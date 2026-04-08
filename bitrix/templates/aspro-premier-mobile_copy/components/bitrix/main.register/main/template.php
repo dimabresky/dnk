@@ -267,10 +267,7 @@ if (
                                                     <?break;
                                                 case 'PERSONAL_NOTES':
                                                 case 'WORK_NOTES':?>
-                                                    <textarea cols="30" rows="5" class="form-control" id="input_<?=$FIELD;?>" name="REGISTER[<?=$FIELD;?>]"><?=$arResult['VALUES'][$FIELD];?></textarea>
-
-                                                <??>
-                                                    <textarea cols="30" rows="5" class="form-control" id="input_<?=$FIELD;?>" name="REGISTER[<?=$FIELD;?>]"><?=$arResult['VALUES'][$FIELD];?></textarea>
+                                                    <textarea cols="30" rows="5" class="form-control" id="input_<?=$FIELD;?>" name="REGISTER[<?=$FIELD;?>]"><?= htmlspecialcharsbx($arResult['VALUES'][$FIELD]); ?></textarea>
                                                     <?break;?>
                                                 <?case 'EMAIL':?>
                                                     <input size="30" type="email" id="input_<?=$FIELD;?>" name="REGISTER[<?=$FIELD;?>]" <?= $arResult['EMAIL_REQUIRED'] || in_array($FIELD, $arResult['REQUIRED_FIELDS']) ? 'required' : '';?> value="<?=$arResult['VALUES'][$FIELD];?>" class="<?=$class;?>" id="emails"/>
