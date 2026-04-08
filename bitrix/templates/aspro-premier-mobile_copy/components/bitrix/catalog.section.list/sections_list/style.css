@@ -1,0 +1,21 @@
+.sections-list-full__item-image-wrapper {
+  --section-image-size: 40px;
+  width: var(--section-image-size);
+  height: var(--section-image-size);
+}
+.sections-list-full__item-image-wrapper--TRANSPARENT_PICTURES {
+  --section-image-size: 56px;
+}
+.sections-list-full__item-image-wrapper--PICTURES {
+  --section-image-size: 88px;
+}
+.sections-list-full__items--top-image .sections-list-full__item-image-wrapper--PICTURES {
+  --section-image-size: 120px;
+}
+.sections-list-full__item-image-wrapper--ICONS svg {
+  width: var(--section-image-size);
+  height: var(--section-image-size);
+}
+.sections-list-full .sections-list-full__item-info {
+  flex-shrink: 1;
+}

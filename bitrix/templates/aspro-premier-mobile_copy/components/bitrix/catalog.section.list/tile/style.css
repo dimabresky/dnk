@@ -1,0 +1,31 @@
+.sections-tile__item-image-wrapper {
+	--section-image-size: 40px;
+	width: var(--section-image-size);
+	height: var(--section-image-size);
+}
+
+.sections-tile__item-image-wrapper--TRANSPARENT_PICTURES {
+	--section-image-size: 88px;
+}
+
+.sections-tile__item-image-wrapper--PICTURES {
+	--section-image-size: 136px;
+	aspect-ratio: 1;
+	height: auto;
+	max-width: 100%;
+}
+.sections-tile__item-image-wrapper--PICTURES.sections-tile__item-image-wrapper--items-medium {
+	--section-image-size: 128px;
+}
+.sections-tile__item-image-wrapper--PICTURES.sections-tile__item-image-wrapper--items-small {
+	--section-image-size: 120px;
+}
+
+.sections-tile__item-image-wrapper--ICONS svg {
+	width: var(--section-image-size);
+	height: var(--section-image-size);
+}
+
+.sections-tile__item-arrow {
+	opacity: 0.16;
+}
