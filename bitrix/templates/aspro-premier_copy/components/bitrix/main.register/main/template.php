@@ -19,6 +19,8 @@ if (Tsolution::GetFrontParametrValue('USE_INTL_PHONE') === 'Y') {
 
 TSolution\Extensions::init($arExtensions);
 
+$this->addExternalJs(SITE_DIR . 'local/js/imask.js');
+
 global $arTheme;
 
 // get phone auth params
@@ -285,24 +287,23 @@ if (
                                                 <?case 'PERSONAL_PHONE':?>
                                                     <input size="30" type="text" id="input_<?=$FIELD;?>" name="REGISTER[<?=$FIELD;?>]" class="form-control phone <?=(array_key_exists($FIELD, $arResult['ERRORS'])) ? 'error' : '';?>" <?= $arResult['REQUIRED_FIELDS_FLAGS'][$FIELD] == 'Y' ? 'required' : '';?> value="<?=$arResult['VALUES'][$FIELD];?>" />
                                                 <?break;?>
-                                                <?break;
-                                                default:?>
+                                                <?case 'PERSONAL_BIRTHDAY':?>
+                                                    <input
+                                                        type="text"
+                                                        id="input_<?=$FIELD;?>"
+                                                        name="REGISTER[<?=$FIELD;?>]"
+                                                        class="form-control js-dnk-register-birthday<?= (array_key_exists($FIELD, $arResult['ERRORS'])) ? ' error' : ''; ?>"
+                                                        size="30"
+                                                        inputmode="numeric"
+                                                        autocomplete="bday"
+                                                        placeholder="дд.мм.гггг"
+                                                        <?= $arResult['REQUIRED_FIELDS_FLAGS'][$FIELD] == 'Y' ? 'required' : ''; ?>
+                                                        value="<?= htmlspecialcharsbx($arResult['VALUES'][$FIELD]); ?>"
+                                                    />
+                                                <?break;?>
+                                                <?default:?>
                                                     <?// hide login?>
                                                     <input size="30" id="input_<?=$FIELD;?>" class="form-control" <?= ($FIELD == 'LOGIN' && $arTheme['CABINET']['DEPENDENT_PARAMS']['LOGIN_EQUAL_EMAIL']['VALUE'] == 'Y') ? 'type="hidden" value="1"' : 'type="text"';?> name="REGISTER[<?=$FIELD;?>]" value="<?=$arResult['VALUES'][$FIELD];?>" />
-                                                    <?if ($FIELD == 'PERSONAL_BIRTHDAY') {?>
-                                                        <?$APPLICATION->IncludeComponent(
-                                                            'bitrix:main.calendar',
-                                                            '',
-                                                            [
-                                                                'SHOW_INPUT' => 'N',
-                                                                'FORM_NAME' => 'regform',
-                                                                'INPUT_NAME' => 'REGISTER[PERSONAL_BIRTHDAY]',
-                                                                'SHOW_TIME' => 'N',
-                                                            ],
-                                                            null,
-                                                            ['HIDE_ICONS' => 'Y']
-                                                        );?>
-                                                    <?}?>
                                                     <?break;?>
                                             <?}?>
                             <?if ($bShowInputWrapper):?>
@@ -410,6 +411,36 @@ if (
                     }
 
                     BX.Aspro.Utils.readyDOM(() => {
+                        (function dnkRegisterBirthdayImask() {
+                            const el = document.querySelector('#registraion-page-form input.js-dnk-register-birthday');
+                            if (!el || el.dataset.dnkImaskInit === '1') {
+                                return;
+                            }
+                            const tryInit = () => {
+                                if (typeof IMask === 'undefined') {
+                                    return false;
+                                }
+                                const y = new Date().getFullYear();
+                                IMask(el, {
+                                    mask: Date,
+                                    min: new Date(1900, 0, 1),
+                                    max: new Date(y, 11, 31),
+                                    lazy: true
+                                });
+                                el.dataset.dnkImaskInit = '1';
+                                return true;
+                            };
+                            if (!tryInit()) {
+                                let n = 0;
+                                const timer = setInterval(() => {
+                                    n += 1;
+                                    if (tryInit() || n > 60) {
+                                        clearInterval(timer);
+                                    }
+                                }, 50);
+                            }
+                        })();
+
                         (function dnkRegisterLoginFromPhone() {
                             const $phone = $('#input_PERSONAL_PHONE');
                             const $login = $('#input_LOGIN');
