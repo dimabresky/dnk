@@ -410,6 +410,23 @@ if (
                     }
 
                     BX.Aspro.Utils.readyDOM(() => {
+                        (function dnkRegisterLoginFromPhone() {
+                            const $phone = $('#input_PERSONAL_PHONE');
+                            const $login = $('#input_LOGIN');
+                            if (!$phone.length || !$login.length || $login.attr('type') !== 'hidden') {
+                                return;
+                            }
+                            const sync = () => {
+                                const digits = String($phone.val() || '').replace(/\D/g, '');
+                                $login.val(digits);
+                            };
+                            $phone.on('input change blur paste', function() {
+                                setTimeout(sync, 0);
+                            });
+                            $('#registraion-page-form').on('submit', sync);
+                            sync();
+                        })();
+
                         <?if ($bPhoneAuthSupported && $bPhoneAuthShow):?>
                             $('#registraion-page-form').submit(function() {
                                 $(this).find('[name=PHONE_NUMBER]').remove();
