@@ -1,0 +1,14 @@
+---
+description: Rules for working with BitrixFramework
+alwaysApply: true
+---
+
+- The project is engaged in the sale of cosmetics.
+- The project uses the Bitrix Framework editorial online store version >= 26.150.0. All solutions must be compatible with the Bitrix architecture and standards.
+- Consideration must be given to working with standard Bitrix classes, hooks, and event handlers.
+- Code should be written using Bitrix Framework functions and classes whenever possible.
+- Include classes by use instruction.
+- You should place all helper methods and functions in local/php_interface/classes/Utils.php
+- You must use @docs/1C-Bitrix api, @docs/1C-Bitrix Разработчик курс, @docs/1C-Bitrix Vue курс
+- For tasks of bonuses system check module by directory @/bitrix/modules/aspro.bonus
+- In templates of components do not include files like ./script.js and ./style.css, because they include automatically

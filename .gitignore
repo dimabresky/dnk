@@ -1,0 +1,39 @@
+# --- Bitrix: runtime and user content ---
+/upload/
+/bitrix/modules/
+/bitrix/cache/
+/bitrix/managed_cache/
+/bitrix/stack_cache/
+/bitrix/backup/
+/bitrix/html_pages/
+/bitrix/tmp/
+/bitrix/catalog_export/
+
+# --- Bitrix: connection and environment (secrets) ---
+/bitrix/php_interface/dbconn.php
+/bitrix/.settings.php
+/bitrix/.settings_extra.php
+/.env
+/.env.local
+
+# --- Dependencies (if added later) ---
+/vendor/
+/node_modules/
+
+# --- NetBeans ---
+/nbproject/
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Logs and temp ---
+*.log
+*.tmp
+*.temp
