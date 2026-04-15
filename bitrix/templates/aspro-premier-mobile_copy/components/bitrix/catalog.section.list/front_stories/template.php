@@ -14,27 +14,28 @@ $sectionIndex = 0;
 $arOptions = Json::encode([
     'spaceBetween' => 0,
     // Дробный slidesPerView: два полных слайда и «подглядывание» третьего на всю ширину контейнера
-    'slidesPerView' => 2.5,
+    'slidesPerView' => 4.5,
+    'spaceBetween' => 0,
     'breakpoints' => [
         '425' => [
             'slidesPerView' => 3.25,
-            'spaceBetween' => 10,
+            'spaceBetween' => 5,
         ],
         '601' => [
             'slidesPerView' => 4,
-            'spaceBetween' => 12,
+            'spaceBetween' => 5,
         ],
         '992' => [
             'slidesPerView' => 5,
-            'spaceBetween' => 12,
+            'spaceBetween' => 5,
         ],
         '1100' => [
             'slidesPerView' => 6,
-            'spaceBetween' => 12,
+            'spaceBetween' => 5,
         ],
         '1200' => [
             'slidesPerView' => 8,
-            'spaceBetween' => 12,
+            'spaceBetween' => 5,
         ],
     ],
 ]);
