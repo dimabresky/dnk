@@ -2,6 +2,7 @@
 
 use Bitrix\Main\Loader;
 use Dnk\PhpInterface\BonusBalanceQueueAgent;
+use Dnk\PhpInterface\HeaderPromoEvents;
 use Dnk\PhpInterface\BonusBalanceQueueTable;
 use Dnk\PhpInterface\BonusFetchAgent;
 use Dnk\PhpInterface\OrderExportEvents;
@@ -21,6 +22,7 @@ if (is_file($includeDir . '/constants.php')) {
 
 Loader::registerAutoLoadClasses(null, [
     Utils::class => $classesPath . '/Utils.php',
+    HeaderPromoEvents::class => $classesPath . '/HeaderPromoEvents.php',
     BonusFetchAgent::class => $classesPath . '/BonusFetchAgent.php',
     BonusBalanceQueueTable::class => $classesPath . '/BonusBalanceQueueTable.php',
     BonusBalanceQueueAgent::class => $classesPath . '/BonusBalanceQueueAgent.php',

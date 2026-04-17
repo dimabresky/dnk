@@ -12,3 +12,4 @@ alwaysApply: true
 - You must use @docs/1C-Bitrix api, @docs/1C-Bitrix Разработчик курс, @docs/1C-Bitrix Vue курс, @docs/IMask, @docs/Swiperjs
 - For tasks of bonuses system check module by directory @/bitrix/modules/aspro.bonus
 - In templates of components do not include files like ./script.js and ./style.css, because they include automatically
+- In templates of components do not include lang files, because they include automatically

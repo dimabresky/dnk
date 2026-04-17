@@ -2,6 +2,8 @@
 
 define('DNK_CATALOG_IBLOCK_ID', 1);
 
+/** Инфоблок узкого промо-баннера в шапке (CODE dnk_header_promo). */
+define('DNK_HEADER_PROMO_IBLOCK_ID', 44);
 
 /** URL (GET): полный список данных по бонусам. */
 define('DNK_BONUS_ENDPOINT', 'http://37.17.18.54:9111/human_ut_test/hs/bonus/bonus/');

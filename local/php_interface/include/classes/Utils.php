@@ -22,6 +22,25 @@ final class Utils
 {
     private const DNK_BONUS_IMPORT_DETAIL_MARKER = '[DNK_BONUS_IMPORT]';
 
+    /**
+     * Безопасное значение для CSS font-size (px, rem, em, % или число — трактуется как px).
+     */
+    public static function sanitizeCssFontSize(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+        if (preg_match('/^\d+(\.\d+)?(px|rem|em|%)$/i', $value)) {
+            return strtolower($value);
+        }
+        if (preg_match('/^\d+(\.\d+)?$/', $value)) {
+            return $value . 'px';
+        }
+
+        return '';
+    }
+
     public static function roundMoney(float $value): float
     {
         return round($value, 2);

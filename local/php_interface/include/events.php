@@ -1,6 +1,7 @@
 <?php
 
 use Bitrix\Main\EventManager;
+use Dnk\PhpInterface\HeaderPromoEvents;
 use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\UserAddEvents;
 
@@ -32,4 +33,10 @@ EventManager::getInstance()->addEventHandlerCompatible(
     'main',
     'OnAfterUserRegister',
     [UserAddEvents::class, 'onAfterUserRegister']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'main',
+    'OnEndBufferContent',
+    [HeaderPromoEvents::class, 'onEndBufferContent']
 );
