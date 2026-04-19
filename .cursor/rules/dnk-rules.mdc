@@ -13,3 +13,4 @@ alwaysApply: true
 - For tasks of bonuses system check module by directory @/bitrix/modules/aspro.bonus
 - In templates of components do not include files like ./script.js and ./style.css, because they include automatically
 - In templates of components do not include lang files, because they include automatically
+- You must add css styles rules in styles.css of component templates or @bitrix/templates/aspro-premier_copy/css/custom.css or @bitrix/templates/aspro-premier-mobile_copy/css/custom.css(depending on the case)
