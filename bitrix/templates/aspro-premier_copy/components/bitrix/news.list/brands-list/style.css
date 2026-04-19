@@ -8,6 +8,7 @@
   height: 100%;
 }
 
+/* 12px horizontal: beats conditional/brands.css @600px (31px) for this layout — higher specificity, no extra mobile block needed */
 .brands-list.brands-list--narrow
   .brands-list__items-wrapper:not(.brands-list__items-wrapper--shrinked)
   .brands-list__item:not(.brands-list__item--picture) {
@@ -39,13 +40,4 @@
   max-height: none;
   object-fit: contain;
   object-position: center;
-}
-
-@media (max-width: 600px) {
-  .brands-list.brands-list--narrow
-    .brands-list__items-wrapper:not(.brands-list__items-wrapper--shrinked)
-    .brands-list__item:not(.brands-list__item--picture) {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
 }
