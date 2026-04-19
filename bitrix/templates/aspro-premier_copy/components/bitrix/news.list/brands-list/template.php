@@ -93,7 +93,7 @@ $itemClasses = TSolution\Utils::implodeClasses($itemClasses);
 			<?
 			$brandsItemsWrapperClassList = ['brands-list__items-wrapper grid-list--fill-bg1 grid-list grid-list--items grid-list--items-2-from-601 mobile-scrolled mobile-scrolled--items-3 mobile-offset'];
 			if ($arParams['IS_TOP_MENU']) {
-				$brandsItemsWrapperClassList[] = 'gap gap--8 brands-list__items-wrapper--shrinked';
+				$brandsItemsWrapperClassList[] = 'gap gap--8';
 			} else {
 				$brandsItemsWrapperClassList[] = \TSolution\Functions::getGridClassByCount(['768', '992', '1200'], $arParams['ELEMENTS_IN_ROW'] ?? $arParams['COUNT_IN_LINE']);
 			}
