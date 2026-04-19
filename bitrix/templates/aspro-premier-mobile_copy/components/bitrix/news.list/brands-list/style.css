@@ -159,40 +159,87 @@
   object-position: center;
 }
 
-/* Горизонтальный скролл на мобильном: без «высоты на всю строку» — иначе grid/flex даёт лишнюю пустоту под логотипами */
+/* Не даём flex-колонке главной страницы задавать лишнюю высоту блоку брендов */
+.brands-list.brands-list--narrow {
+  min-height: 0;
+}
+
+.brands-list.brands-list--narrow .maxwidth-theme {
+  min-height: 0;
+  height: auto;
+  align-self: flex-start;
+}
+
+/* Горизонтальный скролл: высота по контенту — обёртка не flex:1 и не тянется от предка */
 .brands-list.brands-list--narrow
   .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked) {
-  grid-auto-rows: auto;
-  align-items: start;
+  /* Одновременно grid-list + mobile-scrolled: в общих стилях темы может выиграть display:grid и «тянуть» ряд */
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  grid-auto-rows: unset;
+  grid-template-rows: none;
+  align-items: flex-start !important;
+  align-content: flex-start;
+  height: fit-content;
+  max-height: none;
+  min-height: 0;
+  flex: 0 0 auto;
+  row-gap: 0;
+  column-gap: var(--gap, 0px);
+  /* только горизонтальный скролл — без вертикального reflow/полосы, меняющей высоту после первого жеста */
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  /* autoload/mobile-scrolled.css: padding/margin с !important — иначе лишние ~12px+12px и «прыжок» после reflow */
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .brands-list.brands-list--narrow
   .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked)
   > .grid-list__item {
-  height: auto;
-  align-self: start;
+  height: auto !important;
+  min-height: 0 !important;
+  align-self: flex-start !important;
 }
 
 .brands-list.brands-list--narrow
   .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked)
   > .grid-list__item .brands-list__item:not(.brands-list__item--picture) {
-  flex: 0 0 auto;
+  flex: 0 0 auto !important;
+  box-sizing: border-box;
+  height: 87px !important;
+  min-height: 87px !important;
+  max-height: 87px !important;
+}
+
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked)
+  > .grid-list__item
+  .brands-list__item:not(.brands-list__item--picture)
+  > .brands-list__item-link {
+  height: 100%;
 }
 
 .brands-list.brands-list--narrow
   .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked)
   > .grid-list__item .brands-list__image-wrapper {
-  flex: 0 0 auto;
-  height: auto;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: 100%;
 }
 
 .brands-list.brands-list--narrow
   .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked)
   > .grid-list__item .brands-list__image {
+  display: block;
   width: 100%;
-  height: auto;
+  height: 100% !important;
   max-width: none;
-  max-height: none;
+  max-height: 100%;
   object-fit: contain;
   object-position: center;
 }
