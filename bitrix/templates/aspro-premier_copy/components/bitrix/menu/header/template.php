@@ -493,7 +493,7 @@ $nloMenuCode = $arParams["NLO_MENU_CODE"] ?? "menu-fixed";
                                                                             </li>
                                                                         <?endforeach;?>
                                                                     </ul>
-
+                                                                    </div>
                                                                 <?endif;?>
                                                             </li>
                                                         <?endforeach;?>
