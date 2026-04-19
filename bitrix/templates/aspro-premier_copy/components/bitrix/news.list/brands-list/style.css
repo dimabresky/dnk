@@ -1,0 +1,43 @@
+/* Логотип на всю доступную площадь карточки (сетка на главной, не слайдер и не компактное меню) */
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper:not(.brands-list__items-wrapper--shrinked)
+  > .grid-list__item {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+/* 12px horizontal: beats conditional/brands.css @600px (31px) for this layout — higher specificity, no extra mobile block needed */
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper:not(.brands-list__items-wrapper--shrinked)
+  .brands-list__item:not(.brands-list__item--picture) {
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  padding: 10px 12px;
+}
+
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper:not(.brands-list__items-wrapper--shrinked)
+  .brands-list__image-wrapper {
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper:not(.brands-list__items-wrapper--shrinked)
+  .brands-list__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+}
