@@ -158,3 +158,41 @@
   object-fit: contain;
   object-position: center;
 }
+
+/* Горизонтальный скролл на мобильном: без «высоты на всю строку» — иначе grid/flex даёт лишнюю пустоту под логотипами */
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked) {
+  grid-auto-rows: auto;
+  align-items: start;
+}
+
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked)
+  > .grid-list__item {
+  height: auto;
+  align-self: start;
+}
+
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked)
+  > .grid-list__item .brands-list__item:not(.brands-list__item--picture) {
+  flex: 0 0 auto;
+}
+
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked)
+  > .grid-list__item .brands-list__image-wrapper {
+  flex: 0 0 auto;
+  height: auto;
+}
+
+.brands-list.brands-list--narrow
+  .brands-list__items-wrapper.mobile-scrolled:not(.brands-list__items-wrapper--shrinked)
+  > .grid-list__item .brands-list__image {
+  width: 100%;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+}
