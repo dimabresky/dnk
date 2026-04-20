@@ -47,6 +47,7 @@ document.addEventListener("keydown", function (e) {
           });
         }
 
+        document.body.classList.remove("overflow-block");
         window.asproStoriesLoading = false;
       }
     }
@@ -331,6 +332,7 @@ $.fn.asproStoriesSectionsSlider = function (options) {
         responsiveOptions.pauseSlide(responsiveOptions.activeSlide);
       }
       responsiveOptions.popup.remove();
+      document.body.classList.remove("overflow-block");
       responsiveOptions.unbindEvents();
     };
 

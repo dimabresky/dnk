@@ -42,7 +42,7 @@ ExtComponentParameter::addSelectParameter('TITLE_POSITION', [
         'NORMAL' => Loc::getMessage('ASPRO__SELECT_PARAM__NORMAL'),
         'CENTERED' => Loc::getMessage('ASPRO__SELECT_PARAM__CENTERED'),
     ],
-    'DEFAULT' => 'Y',
+    'DEFAULT' => 'NORMAL',
     'SORT' => 999,
 ]);
 
