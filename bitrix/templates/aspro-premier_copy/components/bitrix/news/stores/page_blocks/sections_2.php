@@ -24,19 +24,23 @@ $bUseTabsEffective = ($bUseTabs && $bUseMap && !$bShowMapListSplit);
 	<div class="contacts__row">
 		<div class="contacts__col contacts__col--left flex-1">
 			<div class="contacts__content-wrapper">
-				<div class="contacts__panel-wrapper">
+				<div class="contacts__ajax_items">
 					<?
-					if($bUseTabsEffective){
-						include realpath(__DIR__.'/../include_tabs.php');
-					}
-					?>
-				</div>
-
-				<div class="contacts__ajax_items <?=($bUseTabsEffective ? 'contacts__tab-content contacts__tab-content--map' : '')?>">
-					<?
-					// restart buffer if ajax
+					// restart buffer if ajax — всё ниже подменяется при смене секции (вкл. табы и классы tab-content)
 					TSolution::checkRestartBuffer($bFront = true, $param = '', $reset = true);
 					?>
+					<?if($bUseTabsEffective):?>
+						<div class="contacts__tab-content contacts__tab-content--map">
+					<?endif;?>
+
+					<div class="contacts__panel-wrapper">
+						<?
+						if($bUseTabsEffective){
+							include realpath(__DIR__.'/../include_tabs.php');
+						}
+						?>
+					</div>
+
 					<?if($itemsCnt):?>
 						<?if ($bShowMapListSplit):?>
 							<div class="contacts__desc" itemprop="description">
@@ -67,6 +71,10 @@ $bUseTabsEffective = ($bUseTabs && $bUseMap && !$bShowMapListSplit);
 						<div class="alert alert-warning"><?=GetMessage('SECTION_EMPTY')?></div>
 
 						<?@include_once($arParams["SECTION_ELEMENTS_TYPE_VIEW"].'.php');?>
+					<?endif;?>
+
+					<?if($bUseTabsEffective):?>
+						</div>
 					<?endif;?>
 
 					<?
