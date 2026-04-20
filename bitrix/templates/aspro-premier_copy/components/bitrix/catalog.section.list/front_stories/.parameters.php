@@ -19,7 +19,10 @@ $arFromTheme = $arTmpConfig = [];
 if (isset($_REQUEST['src_path'])) {
     $_SESSION['src_path_component'] = $_REQUEST['src_path'];
 }
-if (strpos($_SESSION['src_path_component'], 'custom') === false) {
+if (
+    !isset($_SESSION['src_path_component'])
+    || strpos((string)$_SESSION['src_path_component'], 'custom') === false
+) {
     $arFromTheme = ['FROM_THEME' => Loc::getMessage('ASPRO__SELECT_PARAM__FROM_THEME')];
 }
 

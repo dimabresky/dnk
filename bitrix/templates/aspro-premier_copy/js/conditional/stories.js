@@ -327,7 +327,9 @@ $.fn.asproStoriesSectionsSlider = function (options) {
     };
 
     responsiveOptions.closePopup = function () {
-      responsiveOptions.pauseSlide($(this));
+      if (responsiveOptions.activeSlide) {
+        responsiveOptions.pauseSlide(responsiveOptions.activeSlide);
+      }
       responsiveOptions.popup.remove();
       responsiveOptions.unbindEvents();
     };
@@ -370,7 +372,12 @@ $.fn.asproStoriesSectionsSlider = function (options) {
         const cookieName = `${arAsproOptions.SOLUTION_ID.replace(".", "_")}_stories_${arAsproOptions.SITE_ID}`;
         const cookie = $.cookie(cookieName);
         if (cookie) {
-          const arStoriesID = JSON.parse($.cookie(cookieName));
+          let arStoriesID;
+          try {
+            arStoriesID = JSON.parse(cookie);
+          } catch (error) {
+            arStoriesID = [];
+          }
           if (!arStoriesID.includes(currentStoryID)) {
             arStoriesID.push(currentStoryID);
             $.cookie(cookieName, JSON.stringify(arStoriesID));
