@@ -1,5 +1,5 @@
 $(document).ready(function(){
-    $('.contacts__filter-select .dropdown-select .dropdown-select__list-item a').on('click', function (e) {
+    $(document).on('click', '.contacts__filter-select .dropdown-select .dropdown-select__list-item a', function (e) {
         e.preventDefault();
 
         var $select = $(this).closest('.dropdown-select');
@@ -52,7 +52,7 @@ $(document).ready(function(){
         }
     });
         
-    $('.contacts__filter-select .dropdown-select.region .dropdown-select__list-item a').on('click', function (e) {
+    $(document).on('click', '.contacts__filter-select .dropdown-select.region .dropdown-select__list-item a', function (e) {
         e.preventDefault();
         
         // region section id
@@ -101,7 +101,7 @@ $(document).ready(function(){
         }
     });
 
-    $('.contacts__tabs .tabs .nav-tabs li a').on('click', function () {
+    $(document).on('click', '.contacts__tabs .tabs .nav-tabs li a', function () {
         $content = $(this).closest('.contacts__row').find('.contacts__tab-content');
 
         if ($(this).attr('href') === '#map') {
