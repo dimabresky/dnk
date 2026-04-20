@@ -595,8 +595,6 @@ $.fn.asproStoriesSectionsSlider = function (options) {
 
                 _this.css(cssCurrent);
                 dependSlide.css(cssDepend);
-
-                console.log(movePercent);
               }
             }
 
