@@ -930,6 +930,11 @@ BX.Aspro.Utils.readyDOM(() => {
     }
 
     nodeStoriesSliderItems.forEach((nodeStoriesSliderItem) => {
+      if (!nodeStoriesSliderItem.classList.contains("item")) {
+        nodeStoriesSliderItem.classList.remove("stories-item--unseen");
+        return;
+      }
+
       if (!storiesItems.includes(nodeStoriesSliderItem.dataset.sectionId)) {
         nodeStoriesSliderItem.classList.add("stories-item--unseen");
       }
