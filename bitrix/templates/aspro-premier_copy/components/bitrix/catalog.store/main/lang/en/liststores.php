@@ -1,0 +1,21 @@
+<?
+$MESS["SECTION_EMPTY"] = "The element list is empty";
+$MESS["SECTION_NOTFOUND"] = "Section not found";
+$MESS["S_ASK_QUESTION"] = "Ask a Question";
+$MESS["CHOISE_ITEM"] = " - Choose #ITEM#";
+$MESS["CHOISE_REGION"] = "region";
+$MESS["CHOISE_CITY"] = "city";
+$MESS["TABS_MAP"] = "On Map";
+$MESS["TABS_LIST"] = "List";
+$MESS["T_CONTACTS_MAIN_OFFICE"] = "Head Office";
+$MESS["T_CONTACTS_METRO"] = "Metro Station";
+$MESS["T_CONTACTS_ADDRESS"] = "Address";
+$MESS["T_CONTACTS_SCHEDULE"] = "Working mode";
+$MESS["T_CONTACTS_PHONE"] = "Phone";
+$MESS["T_CONTACTS_EMAIL"] = "Email";
+$MESS["T_CONTACTS_QUESTION1"] = "Contact us";
+$MESS["T_CONTACTS_QUESTION2"] = "Write message";
+$MESS["SEARCH_LABEL"] = "Search:";
+$MESS["REGION"] = "region";
+$MESS["CITY"] = "city";
+$MESS["SPRAVKA"] = "Help Service";

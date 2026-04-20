@@ -1,0 +1,2 @@
+<?
+\TSolution\Extensions::init('contacts');
