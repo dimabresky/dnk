@@ -21,3 +21,30 @@
 .bonus-history .bonus-history__items {
     display: none !important;
 }
+
+/* news/stores: list left + map right (sections_2) */
+.contacts__map-list-split {
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+	gap: 24px;
+}
+
+.contacts__map-list-split__list {
+	flex: 1;
+	min-width: 0;
+	min-height: 0;
+	height: 520px;
+	max-height: 520px;
+	overflow-y: auto;
+}
+
+.contacts__map-list-split__map {
+	flex: 0 0 50%;
+	min-width: 0;
+}
+
+.contacts__map-list-split__list .grid-list.grid-list--items {
+	display: grid;
+	grid-template-columns: 1fr;
+}

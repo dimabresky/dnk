@@ -1,6 +1,18 @@
 <?
 if(!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 use \Bitrix\Main\Localization\Loc;
+
+$bHasMapMarkers = false;
+if (isset($arItems) && is_array($arItems)) {
+	foreach ($arItems as $arItemMapCheck) {
+		if (!empty($arItemMapCheck['PROPERTY_MAP_VALUE'])) {
+			$bHasMapMarkers = true;
+			break;
+		}
+	}
+}
+$bShowMapListSplit = ($itemsCnt && $bUseMap && $bHasMapMarkers);
+$bUseTabsEffective = ($bUseTabs && $bUseMap && !$bShowMapListSplit);
 ?>
 <div class="contacts-v2" itemscope itemtype="http://schema.org/LocalBusiness">
 	<?//hidden text for validate microdata?>
@@ -14,33 +26,48 @@ use \Bitrix\Main\Localization\Loc;
 			<div class="contacts__content-wrapper">
 				<div class="contacts__panel-wrapper">
 					<?
-					// tabs
-					if($bUseTabs && $bUseMap){
+					if($bUseTabsEffective){
 						include realpath(__DIR__.'/../include_tabs.php');
 					}
 					?>
 				</div>
 
-				<div class="contacts__ajax_items <?=($bUseTabs && $bUseMap ? 'contacts__tab-content contacts__tab-content--map' : '')?>">
+				<div class="contacts__ajax_items <?=($bUseTabsEffective ? 'contacts__tab-content contacts__tab-content--map' : '')?>">
 					<?
 					// restart buffer if ajax
 					TSolution::checkRestartBuffer($bFront = true, $param = '', $reset = true);
 					?>
 					<?if($itemsCnt):?>
-						<?
-						if($bUseMap){
-							include realpath(__DIR__.'/../include_map.php');
-						}
-						?>
+						<?if ($bShowMapListSplit):?>
+							<div class="contacts__desc" itemprop="description">
+								<?$APPLICATION->IncludeFile(SITE_DIR."include/contacts-regions-desc.php", Array(), Array("MODE" => "html", "NAME" => "Description"));?>
+							</div>
+							<div class="contacts__map-list-split">
+								<div class="contacts__map-list-split__list">
+									<?@include_once($arParams["SECTION_ELEMENTS_TYPE_VIEW"].'.php');?>
+								</div>
+								<div class="contacts__map-list-split__map">
+									<?include realpath(__DIR__.'/../include_map.php');?>
+								</div>
+							</div>
+						<?else:?>
+							<?
+							if($bUseMap){
+								include realpath(__DIR__.'/../include_map.php');
+							}
+							?>
 
-						<div class="contacts__desc" itemprop="description">
-							<?$APPLICATION->IncludeFile(SITE_DIR."include/contacts-regions-desc.php", Array(), Array("MODE" => "html", "NAME" => "Description"));?>
-						</div>
+							<div class="contacts__desc" itemprop="description">
+								<?$APPLICATION->IncludeFile(SITE_DIR."include/contacts-regions-desc.php", Array(), Array("MODE" => "html", "NAME" => "Description"));?>
+							</div>
+
+							<?@include_once($arParams["SECTION_ELEMENTS_TYPE_VIEW"].'.php');?>
+						<?endif;?>
 					<?else:?>
 						<div class="alert alert-warning"><?=GetMessage('SECTION_EMPTY')?></div>
-					<?endif;?>
 
-					<?@include_once($arParams["SECTION_ELEMENTS_TYPE_VIEW"].'.php');?>
+						<?@include_once($arParams["SECTION_ELEMENTS_TYPE_VIEW"].'.php');?>
+					<?endif;?>
 
 					<?
 					// die if ajax
