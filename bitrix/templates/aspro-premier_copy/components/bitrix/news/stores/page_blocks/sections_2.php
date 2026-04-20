@@ -26,13 +26,9 @@ $bUseTabsEffective = ($bUseTabs && $bUseMap && !$bShowMapListSplit);
 			<div class="contacts__content-wrapper">
 				<div class="contacts__ajax_items">
 					<?
-					// restart buffer if ajax — всё ниже подменяется при смене секции (вкл. табы и классы tab-content)
+					// AJAX replaces everything between checkRestartBuffer calls (tabs + tab pane markup).
 					TSolution::checkRestartBuffer($bFront = true, $param = '', $reset = true);
 					?>
-					<?if($bUseTabsEffective):?>
-						<div class="contacts__tab-content contacts__tab-content--map">
-					<?endif;?>
-
 					<div class="contacts__panel-wrapper">
 						<?
 						if($bUseTabsEffective){
@@ -40,6 +36,10 @@ $bUseTabsEffective = ($bUseTabs && $bUseMap && !$bShowMapListSplit);
 						}
 						?>
 					</div>
+
+					<?if($bUseTabsEffective):?>
+						<div class="contacts__tab-content contacts__tab-content--map">
+					<?endif;?>
 
 					<?if($itemsCnt):?>
 						<?if ($bShowMapListSplit):?>
