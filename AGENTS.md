@@ -1,37 +1,38 @@
 # Agent instructions — DNK.BY
 
-This file guides AI coding agents and human contributors working on this repository. It complements `README.md` and Cursor workspace rules (`.cursor/rules/`). When instructions conflict, follow the **narrowest** rule for the task at hand, then **project-specific** rules over generic advice.
+This repository powers **DNK.BY**, a cosmetics e-commerce site on **1C-Bitrix: Site Management** (Online Store edition, core **≥ 26.150.0**), using the **Aspro Premier** template ecosystem. Automated/assisted coding agents should follow this document together with [`README.md`](README.md) and workspace Cursor rules (`.cursor/rules/`). When instructions conflict, follow the **narrowest** rule for the task at hand, then **project-specific** rules over generic advice.
 
-## Project
+## Role and priorities
 
-- **Domain:** E-commerce for cosmetics (catalog, cart, checkout, integrations).
-- **Platform:** **1C-Bitrix: Site Management**, Internet Store edition, **core ≥ 26.150.0**.
-- **Theme:** Aspro «Premier»; site templates live under `bitrix/templates/` (including copies such as `aspro-premier_copy` / `aspro-premier-mobile_copy`).
-
-## Bitrix conventions
-
-- Prefer **standard Bitrix APIs**: modules, classes, events, and component lifecycle. Do not bypass the framework when a supported API exists.
-- Use **`use` statements** for class includes.
-- Register logic via **events and hooks** where appropriate; do not duplicate core behavior.
-- **Bonus system:** For anything related to bonuses, review the module at `bitrix/modules/aspro.bonus`.
+- Prefer **Bitrix-native APIs**: standard modules, classes, events, and component APIs.
+- Keep changes **scoped** to the task; match existing patterns (naming, namespaces, PHP style, how components are structured).
+- **Include PHP classes with `use`** where applicable; do not invent parallel frameworks inside the project.
 
 ## Where to put code
 
-- **Custom PHP** generally belongs under `local/` (e.g. `local/php_interface/`, components).
-- **Shared helpers:** Centralize reusable helpers in `local/php_interface/include/classes/Utils.php` (do not scatter one-off utilities across the tree if they belong there).
+| Concern | Location |
+|--------|----------|
+| Custom PHP logic, services, events | `local/php_interface/` and related paths under `local/` |
+| **Shared helpers** | `local/php_interface/include/classes/Utils.php` — centralize reusable helpers here instead of scattering one-off utilities |
+| Site templates (including Aspro copies) | `bitrix/templates/` (e.g. `aspro-premier_copy`, `aspro-premier-mobile_copy`) |
+| Custom components | `local/components/` |
 
-## Front-end and templates
+Project-specific layout details are summarized in [`README.md`](README.md).
 
-- **Component templates:** Do **not** manually include `./script.js` or `./style.css` — they are loaded automatically.
-- **Component templates:** Do **not** manually include language files — they are loaded automatically.
-- **CSS:** Add styles in the component template’s `styles.css`, or in:
-  - `bitrix/templates/aspro-premier_copy/css/custom.css`, or
-  - `bitrix/templates/aspro-premier-mobile_copy/css/custom.css`  
-  (choose based on desktop vs mobile template in use).
+## Bitrix and Aspro conventions
+
+- Use **event handlers** and **standard Bitrix hooks** instead of ad-hoc hooks when an official extension point exists; do not duplicate core behaviour when a supported API exists.
+- **Bonuses / loyalty**: before changing related behaviour, review `bitrix/modules/aspro.bonus`.
+- **Component templates**:
+  - Do **not** manually include `./script.js` or `./style.css` — they are loaded automatically.
+  - Do **not** manually include lang files — they are loaded automatically.
+- **CSS**: add rules in the component’s `styles.css`, or in  
+  `bitrix/templates/aspro-premier_copy/css/custom.css` or  
+  `bitrix/templates/aspro-premier-mobile_copy/css/custom.css`, depending on context (desktop vs mobile template).
 
 ## Documentation and references
 
-Use the project’s internal docs where available:
+When implementing or debugging, align with internal documentation (paths may be exposed as `@docs` in the workspace):
 
 - `@docs/1C-Bitrix api`
 - `@docs/1C-Bitrix Разработчик курс`
@@ -43,11 +44,14 @@ Public API reference: [Bitrix dev docs](https://dev.1c-bitrix.ru/api_help/).
 
 ## Git and delivery
 
-- **Commits:** English messages; **Conventional Commits** (e.g. `feat:`, `fix:`, `refactor:`).
-- **Workflow:** Use feature branches; keep changes **focused** on the requested task — avoid unrelated refactors or broad formatting-only edits unless the task requires them.
+- **Commits:** English messages; [**Conventional Commits**](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`, `fix:`, `chore:`, `refactor:`, etc.).
+- **Workflow:** use feature branches; keep changes **focused** on the requested task — avoid unrelated refactors or broad formatting-only edits unless the task requires them.
+- Do not commit secrets (e.g. `bitrix/php_interface/dbconn.php`, `bitrix/.settings.php`); follow `.gitignore` and team practice from `README.md`.
 
-## Quality bar
+## Out of scope for agents unless explicitly requested
 
-- Match existing naming, structure, and patterns in touched files.
-- Prefer small, reviewable diffs; every line should serve the task.
-- Do not add unsolicited documentation files unless the task asks for them.
+- Broad refactors unrelated to the task.
+- New top-level documentation files beyond what maintainers ask for.
+- Changes that break Bitrix upgrade paths or bypass standard extension points without clear justification.
+
+Prefer small, reviewable diffs; every line should serve the task. When in doubt, stay consistent with neighbouring code and Bitrix documentation for the edition and version in use.
