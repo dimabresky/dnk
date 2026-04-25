@@ -800,4 +800,42 @@ final class Utils
 
         BonusUser::addBonuses($userId, ['TOTAL_BONUSES' => $amount]);
     }
+
+    /**
+     * ID варианта списка (свойство типа L) по коду свойства и XML_ID в инфоблоке.
+     */
+    public static function getIblockListPropertyEnumIdByXmlId(int $iblockId, string $propertyCode, string $xmlId): ?int
+    {
+        $xmlId = trim($xmlId);
+        if ($iblockId <= 0 || $propertyCode === '' || $xmlId === '') {
+            return null;
+        }
+        if (!\CModule::IncludeModule('iblock')) {
+            return null;
+        }
+        $rsProp = \CIBlockProperty::GetList(
+            [],
+            [
+                'IBLOCK_ID' => $iblockId,
+                'CODE' => $propertyCode,
+            ]
+        );
+        $arProp = $rsProp->Fetch();
+        if (!$arProp || (string)($arProp['PROPERTY_TYPE'] ?? '') !== 'L') {
+            return null;
+        }
+        $rsEnum = \CIBlockPropertyEnum::GetList(
+            ['SORT' => 'ASC'],
+            [
+                'PROPERTY_ID' => (int)$arProp['ID'],
+                'XML_ID' => $xmlId,
+            ]
+        );
+        $arEnum = $rsEnum->Fetch();
+        if (!$arEnum) {
+            return null;
+        }
+
+        return (int)$arEnum['ID'];
+    }
 }

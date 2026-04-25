@@ -69,7 +69,7 @@ $APPLICATION->SetTitle("Производители");
 			2 => "PREVIEW_PICTURE",
 			3 => "DETAIL_TEXT",
 			4 => "DETAIL_PICTURE",
-			5 => "",
+			5 => "XML_ID",
 		],
 		"DETAIL_PROPERTY_CODE" => [
 			0 => "SITE",
@@ -128,7 +128,7 @@ $APPLICATION->SetTitle("Производители");
 		"SHOW_LINK_GOODS" => "Y",
 		"T_LINK_GOODS" => "",
 		"LINK_GOODS_IBLOCK_ID" => "14",
-		"LINK_GOODS_PROP_CODE" => "BRAND",
+		"LINK_GOODS_PROP_CODE" => "BREND",
 		"T_COMMENTS" => "",
 		"DETAIL_USE_COMMENTS" => "Y",
 		"DETAIL_BLOG_USE" => "Y",

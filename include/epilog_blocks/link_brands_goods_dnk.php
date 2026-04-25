@@ -2,6 +2,7 @@
 if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 
 use \Bitrix\Main\Localization\Loc;
+use Dnk\PhpInterface\Utils;
 
 $bLinkedGoods = in_array('goods', $GLOBALS["SHOW_TYPE_ITEMS"]);
 $bLinkedCatalog = in_array('catalog', $GLOBALS["SHOW_TYPE_ITEMS"]);
@@ -19,12 +20,33 @@ $bLinkedCatalog = in_array('catalog', $GLOBALS["SHOW_TYPE_ITEMS"]);
 	$bCheckAjaxBlock = TSolution::checkRequestBlock("goods-list-inner");
 	$isAjax = (TSolution::checkAjaxRequest() && $bCheckAjaxBlock ) ? 'Y' : 'N';
 
+	// FIND XML_ID OF CURRENT BRAND
+	$arBrand = CIBlockElement::GetList(
+		false,
+		[
+			'IBLOCK_ID' => $arParams['IBLOCK_ID'],
+			'ID' => $arResult['ID'],
+		],
+		false, false,
+		['ID', 'XML_ID']
+	)->Fetch();
+
+	$brandListEnumId = Utils::getIblockListPropertyEnumIdByXmlId(
+		(int)$catalogIBlockID,
+		(string)($arParams['LINK_GOODS_PROP_CODE'] ?? ''),
+		(string)($arBrand['XML_ID'] ?? '')
+	);
+
 	$arItemsFilter = array(
-		'PROPERTY_'.$arParams['LINK_GOODS_PROP_CODE'] => $arResult['ID'],
 		'SECTION_GLOBAL_ACTIVE' => 'Y',
 		'ACTIVE' => 'Y',
 		'IBLOCK_ID' => $catalogIBlockID,
 	);
+	if ($brandListEnumId !== null) {
+		$arItemsFilter['PROPERTY_'.$arParams['LINK_GOODS_PROP_CODE']] = $brandListEnumId;
+	} else {
+		$arItemsFilter['=ID'] = 0;
+	}
 	TSolution::makeElementFilterInRegion($arItemsFilter);
 	if(is_array($GLOBALS['arRegionLink'])){
 		$arItemsFilter = array_merge($GLOBALS['arRegionLink'], $arItemsFilter);
