@@ -55,6 +55,6 @@
 	display: none;
 }
 
-a.forgot {
+.auth__bottom-action .forgot {
 	display: none;
 }
