@@ -54,3 +54,7 @@
 .header__top-part {
 	display: none;
 }
+
+a.forgot {
+	display: none;
+}
