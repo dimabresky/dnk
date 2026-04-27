@@ -28,54 +28,54 @@ final class IblockProductBrandEvents
     }
 
     /**
-     * @param array<string, mixed> $arFields
+     * Заполняет BRAND из BREND по XML_ID, если BRAND пустой. Для массовой миграции и событий.
+     *
+     * @return bool true, если вызвано сохранение значения BRAND
      */
-    private static function syncBrandFromBrendList(array $arFields): void
+    public static function syncBrandFromBrendListForElement(int $iblockId, int $elementId): bool
     {
-        $iblockId = (int)($arFields['IBLOCK_ID'] ?? 0);
-        $elementId = (int)($arFields['ID'] ?? 0);
         if (!defined('DNK_CATALOG_IBLOCK_ID') || $iblockId !== (int) DNK_CATALOG_IBLOCK_ID || $elementId <= 0) {
-            return;
+            return false;
         }
         if (!\CModule::IncludeModule('iblock')) {
-            return;
+            return false;
         }
 
         $propBrand = self::getPropertyInfo($iblockId, 'BRAND');
         $propBrend = self::getPropertyInfo($iblockId, 'BREND');
         if ($propBrand === null || $propBrend === null) {
-            return;
+            return false;
         }
         if ((string)($propBrand['PROPERTY_TYPE'] ?? '') !== 'E' || (string)($propBrend['PROPERTY_TYPE'] ?? '') !== 'L') {
-            return;
+            return false;
         }
 
         $brandsIblockId = (int)($propBrand['LINK_IBLOCK_ID'] ?? 0);
         if ($brandsIblockId <= 0) {
-            return;
+            return false;
         }
 
         if (self::hasBrandPropertyValues($iblockId, $elementId, (int)($propBrand['ID'] ?? 0))) {
-            return;
+            return false;
         }
 
         $enumId = self::getFirstBrendEnumId($iblockId, $elementId, (int)($propBrend['ID'] ?? 0));
         if ($enumId === null) {
-            return;
+            return false;
         }
 
         $arEnum = CIBlockPropertyEnum::GetByID($enumId);
         if (!is_array($arEnum) || !isset($arEnum['XML_ID'])) {
-            return;
+            return false;
         }
         $listXmlId = trim((string)$arEnum['XML_ID']);
         if ($listXmlId === '') {
-            return;
+            return false;
         }
 
         $brandElementId = Utils::getIblockElementIdByXmlId($brandsIblockId, $listXmlId);
         if ($brandElementId === null || $brandElementId <= 0) {
-            return;
+            return false;
         }
 
         $isMultiple = (string)($propBrand['MULTIPLE'] ?? 'N') === 'Y';
@@ -84,6 +84,19 @@ final class IblockProductBrandEvents
         CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [
             'BRAND' => $value,
         ]);
+
+        return true;
+    }
+
+    /**
+     * @param array<string, mixed> $arFields
+     */
+    private static function syncBrandFromBrendList(array $arFields): void
+    {
+        self::syncBrandFromBrendListForElement(
+            (int)($arFields['IBLOCK_ID'] ?? 0),
+            (int)($arFields['ID'] ?? 0)
+        );
     }
 
     /**
