@@ -13,11 +13,17 @@ final class IblockProductBrandEvents
 {
     public static function onAfterIBlockElementAdd(array &$arFields): void
     {
+        if (isset($arFields['RESULT']) && $arFields['RESULT'] === false) {
+            return;
+        }
         self::syncBrandFromBrendList($arFields);
     }
 
     public static function onAfterIBlockElementUpdate(array &$arFields): void
     {
+        if (empty($arFields['RESULT'])) {
+            return;
+        }
         self::syncBrandFromBrendList($arFields);
     }
 
