@@ -856,11 +856,11 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                         <?=$formsHtml; ?>
                     </div>
                     <?
-                    /*$cntChars = count($arResult['CHARACTERISTICS']) + count((array)$arResult['OFFER_PROP']);
+                    $cntChars = count($arResult['CHARACTERISTICS']) + count((array)$arResult['OFFER_PROP']);
                     $templateData['SHOW_CHARACTERISTICS'] = true;
                     $templateData['VISIBLE_PROPS_BLOCK'] = $cntChars > $cntVisibleChars;
                     ?>
-                    <?TSolution\Functions::showBlockHtml([
+                    <?/*TSolution\Functions::showBlockHtml([
                     'FILE' => '/catalog/props_in_section.php',
                     'ITEM' => $arResult,
                     'PARAMS' => [
@@ -875,10 +875,10 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                         'TEXT_CLASSES' => 'secondary-color',
                         'IS_DETAIL' => true,
                     ],
-                    ]);?>
+                    ]);*/?>
                     <?$bSKUPreviewDescription = $bShowSKUDescription && strlen($arResult['SKU']['CURRENT']['PREVIEW_TEXT']); ?>
                     <?$showPreviewText = boolval(strlen($arResult['PREVIEW_TEXT']) || $bSKUPreviewDescription); ?>
-                    <?if($showPreviewText):?>
+                    <?/*if($showPreviewText):?>
                         <div class="grid-list__item catalog-detail__previewtext" itemprop="description">
                             <div class="fw-500 font_14 color_222"><?=$arParams['T_DESC']; ?></div>
 
