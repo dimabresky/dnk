@@ -96,7 +96,7 @@
 
 .dnk-sku-list__menu {
     position: absolute;
-    z-index: 10050;
+    z-index: 99999;
     left: 0;
     right: 0;
     top: calc(100% + 4px);
