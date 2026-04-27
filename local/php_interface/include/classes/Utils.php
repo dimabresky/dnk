@@ -838,4 +838,35 @@ final class Utils
 
         return (int)$arEnum['ID'];
     }
+
+    /**
+     * ID элемента инфоблока по полю XML_ID.
+     */
+    public static function getIblockElementIdByXmlId(int $iblockId, string $xmlId): ?int
+    {
+        $xmlId = trim($xmlId);
+        if ($iblockId <= 0 || $xmlId === '') {
+            return null;
+        }
+        if (!Loader::includeModule('iblock')) {
+            return null;
+        }
+
+        $row = ElementTable::getList([
+            'filter' => [
+                '=IBLOCK_ID' => $iblockId,
+                '=XML_ID' => $xmlId,
+            ],
+            'select' => ['ID'],
+            'limit' => 1,
+        ])->fetch();
+
+        if ($row === false) {
+            return null;
+        }
+
+        $id = (int)($row['ID'] ?? 0);
+
+        return $id > 0 ? $id : null;
+    }
 }
