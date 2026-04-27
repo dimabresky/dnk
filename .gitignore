@@ -23,6 +23,9 @@
 # --- NetBeans ---
 /nbproject/
 
+# --- Catalog ---
+/catalog/
+
 # --- IDE / OS ---
 .idea/
 .vscode/
