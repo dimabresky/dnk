@@ -617,7 +617,17 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
 
                         <div class="border-bottom"></div>
                     </div>
-
+                    <?$APPLICATION->IncludeComponent(
+                        "dnk:sku.list",
+                        ".default",
+                        [
+                            "CACHE_TYPE" => "N",
+                            "CACHE_TIME" => 3600,
+                            "IBLOCK_ID" => $arResult["IBLOCK_ID"],
+                            "ELEMENT_ID" => $arResult["ID"],
+                        ],
+                        false
+                    );?>
                     <?if ($templateData['PRODUCT_ANALOG']):?>
                         <div class="visible-by-container-rule visible-by-container-rule--ignore-hidden">#<?=$templateData['PRODUCT_ANALOG']['MARKER'];?>#</div>
                     <?endif;?>
@@ -824,17 +834,7 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                                 <?endif; ?>
                             </div>
                         </div>
-                        <?$APPLICATION->IncludeComponent(
-    "dnk:sku.list",
-    ".default",
-    [
-        "CACHE_TYPE" => "N",
-        "CACHE_TIME" => 3600,
-        "IBLOCK_ID" => $arResult["IBLOCK_ID"],
-        "ELEMENT_ID" => $arResult["ID"],
-    ],
-    false
-);?>
+                        
                     <?php
                     $formsHtml = trim(ob_get_contents());
                     ob_end_clean();
@@ -847,7 +847,7 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                         <?=$formsHtml; ?>
                     </div>
                     <?
-                    $cntChars = count($arResult['CHARACTERISTICS']) + count((array)$arResult['OFFER_PROP']);
+                    /*$cntChars = count($arResult['CHARACTERISTICS']) + count((array)$arResult['OFFER_PROP']);
                     $templateData['SHOW_CHARACTERISTICS'] = true;
                     $templateData['VISIBLE_PROPS_BLOCK'] = $cntChars > $cntVisibleChars;
                     ?>
@@ -888,7 +888,7 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                                 </span>
                             <?endif; ?>
                         </div>
-                    <?endif; ?>
+                    <?endif; */?>
 
                 </div>
             </div>
