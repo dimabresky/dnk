@@ -129,7 +129,7 @@ $APPLICATION->SetTitle("Производители");
 		"SHOW_LINK_GOODS" => "Y",
 		"T_LINK_GOODS" => "",
 		"LINK_GOODS_IBLOCK_ID" => "14",
-		"LINK_GOODS_PROP_CODE" => "BREND",
+		"LINK_GOODS_PROP_CODE" => "BRAND",
 		"T_COMMENTS" => "",
 		"DETAIL_USE_COMMENTS" => "Y",
 		"DETAIL_BLOG_USE" => "Y",
