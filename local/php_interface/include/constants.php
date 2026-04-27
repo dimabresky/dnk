@@ -1,6 +1,6 @@
 <?php
 
-define('DNK_CATALOG_IBLOCK_ID', 1);
+define('DNK_CATALOG_IBLOCK_ID', 42);
 
 /** Инфоблок узкого промо-баннера в шапке (CODE dnk_header_promo). */
 define('DNK_HEADER_PROMO_IBLOCK_ID', 44);
