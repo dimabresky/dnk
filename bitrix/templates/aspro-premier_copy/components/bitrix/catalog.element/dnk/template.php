@@ -80,6 +80,7 @@ $templateData = [
     'SHOW_CHARACTERISTICS' => false,
     'PRODUCT_ANALOG' => $arResult['PRODUCT_ANALOG'] ?? false
 ];
+$isShowBrandBlock = ($arResult['BRAND_ITEM'] && $arResult['BRAND_ITEM']['IMAGE']);
 ?>
 
 <?if (TSolution::isSaleMode()):?>
@@ -544,6 +545,14 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                                 'DOP_CLASS' => 'sticker--static mb mb--8',
                                 'CONTENT' => $itemDiscount,
                             ]); ?>
+                            <?if ($isShowBrandBlock):?>
+                                <div class="brand-detail-info__image rounded-x mb mb--8">
+                                    <meta itemprop="name" content="<?=$arResult['BRAND_ITEM']['NAME']; ?>" />
+                                    <a href="<?=$arResult['BRAND_ITEM']['DETAIL_PAGE_URL']; ?>">
+                                        <img src="<?=$arResult['BRAND_ITEM']['IMAGE']['src']; ?>" alt="<?=$arResult['BRAND_ITEM']['NAME']; ?>" title="<?=$arResult['BRAND_ITEM']['NAME']; ?>">
+                                    </a>
+                                </div>
+                            <?endif; ?>
                             <h1 class="font_24 switcher-title js-popup-title mb mb--0 text-overflow-ellipsis min-width-0" title="<?=$elementName; ?>">
                                 <?=$elementName;?>
                             </h1>
@@ -1038,37 +1047,6 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                                 </div>
                             </div>
                         <?endif; ?>
-                    <?endif; ?>
-
-                    <?$isShowBrandBlock = ($arResult['BRAND_ITEM'] && $arResult['BRAND_ITEM']['IMAGE']); ?>
-                    <?if ($isShowBrandBlock):?>
-                        <div class="grid-list__item">
-                            <div class="brand-detail flexbox line-block--gap line-block--gap-12">
-                                <div class="brand-detail-info">
-                                    <meta itemprop="name" content="<?=$arResult['BRAND_ITEM']['NAME']; ?>" />
-                                    <div class="brand-detail-info__image rounded-x">
-                                        <a href="<?=$arResult['BRAND_ITEM']['DETAIL_PAGE_URL']; ?>">
-                                            <img src="<?=$arResult['BRAND_ITEM']['IMAGE']['src']; ?>" alt="<?=$arResult['BRAND_ITEM']['NAME']; ?>" title="<?=$arResult['BRAND_ITEM']['NAME']; ?>">
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <div class="brand-detail-info__preview line-block line-block--gap line-block--gap-8 flexbox--wrap font_14">
-                                    <div class="line-block__item">
-                                        <a class="chip chip--transparent bordered" href="<?=$arResult['BRAND_ITEM']['DETAIL_PAGE_URL']; ?>" target="_blank">
-                                            <span class="chip__label"><?=GetMessage('ITEMS_BY_BRAND', ['#BRAND#' => $arResult['BRAND_ITEM']['NAME']]); ?></span>
-                                        </a>
-                                    </div>
-                                    <?if ($arResult['SECTION']):?>
-                                        <div class="line-block__item">
-                                            <a class="chip chip--transparent bordered" href="<?= $arResult['BRAND_ITEM']['CATALOG_PAGE_URL']; ?>" target="_blank">
-                                                <span class="chip__label"><?=GetMessage('ITEMS_BY_SECTION'); ?></span>
-                                            </a>
-                                        </div>
-                                    <?endif; ?>
-                                </div>
-                            </div>
-                        </div>
                     <?endif; ?>
 
                     <?$isShowTizersBlock = ($templateData['TIZERS']['VALUE'] && $templateData['TIZERS']['IBLOCK_ID']); ?>

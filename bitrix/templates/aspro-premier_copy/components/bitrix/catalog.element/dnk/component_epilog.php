@@ -31,10 +31,6 @@ if ($templateData['USE_SHARE']) {
     $arExtensions[] = 'share';
 }
 
-if ($templateData['BRAND']) {
-    $arExtensions[] = 'chip';
-}
-
 if ($templateData['USE_OFFERS_SELECT']) {
     $arExtensions[] = 'select_offer';
     $arExtensions[] = 'select_offer_load';
