@@ -42,12 +42,14 @@
         root.setAttribute('data-dnk-sku-list-init', '1');
 
         function open() {
+            root.classList.add('dnk-sku-list--open');
             menu.classList.add('dnk-sku-list__menu--open');
             menu.setAttribute('aria-hidden', 'false');
             trigger.setAttribute('aria-expanded', 'true');
         }
 
         function close() {
+            root.classList.remove('dnk-sku-list--open');
             menu.classList.remove('dnk-sku-list__menu--open');
             menu.setAttribute('aria-hidden', 'true');
             trigger.setAttribute('aria-expanded', 'false');
