@@ -58,3 +58,7 @@
 .auth__bottom-action .forgot {
 	display: none;
 }
+
+.catalog-viewed__item__image {
+	width: 100% !important;
+}
