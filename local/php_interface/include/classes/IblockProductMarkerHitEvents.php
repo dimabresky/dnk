@@ -165,11 +165,9 @@ final class IblockProductMarkerHitEvents
 
         $value = trim((string) ($markerEnumRow['VALUE'] ?? ''));
         if ($value !== '') {
-            if (isset(self::MARKER_VALUE_TO_HIT_XML_ID[$value])) {
-                return self::MARKER_VALUE_TO_HIT_XML_ID[$value];
-            }
+            $normValue = self::normalizeUtf8Lower($value);
             foreach (self::MARKER_VALUE_TO_HIT_XML_ID as $label => $hitXml) {
-                if (strcasecmp($value, $label) === 0) {
+                if ($normValue === self::normalizeUtf8Lower($label)) {
                     return $hitXml;
                 }
             }
@@ -184,6 +182,11 @@ final class IblockProductMarkerHitEvents
         }
 
         return null;
+    }
+
+    private static function normalizeUtf8Lower(string $value): string
+    {
+        return mb_strtolower($value, 'UTF-8');
     }
 
     private static function findHitEnumIdByXmlId(int $hitPropertyId, string $hitXmlId): ?int
