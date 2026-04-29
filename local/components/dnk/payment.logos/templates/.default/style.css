@@ -1,0 +1,61 @@
+.dnk-payment-logos {
+  background: #f8f9fb;
+  padding: 20px 16px;
+  margin: 0;
+}
+
+.dnk-payment-logos__inner {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px 24px;
+}
+
+.dnk-payment-logos__inner--badges {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  gap: 12px 20px;
+}
+
+.dnk-payment-logos__inner--strip {
+  justify-content: center;
+}
+
+.dnk-payment-logos__img {
+  display: block;
+  height: 32px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.dnk-payment-logos__img--badge {
+  height: 40px;
+}
+
+.dnk-payment-logos__strip {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 575px) {
+  .dnk-payment-logos {
+    padding: 16px 12px;
+  }
+
+  .dnk-payment-logos__inner {
+    gap: 12px 16px;
+  }
+
+  .dnk-payment-logos__img {
+    height: 26px;
+  }
+
+  .dnk-payment-logos__img--badge {
+    height: 32px;
+  }
+}
