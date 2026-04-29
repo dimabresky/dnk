@@ -127,6 +127,11 @@
 }
 
 @media (max-width: 767px) {
+    .dnk-header-promo-bar__media .dnk-header-promo-bar__img {
+        object-fit: initial;
+        object-position: initial;
+    }
+
     .dnk-header-promo-bar__text {
         white-space: normal;
         display: -webkit-box;
