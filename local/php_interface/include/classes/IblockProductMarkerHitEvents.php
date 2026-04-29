@@ -3,7 +3,6 @@
 namespace Dnk\PhpInterface;
 
 use CIBlockElement;
-use CIBlockProperty;
 use CIBlockPropertyEnum;
 
 /**
@@ -49,8 +48,8 @@ final class IblockProductMarkerHitEvents
             return false;
         }
 
-        $propMarker = self::getPropertyInfo($iblockId, 'MARKER_DLYA_SAYTA');
-        $propHit = self::getPropertyInfo($iblockId, 'HIT');
+        $propMarker = Utils::getIblockPropertyByCode($iblockId, 'MARKER_DLYA_SAYTA');
+        $propHit = Utils::getIblockPropertyByCode($iblockId, 'HIT');
         if ($propMarker === null || $propHit === null) {
             return false;
         }
@@ -65,8 +64,7 @@ final class IblockProductMarkerHitEvents
         }
 
         $markerPropId = (int) ($propMarker['ID'] ?? 0);
-        $hitPropId = (int) ($propHit['ID'] ?? 0);
-        if ($markerPropId <= 0 || $hitPropId <= 0) {
+        if ($markerPropId <= 0) {
             return false;
         }
 
@@ -86,7 +84,7 @@ final class IblockProductMarkerHitEvents
             return true;
         }
 
-        $hitEnumId = self::findHitEnumIdByXmlId($hitPropId, $hitXmlId);
+        $hitEnumId = Utils::getIblockListPropertyEnumIdByXmlId($iblockId, 'HIT', $hitXmlId);
         if ($hitEnumId === null) {
             CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [
                 'HIT' => false,
@@ -113,45 +111,18 @@ final class IblockProductMarkerHitEvents
         );
     }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    private static function getPropertyInfo(int $iblockId, string $code): ?array
-    {
-        $res = CIBlockProperty::GetList(
-            [],
-            [
-                'IBLOCK_ID' => $iblockId,
-                'CODE' => $code,
-            ]
-        );
-        $row = $res->Fetch();
-
-        return is_array($row) ? $row : null;
-    }
-
     private static function getSingleMarkerEnumId(int $iblockId, int $elementId, int $propertyId): ?int
     {
         $res = CIBlockElement::GetProperty($iblockId, $elementId, 'sort', 'asc', ['ID' => $propertyId]);
         while ($row = $res->Fetch()) {
             $v = $row['VALUE'] ?? null;
-            $id = self::coercePropertyEnumId(is_array($v) ? ($v[0] ?? null) : $v);
+            $id = Utils::coerceIblockListEnumId(is_array($v) ? ($v[0] ?? null) : $v);
             if ($id !== null) {
                 return $id;
             }
         }
 
         return null;
-    }
-
-    private static function coercePropertyEnumId(mixed $value): ?int
-    {
-        if ($value === null || $value === '' || $value === false) {
-            return null;
-        }
-        $id = (int) $value;
-
-        return $id > 0 ? $id : null;
     }
 
     /**
@@ -187,19 +158,5 @@ final class IblockProductMarkerHitEvents
     private static function normalizeUtf8Lower(string $value): string
     {
         return mb_strtolower($value, 'UTF-8');
-    }
-
-    private static function findHitEnumIdByXmlId(int $hitPropertyId, string $hitXmlId): ?int
-    {
-        $res = CIBlockPropertyEnum::GetList(
-            ['SORT' => 'ASC'],
-            [
-                'PROPERTY_ID' => $hitPropertyId,
-                'XML_ID' => $hitXmlId,
-            ]
-        );
-        $row = $res->Fetch();
-
-        return is_array($row) && isset($row['ID']) ? (int) $row['ID'] : null;
     }
 }
