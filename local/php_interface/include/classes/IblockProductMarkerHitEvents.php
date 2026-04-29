@@ -145,7 +145,7 @@ final class IblockProductMarkerHitEvents
         }
 
         $xmlId = trim((string) ($markerEnumRow['XML_ID'] ?? ''));
-        $allowed = ['RECOMMEND', 'HIT', 'NEW', 'STOCK'];
+        $allowed = array_unique(array_values(self::MARKER_VALUE_TO_HIT_XML_ID));
         foreach ($allowed as $one) {
             if (strcasecmp($xmlId, $one) === 0) {
                 return $one;
