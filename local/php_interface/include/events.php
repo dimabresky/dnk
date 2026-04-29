@@ -3,6 +3,7 @@
 use Bitrix\Main\EventManager;
 use Dnk\PhpInterface\HeaderPromoEvents;
 use Dnk\PhpInterface\IblockProductBrandEvents;
+use Dnk\PhpInterface\IblockProductMarkerHitEvents;
 use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\UserAddEvents;
 
@@ -52,4 +53,16 @@ EventManager::getInstance()->addEventHandlerCompatible(
     'iblock',
     'OnAfterIBlockElementUpdate',
     [IblockProductBrandEvents::class, 'onAfterIBlockElementUpdate']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'iblock',
+    'OnAfterIBlockElementAdd',
+    [IblockProductMarkerHitEvents::class, 'onAfterIBlockElementAdd']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'iblock',
+    'OnAfterIBlockElementUpdate',
+    [IblockProductMarkerHitEvents::class, 'onAfterIBlockElementUpdate']
 );
