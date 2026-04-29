@@ -4,6 +4,7 @@ use Bitrix\Main\Loader;
 use Dnk\PhpInterface\BonusBalanceQueueAgent;
 use Dnk\PhpInterface\HeaderPromoEvents;
 use Dnk\PhpInterface\IblockProductBrandEvents;
+use Dnk\PhpInterface\IblockProductMarkerHitEvents;
 use Dnk\PhpInterface\BonusBalanceQueueTable;
 use Dnk\PhpInterface\BonusFetchAgent;
 use Dnk\PhpInterface\OrderExportEvents;
@@ -32,6 +33,7 @@ Loader::registerAutoLoadClasses(null, [
     OrderExportEvents::class => $classesPath . '/OrderExportEvents.php',
     UserAddEvents::class => $classesPath . '/UserAddEvents.php',
     IblockProductBrandEvents::class => $classesPath . '/IblockProductBrandEvents.php',
+    IblockProductMarkerHitEvents::class => $classesPath . '/IblockProductMarkerHitEvents.php',
     UserRegisterExportQueueTable::class => $classesPath . '/UserRegisterExportQueueTable.php',
     UserRegisterExportQueueAgent::class => $classesPath . '/UserRegisterExportQueueAgent.php',
 ]);

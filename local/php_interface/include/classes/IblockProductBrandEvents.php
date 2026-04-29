@@ -3,7 +3,6 @@
 namespace Dnk\PhpInterface;
 
 use CIBlockElement;
-use CIBlockProperty;
 use CIBlockPropertyEnum;
 
 /**
@@ -41,8 +40,8 @@ final class IblockProductBrandEvents
             return false;
         }
 
-        $propBrand = self::getPropertyInfo($iblockId, 'BRAND');
-        $propBrend = self::getPropertyInfo($iblockId, 'BREND');
+        $propBrand = Utils::getIblockPropertyByCode($iblockId, 'BRAND');
+        $propBrend = Utils::getIblockPropertyByCode($iblockId, 'BREND');
         if ($propBrand === null || $propBrend === null) {
             return false;
         }
@@ -99,23 +98,6 @@ final class IblockProductBrandEvents
         );
     }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    private static function getPropertyInfo(int $iblockId, string $code): ?array
-    {
-        $res = CIBlockProperty::GetList(
-            [],
-            [
-                'IBLOCK_ID' => $iblockId,
-                'CODE' => $code,
-            ]
-        );
-        $row = $res->Fetch();
-
-        return is_array($row) ? $row : null;
-    }
-
     private static function hasBrandPropertyValues(int $iblockId, int $elementId, int $propertyId): bool
     {
         if ($propertyId <= 0) {
@@ -163,13 +145,13 @@ final class IblockProductBrandEvents
             $v = $row['VALUE'] ?? null;
             if (is_array($v)) {
                 foreach ($v as $one) {
-                    $id = self::coercePropertyEnumId($one);
+                    $id = Utils::coerceIblockListEnumId($one);
                     if ($id !== null) {
                         return $id;
                     }
                 }
             } else {
-                $id = self::coercePropertyEnumId($v);
+                $id = Utils::coerceIblockListEnumId($v);
                 if ($id !== null) {
                     return $id;
                 }
@@ -177,15 +159,5 @@ final class IblockProductBrandEvents
         }
 
         return null;
-    }
-
-    private static function coercePropertyEnumId(mixed $value): ?int
-    {
-        if ($value === null || $value === '' || $value === false) {
-            return null;
-        }
-        $id = (int)$value;
-
-        return $id > 0 ? $id : null;
     }
 }

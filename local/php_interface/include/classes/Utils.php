@@ -802,6 +802,44 @@ final class Utils
     }
 
     /**
+     * Строка описания свойства инфоблока по символьному коду (CODE).
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function getIblockPropertyByCode(int $iblockId, string $code): ?array
+    {
+        if ($iblockId <= 0 || $code === '') {
+            return null;
+        }
+        if (!\CModule::IncludeModule('iblock')) {
+            return null;
+        }
+        $res = \CIBlockProperty::GetList(
+            [],
+            [
+                'IBLOCK_ID' => $iblockId,
+                'CODE' => $code,
+            ]
+        );
+        $row = $res->Fetch();
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
+     * Корректный положительный ID перечисления для значения свойства типа список (L).
+     */
+    public static function coerceIblockListEnumId(mixed $value): ?int
+    {
+        if ($value === null || $value === '' || $value === false) {
+            return null;
+        }
+        $id = (int) $value;
+
+        return $id > 0 ? $id : null;
+    }
+
+    /**
      * ID варианта списка (свойство типа L) по коду свойства и XML_ID в инфоблоке.
      */
     public static function getIblockListPropertyEnumIdByXmlId(int $iblockId, string $propertyCode, string $xmlId): ?int
@@ -810,18 +848,8 @@ final class Utils
         if ($iblockId <= 0 || $propertyCode === '' || $xmlId === '') {
             return null;
         }
-        if (!\CModule::IncludeModule('iblock')) {
-            return null;
-        }
-        $rsProp = \CIBlockProperty::GetList(
-            [],
-            [
-                'IBLOCK_ID' => $iblockId,
-                'CODE' => $propertyCode,
-            ]
-        );
-        $arProp = $rsProp->Fetch();
-        if (!$arProp || (string)($arProp['PROPERTY_TYPE'] ?? '') !== 'L') {
+        $arProp = self::getIblockPropertyByCode($iblockId, $propertyCode);
+        if (!$arProp || (string) ($arProp['PROPERTY_TYPE'] ?? '') !== 'L') {
             return null;
         }
         $rsEnum = \CIBlockPropertyEnum::GetList(
