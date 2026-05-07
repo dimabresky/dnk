@@ -54,10 +54,10 @@ define('DNK_BONUS_JSON_KEY_BALANCE', 'НачисленоОстаток');
 define('DNK_BONUS_JSON_KEY_PARTNER_PHONE', 'ПартнерНомерТелефона');
 
 /** URL (POST JSON): регистрация клиента после OnAfterUserRegister; пустая строка — отправка отключена. */
-define('DNK_USER_REGISTER_EXPORT_ENDPOINT', 'http://37.17.18.54:9111/human_ut/hs/bonus/client');
+define('DNK_USER_REGISTER_EXPORT_ENDPOINT', 'http://37.17.18.54:9111/human_ut_test/hs/bonus/client');
 
 /** Сколько задач очереди регистрации за один запуск агента. */
 define('DNK_USER_REGISTER_EXPORT_QUEUE_BATCH', 10);
 
 /** После стольких неудачных попыток статус E. */
-define('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS', 5);
+define('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS', 30);
