@@ -59,6 +59,9 @@ body .catalog-detail__main-parts {
   body .catalog-detail__item .catalog-detail__top-info > .detail-gallery-big .detail-gallery-big-wrapper {
     min-width: 0;
   }
+}
+
+@media (min-width: 992px) {
   body .catalog-detail__item .catalog-detail__top-info {
     gap: 24px;
   }
