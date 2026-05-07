@@ -16,6 +16,7 @@
 .catalog-viewed__item__image {
   width: 96px;
   height: 96px;
+  margin: 0 auto;
 }
 .catalog-viewed__item__image:has(.lazyload) {
   background-color: var(--darkerblack_bg_black);
