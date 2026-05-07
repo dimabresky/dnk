@@ -45,9 +45,10 @@ final class UserAddEvents
     public static function onAfterUserRegister(array &$arFields): void
     {
         $userId = (int)($arFields['USER_ID'] ?? $arFields['ID'] ?? 0);
-        self::enqueueBonusBalanceSyncIfPossible($userId);
+        
         if ($userId > 0) {
             Utils::enqueueUserRegisterExportIfNotPending($userId);
+            self::enqueueBonusBalanceSyncIfPossible($userId);
         }
     }
 
