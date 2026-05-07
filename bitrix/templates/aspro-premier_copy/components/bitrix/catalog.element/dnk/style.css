@@ -10,6 +10,10 @@
   max-width: 100%;
 }
 
+.catalog-detail__top-info {
+  width: 75%;
+}
+
 .catalog-detail__item .catalog-detail__main {
   min-width: 0;
 
