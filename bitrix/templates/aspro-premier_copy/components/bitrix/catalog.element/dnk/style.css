@@ -12,6 +12,7 @@
 
 .catalog-detail__top-info {
   width: 75%;
+  margin: 0 auto;
 }
 
 .catalog-detail__item .catalog-detail__main {
