@@ -26,6 +26,9 @@
 # --- Catalog ---
 /catalog/
 
+# --- Personal ---
+/personal/
+
 # --- IDE / OS ---
 .idea/
 .vscode/
