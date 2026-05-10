@@ -85,6 +85,18 @@ final class Utils
     }
 
     /**
+     * Текущий бонусный баланс пользователя Aspro (aspro.bonus). 0 при выключенном модуле или неверном ID.
+     */
+    public static function getAsproBonusBalance(int $userId): float
+    {
+        if ($userId <= 0 || !Loader::includeModule('aspro.bonus')) {
+            return 0.0;
+        }
+
+        return (float) BonusUser::getBalance($userId);
+    }
+
+    /**
      * GET DNK_BONUS_ENDPOINT: полный JSON-список бонусов или null при ошибке.
      *
      * @return array<int, mixed>|null
