@@ -66,6 +66,35 @@ if ($arResult['SECTIONS']) {
             $arResult['SECTIONS'] = [];
         }
     }
+
+    /* set section custom link */
+    if ($arResult['SECTIONS']) {
+        foreach ($arResult['SECTIONS'] as &$arSection) {
+            $arSection['UF_LINK'] = '';
+        }
+        unset($arSection);
+
+        $sectionIds = array_keys($arResult['SECTIONS']);
+        $arSections = CIBlockSection::GetList(
+            [],
+            [
+                'IBLOCK_ID' => $arParams['IBLOCK_ID'],
+                'ID' => $sectionIds,
+            ],
+            false,
+            [
+                'ID',
+                'UF_LINK',
+            ]
+        );
+
+        while ($arSection = $arSections->Fetch()) {
+            $sectionId = (int)$arSection['ID'];
+            if (isset($arResult['SECTIONS'][$sectionId])) {
+                $arResult['SECTIONS'][$sectionId]['UF_LINK'] = (string)$arSection['UF_LINK'];
+            }
+        }
+    }
 }
 
 $arResult['SIGNED_PARAMS'] = TSolution\Stories::getComponentSignedParams($arParams);
