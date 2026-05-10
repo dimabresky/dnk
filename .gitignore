@@ -43,3 +43,6 @@ desktop.ini
 *.log
 *.tmp
 *.temp
+
+# Legacy path: submodule lives at local/modules/sms.traffic; ignore old dir if still used as junction target
+local/modules/smstraffic/
