@@ -56,15 +56,24 @@ $arOptions = Json::encode([
                         }
                         $this->AddEditAction($arSection['ID'], $arSection['EDIT_LINK'], CIBlock::GetArrayByID($arSection['IBLOCK_ID'], 'SECTION_EDIT'));
                         $this->AddDeleteAction($arSection['ID'], $arSection['DELETE_LINK'], CIBlock::GetArrayByID($arSection['IBLOCK_ID'], 'SECTION_DELETE'), ['CONFIRM' => GetMessage('CT_BNL_SECTION_DELETE_CONFIRM')]);
+                        $sectionLink = trim((string)($arSection['UF_LINK'] ?? ''));
+                        $isSectionLink = $sectionLink !== '';
                         $storyItemClassList = [
-                            'stories-slider__item stories-item item swiper-slide',
+                            'stories-slider__item stories-item swiper-slide',
                             'p-inline p-inline--20 color-theme-hover pointer'
                         ];
+                        if (!$isSectionLink) {
+                            $storyItemClassList[] = 'item';
+                        }
                         ?>
-                        <div class="<?=TSolution\Utils::implodeClasses($storyItemClassList);?>"
+                        <<?=$isSectionLink ? 'a' : 'div';?>
+                            class="<?=TSolution\Utils::implodeClasses($storyItemClassList);?>"
                             id="<?=$this->GetEditAreaId($arSection['ID']);?>"
-                            data-section-id=<?=$arSection['ID'];?>
-                            data-index=<?=$sectionIndex++;?>
+                            data-section-id="<?=$arSection['ID'];?>"
+                            data-index="<?=$sectionIndex++;?>"
+                            <?if ($isSectionLink):?>
+                                href="<?=htmlspecialcharsbx($sectionLink);?>"
+                            <?endif;?>
                         >
                             <?if ($arSection['PICTURE']['SRC']):?>
                                 <div class="p-inline p-inline--12 p-block p-block--4 width-100">
@@ -83,7 +92,7 @@ $arOptions = Json::encode([
                             <div class="name font_14 color_dark f-500 mt mt--16 centered">
                                 <?=$arSection['NAME'];?>
                             </div>
-                        </div>
+                        </<?=$isSectionLink ? 'a' : 'div';?>>
                     <?endforeach;?>
                 </div>
             </div>
