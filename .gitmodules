@@ -1,0 +1,3 @@
+[submodule "local/modules/smstraffic"]
+	path = local/modules/smstraffic
+	url = https://github.com/dimabresky/smstraffic.git
