@@ -1,0 +1,57 @@
+.personal__block--profiles .tabs {
+	margin-bottom: 23px;
+}
+/* .personal__block--profiles .profiles__items {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 24px;
+} */
+.personal__block--profiles .profiles__item {
+	/* padding: 27px; */
+    background: #fff;
+    background: var(--card_bg_black);
+	position: relative;
+}
+/* .profiles__item__inner {
+	display: flex;
+	justify-content: space-between;
+	gap: 20px;
+} */
+.personal__block--profiles .profiles__item__title {
+    /* font-size: 1.25rem;
+    line-height: calc(1em + 10px);
+    font-weight: 500;
+    color: #222;
+    color: var(--white_text_black); */
+	word-break: break-word;
+}
+.profiles__item__properties {
+	/* margin: 12px 0 0 0; */
+	position: relative;
+}
+.personal__block--profiles .profiles__item__property-value {
+	font-size: 0.875rem;
+    line-height: calc(1em + 6px);
+	word-break: break-word;
+}
+.profiles__item__buttons .btn {
+	z-index: 2;
+	position: relative;
+}
+.personal__block--profiles .personal__block--profile .btn[name=cancel] {
+    display: initial;
+}
+@media (max-width: 600px) {
+	.personal__block--profiles .profiles__items {
+		gap: 16px;
+	}
+	.personal__block--profiles .profiles__item {
+		padding: 19px 19px;
+	}
+	.profiles__item__properties {
+		margin-top: 21px;
+	}
+	.profiles__item__property {
+		width: 100%;
+	}
+}

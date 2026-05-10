@@ -1,0 +1,40 @@
+body .social__items.social__items--merged {
+  display: grid;
+  gap: 24px 32px;
+}
+.social__item.social__item--merged:hover{
+  opacity: 1;
+}
+.social__items .social__item.social__item--merged {
+  display: flex;
+  gap: 16px;
+  align-items: start;
+}
+.social__item--merged__icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+}
+.social__item--merged__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+.social__item--merged__head {
+  gap: 8px;
+  display: flex;
+  align-items: start;
+  margin: 1px 0 0 0;
+}
+.social__item--merged__checked {
+  height: 16px;
+  width: 16px;
+}
+.social__item--merged__checked .svg {
+  vertical-align: top;
+}
+.social__item--merged__action--delete {
+  color: #FF7081;
+  color: var(--personal-color--red);
+}
