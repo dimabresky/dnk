@@ -13,29 +13,28 @@ if (empty($arResult['SECTIONS'])) {
 $sectionIndex = 0;
 $arOptions = Json::encode([
     'spaceBetween' => 0,
-    // Дробный slidesPerView: два полных слайда и «подглядывание» третьего на всю ширину контейнера
-    'slidesPerView' => 4.5,
-    'spaceBetween' => 0,
+    // Дробный slidesPerView: два полных элемента и половина следующего (до ~425px по ширине)
+    'slidesPerView' => 2.5,
     'breakpoints' => [
         '425' => [
             'slidesPerView' => 3.25,
-            'spaceBetween' => 5,
+            'spaceBetween' => 2,
         ],
         '601' => [
             'slidesPerView' => 4,
-            'spaceBetween' => 5,
+            'spaceBetween' => 2,
         ],
         '992' => [
             'slidesPerView' => 5,
-            'spaceBetween' => 5,
+            'spaceBetween' => 2,
         ],
         '1100' => [
             'slidesPerView' => 6,
-            'spaceBetween' => 5,
+            'spaceBetween' => 2,
         ],
         '1200' => [
             'slidesPerView' => 8,
-            'spaceBetween' => 5,
+            'spaceBetween' => 2,
         ],
     ],
 ]);
@@ -60,7 +59,7 @@ $arOptions = Json::encode([
                         $isSectionLink = $sectionLink !== '';
                         $storyItemClassList = [
                             'stories-slider__item stories-item swiper-slide',
-                            'p-inline p-inline--20 color-theme-hover pointer'
+                            'p-inline p-inline--8 color-theme-hover pointer'
                         ];
                         if (!$isSectionLink) {
                             $storyItemClassList[] = 'item';
@@ -76,7 +75,7 @@ $arOptions = Json::encode([
                             <?endif;?>
                         >
                             <?if ($arSection['PICTURE']['SRC']):?>
-                                <div class="p-inline p-inline--12 p-block p-block--4 width-100">
+                                <div class="p-inline p-inline--8 p-block p-block--4 width-100">
                                     <div class="stories-item__image image relative ratio-1 overflow-block rounded skeleton-item mi mi--auto">
                                         <img src="<?=$arSection['PICTURE']['SRC'];?>"
                                             loading="lazy"

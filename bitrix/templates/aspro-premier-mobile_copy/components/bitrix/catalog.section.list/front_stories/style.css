@@ -28,11 +28,11 @@
 }
 @media screen and (max-width: 600px) {
 	.stories-slider:not(.swiper-initialized) .stories-slider__item {
-		width: calc(100% / 3);
+		width: calc(100% / 3.25);
 	}
 }
 @media screen and (max-width: 424px) {
 	.stories-slider:not(.swiper-initialized) .stories-slider__item {
-		width: calc(100% / 2);
+		width: calc(100% / 2.5);
 	}
 }
