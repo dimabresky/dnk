@@ -1,7 +1,5 @@
 <?
 $MESS['AUTH_LOGIN_BUTTON'] = 'Login';
-$MESS['AUTH_REMEMBER_ME'] = 'Remember me';
-$MESS['AUTH_FORGOT_PASSWORD_2'] = 'Forgot your password?';
 $MESS['AUTH_REGISTER'] = 'Register';
 $MESS['AUTH_REGISTER_NEW'] = 'Register';
 $MESS['AUTH_LOGOUT_BUTTON'] = 'Logout';
@@ -13,19 +11,11 @@ $MESS['AUTH_A_LIVEID'] = 'LiveID';
 $MESS['AUTH_LIVEID_LOGIN'] = 'Log In';
 $MESS['CAPTCHA_PROMT'] = 'Enter Code';
 $MESS['RELOAD'] = 'Reload';
-$MESS['AUTH_REMEMBER_SHORT'] = 'Remember me';
 $MESS['SOCSERV_AS_USER_FORM'] = 'Fast Social Login';
-$MESS['AUTH_SECURE_NOTE'] = 'The password will be encrypted in the browser before the login form is submitted. This will avoid passing the password in the clear.';
-$MESS['AUTH_NONSECURE_NOTE'] = 'Password will be sent in plaintext. Please enable JavaScript in your browser to encrypt your password before sending.';
-$MESS['AUTH_ERROR'] = 'Invalid username or password';
+$MESS['AUTH_ERROR'] = 'Invalid phone number or SMS code';
 $MESS['REFRESH'] = 'Replace image';
 $MESS['AUTH_SMS_SENDED_TITLE'] = 'Enter code from SMS';
-$MESS['auth_phone_number_or_login'] = 'Enter your username or phone number';
 $MESS['auth_phone_number'] = 'Phone number';
-$MESS['auth_login'] = 'Login';
-$MESS['auth_password'] = 'Password';
-$MESS['auth_password2'] = 'Confirm that this is your account and enter a password';
-$MESS['auth_password_continue'] = 'Continue';
 $MESS['auth_get_sms_code'] = 'Send Code';
 $MESS['auth_sms_code'] = 'SMS authorization code';
 $MESS['auth_code_sent'] = 'We have sent a confirmation code to <span style=\"white-space: nowrap;\">#PHONE_NUMBER#</span>';
