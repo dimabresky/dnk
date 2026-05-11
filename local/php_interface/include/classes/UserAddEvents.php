@@ -15,6 +15,14 @@ final class UserAddEvents
     /**
      * @param array<string, mixed> $arFields
      */
+    public static function onBeforeUserSave(array &$arFields): void
+    {
+        $arFields['EXTERNAL_AUTH_ID'] = null;
+    }
+
+    /**
+     * @param array<string, mixed> $arFields
+     */
     public static function onAfterUserAdd(array &$arFields): void
     {
         self::ensurePhoneAuthFromWorkPhone((int)($arFields['ID'] ?? 0));
