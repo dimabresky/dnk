@@ -4,7 +4,7 @@ if(!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
 }
 $this->setFrameMode(false);
 
-$arExtensions = ['profile', 'validate', 'phone_input', 'phone_mask'];
+$arExtensions = ['profile', 'flexbox', 'validate', 'phone_input', 'phone_mask'];
 
 if (TSolution::GetFrontParametrValue('USE_INTL_PHONE') === 'Y') {
     $arExtensions[] = 'intl_phone_input';

@@ -1,0 +1,22 @@
+<?
+$MESS['AUTH_LOGIN_BUTTON'] = 'Войти';
+$MESS['AUTH_REGISTER'] = 'Регистрация';
+$MESS['AUTH_REGISTER_NEW'] = 'Зарегистрироваться';
+$MESS['AUTH_LOGOUT_BUTTON'] = 'Выйти';
+$MESS['AUTH_PROFILE'] = 'Мой профиль';
+$MESS['AUTH_A_INTERNAL'] = 'Встроенная авторизация';
+$MESS['AUTH_A_OPENID'] = 'OpenID';
+$MESS['AUTH_OPENID'] = 'OpenID';
+$MESS['AUTH_A_LIVEID'] = 'LiveID';
+$MESS['AUTH_LIVEID_LOGIN'] = 'Log In';
+$MESS['CAPTCHA_PROMT'] = 'Введите код';
+$MESS['RELOAD'] = 'Обновить';
+$MESS['SOCSERV_AS_USER_FORM'] = 'Быстрый вход через соцсети';
+$MESS['AUTH_ERROR'] = 'Неверный номер телефона или код из СМС';
+$MESS['REFRESH'] = 'Поменять картинку';
+$MESS['AUTH_SMS_SENDED_TITLE'] = 'Введите код из СМС';
+$MESS['auth_phone_number'] = 'Номер телефона';
+$MESS['auth_get_sms_code'] = 'Выслать код';
+$MESS['auth_sms_code'] = 'Код авторизации из СМС';
+$MESS['auth_code_sent'] = 'Мы отправили код подтверждения на номер <span style=\"white-space: nowrap;\">#PHONE_NUMBER#</span>';
+$MESS['AUTH_REGISTER_ASK_ACCOUNT'] = 'Нет аккаунта?';
