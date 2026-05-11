@@ -14,10 +14,8 @@ TSolution\Extensions::init($arExtensions);
 
 TSolution\PhoneAuth::modifyResult($arResult, $arParams);
 
-if($arResult['PHONE_AUTH_PARAMS']['USE']) {
-    echo CJSCore::Init('phone_auth', true);
-    TSolution\Extensions::init('phonecode');
-}
+echo CJSCore::Init('phone_auth', true);
+TSolution\Extensions::init('phonecode');
 
 $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
 ?>
