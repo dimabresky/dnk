@@ -15,6 +15,18 @@ EventManager::getInstance()->addEventHandler(
 
 EventManager::getInstance()->addEventHandlerCompatible(
     'main',
+    'OnBeforeUserAdd',
+    [UserAddEvents::class, 'onBeforeUserSave']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'main',
+    'OnBeforeUserUpdate',
+    [UserAddEvents::class, 'onBeforeUserSave']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'main',
     'OnAfterUserAdd',
     [UserAddEvents::class, 'onAfterUserAdd']
 );
