@@ -22,6 +22,11 @@ final class Utils
 {
     private const DNK_BONUS_IMPORT_DETAIL_MARKER = '[DNK_BONUS_IMPORT]';
 
+    public static function isTechnicalBuyerEmail(string $email): bool
+    {
+        return preg_match('/^buyer[0-9]+/i', trim($email)) === 1;
+    }
+
     /**
      * Безопасное значение для CSS font-size (px, rem, em, % или число — трактуется как px).
      */
