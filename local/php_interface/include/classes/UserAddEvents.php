@@ -17,6 +17,7 @@ final class UserAddEvents
      */
     public static function onBeforeUserSave(array &$arFields): void
     {
+        self::clearTechnicalBuyerEmail($arFields);
         $arFields['EXTERNAL_AUTH_ID'] = null;
     }
 
@@ -66,6 +67,35 @@ final class UserAddEvents
             return;
         }
         Utils::enqueueBonusBalanceSyncIfNotPending($userId);
+    }
+
+    /**
+     * @param array<string, mixed> $arFields
+     */
+    private static function clearTechnicalBuyerEmail(array &$arFields): void
+    {
+        if (array_key_exists('EMAIL', $arFields)) {
+            if (Utils::isTechnicalBuyerEmail((string)$arFields['EMAIL'])) {
+                $arFields['EMAIL'] = '';
+            }
+
+            return;
+        }
+
+        $userId = (int)($arFields['ID'] ?? 0);
+        if ($userId <= 0) {
+            return;
+        }
+
+        $row = UserTable::getList([
+            'select' => ['EMAIL'],
+            'filter' => ['=ID' => $userId],
+            'limit' => 1,
+        ])->fetch();
+
+        if ($row !== false && Utils::isTechnicalBuyerEmail((string)($row['EMAIL'] ?? ''))) {
+            $arFields['EMAIL'] = '';
+        }
     }
 
     private static function ensurePhoneAuthFromWorkPhone(int $userId): void
