@@ -6,10 +6,10 @@ define('DNK_CATALOG_IBLOCK_ID', 42);
 define('DNK_HEADER_PROMO_IBLOCK_ID', 44);
 
 /** URL (GET): полный список данных по бонусам. */
-define('DNK_BONUS_ENDPOINT', 'http://37.17.18.54:9111/human_ut_test/hs/bonus/bonus/');
+define('DNK_BONUS_ENDPOINT', 'http://37.17.18.54:9111/human_ut/hs/bonus/bonus/');
 
 /** URL для POST JSON заказа; пустая строка — отправка отключена (задачи остаются в очереди). */
-define('DNK_ORDER_EXPORT_ENDPOINT', 'http://192.168.0.2/human_ut_test/hs/bonus/offs/');
+define('DNK_ORDER_EXPORT_ENDPOINT', 'http://192.168.0.2/human_ut/hs/bonus/offs/');
 
 /** Логин для авторизации на сервере */
 define('DNK_ORDER_EXPORT_LOGIN', 'Odata');
@@ -54,7 +54,7 @@ define('DNK_BONUS_JSON_KEY_BALANCE', 'НачисленоОстаток');
 define('DNK_BONUS_JSON_KEY_PARTNER_PHONE', 'ПартнерНомерТелефона');
 
 /** URL (POST JSON): регистрация клиента после OnAfterUserRegister; пустая строка — отправка отключена. */
-define('DNK_USER_REGISTER_EXPORT_ENDPOINT', 'http://37.17.18.54:9111/human_ut_test/hs/bonus/client');
+define('DNK_USER_REGISTER_EXPORT_ENDPOINT', 'http://37.17.18.54:9111/human_ut/hs/bonus/client');
 
 /** Сколько задач очереди регистрации за один запуск агента. */
 define('DNK_USER_REGISTER_EXPORT_QUEUE_BATCH', 10);
