@@ -1,6 +1,7 @@
 <?php
 
 use Bitrix\Main\EventManager;
+use Dnk\PhpInterface\BonusAccrualEvents;
 use Dnk\PhpInterface\HeaderPromoEvents;
 use Dnk\PhpInterface\IblockProductBrandEvents;
 use Dnk\PhpInterface\IblockProductMarkerHitEvents;
@@ -11,6 +12,12 @@ EventManager::getInstance()->addEventHandler(
     'sale',
     'OnSaleOrderSaved',
     [OrderExportEvents::class, 'onSaleOrderSaved']
+);
+
+EventManager::getInstance()->addEventHandler(
+    'aspro.bonus',
+    'beforeCreateAddByOrder',
+    [BonusAccrualEvents::class, 'onBeforeCreateAddByOrder']
 );
 
 EventManager::getInstance()->addEventHandlerCompatible(
