@@ -9,6 +9,8 @@
 /bitrix/html_pages/
 /bitrix/tmp/
 /bitrix/catalog_export/
+/bitrix/admin
+/index.php
 
 # --- Bitrix: connection and environment (secrets) ---
 /bitrix/php_interface/
