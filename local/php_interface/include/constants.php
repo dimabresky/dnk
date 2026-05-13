@@ -102,3 +102,5 @@ define('DNK_USER_REGISTER_EXPORT_QUEUE_BATCH', $dnkEnvInt('DNK_USER_REGISTER_EXP
 
 /** После стольких неудачных попыток статус E. */
 define('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS', $dnkEnvInt('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS'));
+
+unset($dnkEnvPath, $dnkEnvValues, $dnkEnvName, $dnkEnvValue, $dnkEnv, $dnkEnvInt);
