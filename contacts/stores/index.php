@@ -35,8 +35,8 @@ define('STORES_PAGE', true);
 <?else:?>
 	<?$APPLICATION->IncludeComponent(
 	"bitrix:news", 
-	"contacts", 
-	array(
+	"stores", 
+	[
 		"IBLOCK_TYPE" => "aspro_premier_content",
 		"IBLOCK_ID" => "11",
 		"NEWS_COUNT" => "999",
@@ -67,14 +67,14 @@ define('STORES_PAGE', true);
 		"USE_PERMISSIONS" => "N",
 		"PREVIEW_TRUNCATE_LEN" => "",
 		"LIST_ACTIVE_DATE_FORMAT" => "j F Y",
-		"LIST_FIELD_CODE" => array(
+		"LIST_FIELD_CODE" => [
 			0 => "NAME",
 			1 => "PREVIEW_TEXT",
 			2 => "PREVIEW_PICTURE",
 			3 => "DETAIL_PICTURE",
 			4 => "",
-		),
-		"LIST_PROPERTY_CODE" => array(
+		],
+		"LIST_PROPERTY_CODE" => [
 			0 => "ADDRESS",
 			1 => "METRO",
 			2 => "PHONE",
@@ -83,22 +83,22 @@ define('STORES_PAGE', true);
 			5 => "PAY_TYPE",
 			6 => "MAP",
 			7 => "",
-		),
+		],
 		"HIDE_LINK_WHEN_NO_DETAIL" => "N",
 		"DISPLAY_NAME" => "Y",
 		"META_KEYWORDS" => "-",
 		"META_DESCRIPTION" => "-",
 		"BROWSER_TITLE" => "-",
 		"DETAIL_ACTIVE_DATE_FORMAT" => "j F Y",
-		"DETAIL_FIELD_CODE" => array(
+		"DETAIL_FIELD_CODE" => [
 			0 => "NAME",
 			1 => "PREVIEW_TEXT",
 			2 => "DETAIL_TEXT",
 			3 => "DETAIL_PICTURE",
 			4 => "DATE_ACTIVE_FROM",
 			5 => "",
-		),
-		"DETAIL_PROPERTY_CODE" => array(
+		],
+		"DETAIL_PROPERTY_CODE" => [
 			0 => "ADDRESS",
 			1 => "METRO",
 			2 => "PHONE",
@@ -108,7 +108,7 @@ define('STORES_PAGE', true);
 			6 => "MAP",
 			7 => "MORE_PHOTOS",
 			8 => "",
-		),
+		],
 		"DETAIL_DISPLAY_TOP_PAGER" => "N",
 		"DETAIL_DISPLAY_BOTTOM_PAGER" => "N",
 		"DETAIL_PAGER_TITLE" => "",
@@ -126,7 +126,7 @@ define('STORES_PAGE', true);
 		"USE_REVIEW" => "N",
 		"ADD_ELEMENT_CHAIN" => "Y",
 		"SHOW_DETAIL_LINK" => "Y",
-		"COMPONENT_TEMPLATE" => "contacts",
+		"COMPONENT_TEMPLATE" => "stores",
 		"SET_LAST_MODIFIED" => "Y",
 		"DETAIL_SET_CANONICAL_URL" => "N",
 		"PAGER_BASE_LINK_ENABLE" => "N",
@@ -136,14 +136,14 @@ define('STORES_PAGE', true);
 		"COMPOSITE_FRAME_TYPE" => "AUTO",
 		"INCLUDE_SUBSECTIONS" => "Y",
 		"FILTER_NAME" => "arFilterContacts",
-		"FILTER_FIELD_CODE" => array(
+		"FILTER_FIELD_CODE" => [
 			0 => "",
 			1 => "",
-		),
-		"FILTER_PROPERTY_CODE" => array(
+		],
+		"FILTER_PROPERTY_CODE" => [
 			0 => "",
 			1 => "",
-		),
+		],
 		"DETAIL_STRICT_SECTION_CHECK" => "N",
 		"STRICT_SECTION_CHECK" => "Y",
 		"AJAX_OPTION_ADDITIONAL" => "",
@@ -153,12 +153,12 @@ define('STORES_PAGE', true);
 		"SECTION_ELEMENTS_TYPE_VIEW" => "list_elements_1",
 		"ELEMENT_TYPE_VIEW" => "element_1",
 		"CHOOSE_REGION_TEXT" => "",
-		"SEF_URL_TEMPLATES" => array(
+		"SEF_URL_TEMPLATES" => [
 			"news" => "",
 			"section" => "#SECTION_CODE#/",
 			"detail" => "#SECTION_CODE#/#ELEMENT_ID#/",
-		)
-	),
+		]
+	],
 	false
 );?>
 <?endif;?>
