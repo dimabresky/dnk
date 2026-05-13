@@ -1,6 +1,7 @@
 # --- Bitrix: runtime and user content ---
 /upload/
 /bitrix/modules/
+/bitrix/components/
 /bitrix/cache/
 /bitrix/managed_cache/
 /bitrix/stack_cache/
@@ -8,9 +9,11 @@
 /bitrix/html_pages/
 /bitrix/tmp/
 /bitrix/catalog_export/
+/bitrix/admin
+/index.php
 
 # --- Bitrix: connection and environment (secrets) ---
-/bitrix/php_interface/dbconn.php
+/bitrix/php_interface/
 /bitrix/.settings.php
 /bitrix/.settings_extra.php
 /.env
@@ -25,6 +28,18 @@
 
 # --- Catalog ---
 /catalog/
+
+# --- Order ---
+/order/
+
+# --- Contacts ---
+/contacts/
+
+# --- Brands ---
+/brands/
+
+# --- Basket ---
+/basket/
 
 # --- Personal ---
 /personal/

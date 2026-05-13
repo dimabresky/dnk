@@ -46,6 +46,7 @@ Public API reference: [Bitrix dev docs](https://dev.1c-bitrix.ru/api_help/).
 
 - **Commits:** English messages; [**Conventional Commits**](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`, `fix:`, `chore:`, `refactor:`, etc.).
 - **Workflow:** use feature branches; keep changes **focused** on the requested task — avoid unrelated refactors or broad formatting-only edits unless the task requires them.
+- **Branching:** commit changes only to a dedicated feature branch and open a PR into `dev`; do not commit directly to `dev`.
 - Do not commit secrets (e.g. `bitrix/php_interface/dbconn.php`, `bitrix/.settings.php`); follow `.gitignore` and team practice from `README.md`.
 
 ## Out of scope for agents unless explicitly requested
