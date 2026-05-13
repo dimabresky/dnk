@@ -26,6 +26,18 @@
 # --- Catalog ---
 /catalog/
 
+# --- Order ---
+/order/
+
+# --- Contacts ---
+/contacts/
+
+# --- Brands ---
+/brands/
+
+# --- Basket ---
+/basket/
+
 # --- Personal ---
 /personal/
 
