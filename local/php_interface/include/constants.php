@@ -2,9 +2,41 @@
 
 $dnkEnvPath = dirname(__DIR__, 3) . '/.env';
 if (is_file($dnkEnvPath) && is_readable($dnkEnvPath)) {
-    $dnkEnvValues = parse_ini_file($dnkEnvPath, false, INI_SCANNER_RAW);
+    $dnkEnvValues = [];
+    $dnkEnvLines = file($dnkEnvPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
-    if (is_array($dnkEnvValues)) {
+    if (is_array($dnkEnvLines)) {
+        foreach ($dnkEnvLines as $dnkEnvLine) {
+            $dnkEnvLine = trim($dnkEnvLine);
+
+            if ($dnkEnvLine === '' || $dnkEnvLine[0] === '#' || $dnkEnvLine[0] === ';') {
+                continue;
+            }
+
+            $dnkEnvEqualsPosition = strpos($dnkEnvLine, '=');
+            if ($dnkEnvEqualsPosition === false) {
+                continue;
+            }
+
+            $dnkEnvName = trim(substr($dnkEnvLine, 0, $dnkEnvEqualsPosition));
+            if ($dnkEnvName === '') {
+                continue;
+            }
+
+            $dnkEnvValue = trim(substr($dnkEnvLine, $dnkEnvEqualsPosition + 1));
+            $dnkEnvQuote = $dnkEnvValue[0] ?? '';
+
+            if (
+                $dnkEnvQuote !== ''
+                && ($dnkEnvQuote === '"' || $dnkEnvQuote === "'")
+                && substr($dnkEnvValue, -1) === $dnkEnvQuote
+            ) {
+                $dnkEnvValue = substr($dnkEnvValue, 1, -1);
+            }
+
+            $dnkEnvValues[$dnkEnvName] = $dnkEnvValue;
+        }
+
         foreach ($dnkEnvValues as $dnkEnvName => $dnkEnvValue) {
             $_ENV[$dnkEnvName] = $dnkEnvValue;
             $_SERVER[$dnkEnvName] = $dnkEnvValue;
@@ -103,4 +135,15 @@ define('DNK_USER_REGISTER_EXPORT_QUEUE_BATCH', $dnkEnvInt('DNK_USER_REGISTER_EXP
 /** После стольких неудачных попыток статус E. */
 define('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS', $dnkEnvInt('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS'));
 
-unset($dnkEnvPath, $dnkEnvValues, $dnkEnvName, $dnkEnvValue, $dnkEnv, $dnkEnvInt);
+unset(
+    $dnkEnvPath,
+    $dnkEnvValues,
+    $dnkEnvLines,
+    $dnkEnvLine,
+    $dnkEnvEqualsPosition,
+    $dnkEnvName,
+    $dnkEnvValue,
+    $dnkEnvQuote,
+    $dnkEnv,
+    $dnkEnvInt
+);
