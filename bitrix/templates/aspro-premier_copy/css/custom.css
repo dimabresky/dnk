@@ -62,3 +62,7 @@
 .catalog-viewed__item__image {
 	width: 100%;
 }
+
+.catalog-block .aspro-bonus-wrapper .aspro-bonus {
+	display: none !important;
+}

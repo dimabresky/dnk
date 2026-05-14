@@ -23,3 +23,7 @@
 .mobileheader__inner.p-block {
     padding-block: 0;
 }
+
+.catalog-block .aspro-bonus-wrapper .aspro-bonus {
+    display: none !important;
+}

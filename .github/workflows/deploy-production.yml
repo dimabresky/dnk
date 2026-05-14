@@ -1,0 +1,48 @@
+name: Deploy Production
+
+on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - closed
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production
+    if: github.event.pull_request.merged == true
+    runs-on: self-hosted
+
+    steps:
+      - name: Update production repository
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REPO_DIR="/home/bitrix/dnk"
+          WEB_DIR="/home/bitrix/www"
+
+          test -d "$REPO_DIR"
+          test -d "$WEB_DIR"
+
+          git -C "$REPO_DIR" fetch origin master
+          git -C "$REPO_DIR" checkout master
+          git -C "$REPO_DIR" pull --ff-only origin master
+
+      - name: Copy files to production web root
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REPO_DIR="/home/bitrix/dnk"
+          WEB_DIR="/home/bitrix/www"
+
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            "$REPO_DIR/" \
+            "$WEB_DIR/"
