@@ -139,7 +139,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
 
 @media (max-width: 767px) {
     .dnk-header-promo-bar__media .dnk-header-promo-bar__img {
-        object-fit: contain;
+        object-fit: cover;
         object-position: center;
     }
 
