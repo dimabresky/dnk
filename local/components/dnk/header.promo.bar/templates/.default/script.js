@@ -20,6 +20,11 @@
     }
 
     function initBar(root) {
+        if (root.getAttribute('data-dnk-header-promo-init') === '1') {
+            return;
+        }
+        root.setAttribute('data-dnk-header-promo-init', '1');
+
         var dismissKey = root.getAttribute('data-dismiss-key') || '';
         var elementId = root.getAttribute('data-element-id') || '';
         var storageKey = 'dnk_header_promo_hide_' + (dismissKey || elementId);
