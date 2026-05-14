@@ -169,6 +169,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
     right: 8px;
     top: 50%;
     transform: translateY(-50%);
+    z-index: 2;
     width: 28px;
     height: 28px;
     margin: 0;
@@ -350,3 +351,10 @@ $hasOverlayContent = ($text !== '') || $showTimerBlock;
         <?php endif; ?>
     </div>
 </div>
+<?php
+// Компонент вставляется через OnEndBufferContent (см. HeaderPromoEvents): автоподключение script.js шаблона не попадает в страницу — явный тег обязателен.
+$dnkHeaderPromoScriptRel = $templateFolder . '/script.js';
+$dnkHeaderPromoScriptAbs = \Bitrix\Main\Application::getDocumentRoot() . $dnkHeaderPromoScriptRel;
+$dnkHeaderPromoScriptVer = is_file($dnkHeaderPromoScriptAbs) ? (int) filemtime($dnkHeaderPromoScriptAbs) : 1;
+?>
+<script src="<?= htmlspecialcharsbx($dnkHeaderPromoScriptRel) ?>?<?= $dnkHeaderPromoScriptVer ?>"></script>
