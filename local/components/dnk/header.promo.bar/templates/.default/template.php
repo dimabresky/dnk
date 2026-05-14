@@ -8,6 +8,8 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
 /** @var array $arResult */
 /** @var CBitrixComponentTemplate $this */
 
+$this->addExternalCss($templateFolder . '/style.css');
+
 if (empty($arResult['ITEM'])) {
     return;
 }
