@@ -15,7 +15,6 @@ class DnkHeaderPromoBarComponent extends CBitrixComponent
 
     public function executeComponent()
     {
-        
         if (!CModule::IncludeModule('iblock')) {
             ShowError(GetMessage('DNK_HEADER_PROMO_BAR_ERR_IBLOCK'));
             return;
@@ -44,9 +43,8 @@ class DnkHeaderPromoBarComponent extends CBitrixComponent
             $CACHE_MANAGER->EndTagCache();
 
             $this->arResult['ITEM'] = $this->loadItem($iblockId);
+            $this->includeComponentTemplate();
         }
-
-        $this->includeComponentTemplate();
     }
 
     /**

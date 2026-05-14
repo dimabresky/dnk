@@ -13,7 +13,6 @@ if (empty($arResult['ITEM'])) {
 }
 
 $item = $arResult['ITEM'];
-$folder = $this->GetFolder();
 
 $bp = (int) ($arParams['MOBILE_BREAKPOINT'] ?? 768);
 if ($bp < 320) {
@@ -67,7 +66,6 @@ $hasImage = $showPicture || $showSingleImg;
 $showTimerBlock = $item['SHOW_TIMER'] && (int) $item['TIMER_END_TS'] > 0;
 $hasOverlayContent = ($text !== '') || $showTimerBlock;
 ?>
-<link rel="stylesheet" href="<?= htmlspecialcharsbx($folder) ?>/style.css"/>
 <div
     id="dnk-header-promo-bar"
     class="dnk-header-promo-bar"
@@ -167,4 +165,3 @@ $hasOverlayContent = ($text !== '') || $showTimerBlock;
         <?php endif; ?>
     </div>
 </div>
-<script src="<?= htmlspecialcharsbx($folder) ?>/script.js" defer></script>
