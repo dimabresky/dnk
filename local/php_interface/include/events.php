@@ -52,6 +52,12 @@ EventManager::getInstance()->addEventHandlerCompatible(
 
 EventManager::getInstance()->addEventHandlerCompatible(
     'main',
+    'OnAfterUserLogin',
+    [UserAddEvents::class, 'onAfterUserAuthorize']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'main',
     'OnAfterUserRegister',
     [UserAddEvents::class, 'onAfterUserRegister']
 );
