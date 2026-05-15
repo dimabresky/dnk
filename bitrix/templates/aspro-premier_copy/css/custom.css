@@ -63,6 +63,7 @@
 	width: 100%;
 }
 
-.catalog-block .aspro-bonus-wrapper .aspro-bonus {
-	display: none !important;
+.catalog-block .aspro-bonus-wrapper .aspro-bonus,
+.catalog-block .catalog-block__item .instock {
+    display: none !important;
 }
