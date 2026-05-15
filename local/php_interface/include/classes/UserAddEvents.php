@@ -45,7 +45,8 @@ final class UserAddEvents
      */
     public static function onAfterUserAuthorize(array &$arUser): void
     {
-        self::enqueueBonusBalanceSyncIfPossible((int)($arUser['ID'] ?? $arUser['USER_ID'] ?? 0));
+        $userId = isset($arUser['user_fields']) && isset($arUser['user_fields']['ID']) ? (int)$arUser['user_fields']['ID'] : 0;
+        self::enqueueBonusBalanceSyncIfPossible((int)($arUser['ID'] ?? $arUser['USER_ID'] ?? $userId));
     }
 
     /**
