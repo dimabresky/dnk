@@ -120,6 +120,7 @@ final class OrderExportEvents
             'number' => $number,
             'totalCost' => Utils::roundMoney((float)$order->getPrice()),
             'bonusesApplyed' => Utils::roundMoney($bonusesApplied),
+            'client' => Utils::buildOrderExportClientBlock((int)$order->getUserId()),
             'basket' => $basketOut,
             'discounts' => $discounts,
         ];

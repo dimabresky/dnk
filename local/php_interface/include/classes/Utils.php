@@ -657,6 +657,44 @@ final class Utils
         return null;
     }
 
+    /**
+     * Блок клиента для JSON экспорта заказа: внешний UUID из b_user.XML_ID и телефон (только цифры, как для бонусов).
+     *
+     * @return array{xml_id: string, phone: string}
+     */
+    public static function buildOrderExportClientBlock(int $userId): array
+    {
+        $xmlId = '';
+        $phone = '';
+
+        if ($userId <= 0) {
+            return [
+                'xml_id' => $xmlId,
+                'phone' => $phone,
+            ];
+        }
+
+        $userRow = UserTable::getList([
+            'filter' => ['=ID' => $userId],
+            'select' => ['XML_ID'],
+            'limit' => 1,
+        ])->fetch();
+
+        if ($userRow !== false) {
+            $xmlId = trim((string)($userRow['XML_ID'] ?? ''));
+        }
+
+        $digits = self::resolveUserPhoneDigitsForBonus($userId);
+        if ($digits !== null && $digits !== '') {
+            $phone = $digits;
+        }
+
+        return [
+            'xml_id' => $xmlId,
+            'phone' => $phone,
+        ];
+    }
+
     public static function resolveProductXmlId(BasketItemBase $basketItem): string
     {
         $xmlId = (string)$basketItem->getField('PRODUCT_XML_ID');
