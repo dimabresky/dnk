@@ -847,6 +847,9 @@ final class Utils
         ]);
     }
 
+    /**
+     * Одна операция импорта: вызывать только когда баланс пользователя уже сброшен в 0 (см. replaceDnkImportBonusesForUser).
+     */
     private static function addDnkImportAccrualOperation(int $userId, float $amount): void
     {
         $years = defined('DNK_BONUS_IMPORT_ACTIVE_YEARS') ? (int)DNK_BONUS_IMPORT_ACTIVE_YEARS : 2;
@@ -855,7 +858,6 @@ final class Utils
         }
 
         $typeAdd = BonusHelper::getString(BonusHistoryOperationsEnum::ADD_BY_ORDER);
-        $userBalance = BonusUser::getBalance($userId);
         $detailInfo = self::DNK_BONUS_IMPORT_DETAIL_MARKER . ' Импорт остатка бонусов';
 
         $activeTo = Date::createFromTimestamp(strtotime('+' . $years . ' years'));
@@ -866,8 +868,8 @@ final class Utils
             'USER_ID' => $userId,
             'ORDER_ID' => 0,
             'SUMM_BONUSES' => $amount,
-            'BONUSES_BEFORE' => $userBalance,
-            'BONUSES_AFTER' => $userBalance + $amount,
+            'BONUSES_BEFORE' => 0.0,
+            'BONUSES_AFTER' => $amount,
             'BALANCE' => $amount,
             'DETAIL_INFO' => $detailInfo,
             'ACTIVE_TO' => $activeTo,
@@ -878,7 +880,7 @@ final class Utils
             return;
         }
 
-        BonusUser::addBonuses($userId, ['TOTAL_BONUSES' => $amount]);
+        self::setAsproBonusUserBalanceAbsolute($userId, $amount);
     }
 
     /**
