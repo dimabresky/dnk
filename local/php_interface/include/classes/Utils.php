@@ -768,8 +768,8 @@ final class Utils
     }
 
     /**
-     * Синхронизация импортированного остатка бонусов Aspro: снимает предыдущие начисления импорта и начисляет новую сумму.
-     * Записи импорта помечаются в DETAIL_INFO маркером; срок жизни — DNK_BONUS_IMPORT_ACTIVE_YEARS.
+     * Синхронизация остатка бонусов с 1С: значение из внешней системы — единственный актуальный баланс.
+     * Удаляются все строки истории Aspro Bonus по пользователю; баланс UF_ASPRO_BONUS_COUNT сбрасывается и при сумме > 0 создаётся одна операция импорта.
      *
      * @param float $amount Сумма из внешней системы (НачисленоОстаток), неотрицательная.
      */
@@ -784,7 +784,8 @@ final class Utils
         }
 
         $amount = max(0.0, $amount);
-        self::removeDnkImportAccrualOperations($userId);
+        self::deleteAllBonusHistoryForUser($userId);
+        self::setAsproBonusUserBalanceAbsolute($userId, 0.0);
 
         if ($amount <= 0.0) {
             return;
@@ -793,35 +794,62 @@ final class Utils
         self::addDnkImportAccrualOperation($userId, $amount);
     }
 
-    private static function removeDnkImportAccrualOperations(int $userId): void
+    /**
+     * Удаление всех операций истории бонусов по пользователю (включая неактивные).
+     */
+    private static function deleteAllBonusHistoryForUser(int $userId): void
     {
-        $typeAdd = BonusHelper::getString(BonusHistoryOperationsEnum::ADD_BY_ORDER);
-        $marker = self::DNK_BONUS_IMPORT_DETAIL_MARKER;
-
-        $res = HistoryOperationsTable::getList([
-            'filter' => [
-                '=USER_ID' => $userId,
-                '=TYPE' => $typeAdd,
-                '=ACTIVE' => 'Y',
-            ],
-            'select' => ['ID', 'BALANCE', 'DETAIL_INFO'],
-        ]);
-
-        while ($row = $res->fetch()) {
-            $detail = (string)($row['DETAIL_INFO'] ?? '');
-            if (strpos($detail, $marker) === false) {
-                continue;
-            }
-
-            $balance = (float)($row['BALANCE'] ?? 0);
-            if ($balance > 0) {
-                BonusUser::minusBonuses($userId, $balance);
-            }
-
-            HistoryOperationsTable::update((int)$row['ID'], ['ACTIVE' => 'N']);
+        if ($userId <= 0) {
+            return;
         }
+
+        do {
+            $res = HistoryOperationsTable::getList([
+                'filter' => ['=USER_ID' => $userId],
+                'select' => ['ID'],
+                'limit' => 500,
+            ]);
+
+            $rowsInBatch = 0;
+            $deletedOk = 0;
+
+            while ($row = $res->fetch()) {
+                $rowsInBatch++;
+                $deleteResult = HistoryOperationsTable::delete((int)$row['ID']);
+                if ($deleteResult->isSuccess()) {
+                    $deletedOk++;
+                }
+            }
+
+            if ($rowsInBatch === 0) {
+                break;
+            }
+
+            if ($deletedOk === 0) {
+                break;
+            }
+        } while (true);
     }
 
+    /**
+     * Абсолютное значение баланса Aspro Bonus (как в Aspro\Bonus\History\User, без записей в истории).
+     */
+    private static function setAsproBonusUserBalanceAbsolute(int $userId, float $balance): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        $balance = max(0.0, $balance);
+
+        $GLOBALS['USER_FIELD_MANAGER']->Update('USER', $userId, [
+            BonusUser::PROPERTY_BONUS_COUNT => $balance,
+        ]);
+    }
+
+    /**
+     * Одна операция импорта: вызывать только когда баланс пользователя уже сброшен в 0 (см. replaceDnkImportBonusesForUser).
+     */
     private static function addDnkImportAccrualOperation(int $userId, float $amount): void
     {
         $years = defined('DNK_BONUS_IMPORT_ACTIVE_YEARS') ? (int)DNK_BONUS_IMPORT_ACTIVE_YEARS : 2;
@@ -830,7 +858,6 @@ final class Utils
         }
 
         $typeAdd = BonusHelper::getString(BonusHistoryOperationsEnum::ADD_BY_ORDER);
-        $userBalance = BonusUser::getBalance($userId);
         $detailInfo = self::DNK_BONUS_IMPORT_DETAIL_MARKER . ' Импорт остатка бонусов';
 
         $activeTo = Date::createFromTimestamp(strtotime('+' . $years . ' years'));
@@ -841,8 +868,8 @@ final class Utils
             'USER_ID' => $userId,
             'ORDER_ID' => 0,
             'SUMM_BONUSES' => $amount,
-            'BONUSES_BEFORE' => $userBalance,
-            'BONUSES_AFTER' => $userBalance + $amount,
+            'BONUSES_BEFORE' => 0.0,
+            'BONUSES_AFTER' => $amount,
             'BALANCE' => $amount,
             'DETAIL_INFO' => $detailInfo,
             'ACTIVE_TO' => $activeTo,
@@ -853,7 +880,7 @@ final class Utils
             return;
         }
 
-        BonusUser::addBonuses($userId, ['TOTAL_BONUSES' => $amount]);
+        self::setAsproBonusUserBalanceAbsolute($userId, $amount);
     }
 
     /**
