@@ -810,13 +810,22 @@ final class Utils
                 'limit' => 500,
             ]);
 
-            $deletedAny = false;
+            $rowsInBatch = 0;
+            $deletedOk = 0;
+
             while ($row = $res->fetch()) {
-                $deletedAny = true;
-                HistoryOperationsTable::delete((int)$row['ID']);
+                $rowsInBatch++;
+                $deleteResult = HistoryOperationsTable::delete((int)$row['ID']);
+                if ($deleteResult->isSuccess()) {
+                    $deletedOk++;
+                }
             }
 
-            if (!$deletedAny) {
+            if ($rowsInBatch === 0) {
+                break;
+            }
+
+            if ($deletedOk === 0) {
                 break;
             }
         } while (true);
