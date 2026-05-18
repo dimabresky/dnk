@@ -16,8 +16,21 @@ This repository powers **DNK.BY**, a cosmetics e-commerce site on **1C-Bitrix: S
 | **Shared helpers** | `local/php_interface/include/classes/Utils.php` — centralize reusable helpers here instead of scattering one-off utilities |
 | Site templates (including Aspro copies) | `bitrix/templates/` (e.g. `aspro-premier_copy`, `aspro-premier-mobile_copy`) |
 | Custom components | `local/components/` |
+| **Custom Bitrix modules** | `local/modules/<vendor>.<name>/` — структура `install/`, `lib/`, `include.php`, см. раздел ниже |
 
 Project-specific layout details are summarized in [`README.md`](README.md).
+
+## Custom Bitrix modules (`local/modules/`)
+
+Проект на **1C-Битрикс: Управление сайтом** (редакция «Интернет-магазин», ядро **≥ 26.150.0**). Локальные модули оформляйте как полноценные решения Bitrix Framework:
+
+- Класс модуля наследуйте от `CModule`; **`installDB` / `unInstallDB` / `installFiles` / `unInstallFiles`** объявляйте с той же видимостью, что и в `CModule` (как правило **`public`**), иначе возможны фаталы совместимости при установке.
+- Подключение классов: **`use`** для своих namespace, `Loader::registerAutoLoadClasses` или принятый в модуле автозагрузчик; не смешивайте устаревшие глобальные классы без необходимости.
+- БД: предпочтительно **D7 ORM** (`DataManager`, таблицы через `install/db/mysql/*.sql` или миграции), явный **`DROP`/удаление опций** в `DoUninstall`; не оставляйте «висячие» HL/таблицы без документации.
+- Точки расширения: **`RegisterModuleDependences`**, `\Bitrix\Main\EventManager`, штатные события ядра и модулей — не подключайте произвольные `require` из чужих мест вместо официальных extension points.
+- Секреты (ключи API, пароли) не храните в репозитории: только опции модуля на стенде, `.settings.php` / окружение по практике команды.
+
+**Git** для изменений в `local/modules/` — те же правила, что в разделе [Git and delivery](#git-and-delivery): ветка фичи, Conventional Commits, PR в `dev`, без коммита в `dev` напрямую.
 
 ## Bitrix and Aspro conventions
 
