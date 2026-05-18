@@ -28,3 +28,7 @@
 .catalog-block .instock {
     display: none !important;
 }
+
+.personal__block #change-password {
+    display: none !important;
+}

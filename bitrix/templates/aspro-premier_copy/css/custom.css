@@ -67,3 +67,7 @@
 .catalog-block .catalog-block__item .instock {
     display: none !important;
 }
+
+.personal__block #change-password {
+    display: none !important;
+}
