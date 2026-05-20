@@ -16,10 +16,6 @@
 !/bitrix/templates/aspro-premier-mobile_copy/css/custom.css
 /bitrix/templates/aspro-premier_copy/js/*
 /bitrix/templates/aspro-premier-mobile_copy/js/*
-!/bitrix/templates/aspro-premier_copy/js/phonecode.js
-!/bitrix/templates/aspro-premier_copy/js/phonecode.min.js
-!/bitrix/templates/aspro-premier-mobile_copy/js/phonecode.js
-!/bitrix/templates/aspro-premier-mobile_copy/js/phonecode.min.js
 /bitrix/templates/aspro-premier_copy/vendor/
 /bitrix/templates/aspro-premier-mobile_copy/vendor/
 /bitrix/templates/aspro-premier_copy/footer.php
