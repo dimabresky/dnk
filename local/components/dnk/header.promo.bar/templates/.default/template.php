@@ -14,7 +14,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
     width: 100%;
     min-height: 45px;
     position: relative;
-    z-index: 1200;
+    z-index: 990;
     font-size: 13px;
     line-height: 1.2;
 }
