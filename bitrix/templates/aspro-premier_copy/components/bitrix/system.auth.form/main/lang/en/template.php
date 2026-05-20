@@ -13,6 +13,7 @@ $MESS['CAPTCHA_PROMT'] = 'Enter Code';
 $MESS['RELOAD'] = 'Reload';
 $MESS['SOCSERV_AS_USER_FORM'] = 'Fast Social Login';
 $MESS['AUTH_ERROR'] = 'Invalid phone number or SMS code';
+$MESS['AUTH_SMS_CODE_ERROR'] = 'Invalid SMS code';
 $MESS['REFRESH'] = 'Replace image';
 $MESS['AUTH_SMS_SENDED_TITLE'] = 'Enter code from SMS';
 $MESS['auth_phone_number'] = 'Phone number';

@@ -74,6 +74,7 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                     <label for="SMS_CODE_POPUP<?=$rand; ?>"><span><?=GetMessage('auth_sms_code'); ?>&nbsp;<span class="required-star">*</span></span></label>
                                     <div class="input">
                                         <input type="text" name="SMS_CODE" id="SMS_CODE_POPUP<?=$rand; ?>" class="form-control" maxlength="50" value="<?=htmlspecialcharsbx($arResult['SMS_CODE']); ?>" autocomplete="off" tabindex="1" required />
+                                        <label class="error" for="SMS_CODE_POPUP<?=$rand; ?>" style="display:none;"></label>
                                     </div>
                                 </div>
                             <?else:?>
@@ -161,10 +162,16 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                     </form>
                     <?if($arResult['SHOW_SMS_FIELD']):?>
                         <div class="form-footer">
-                            <div id="bx_auth_error<?=$rand; ?>" style="display:none;"><?ShowError('error'); ?></div>
+                            <div id="bx_auth_error<?=$rand; ?>" style="display:none;"></div>
                             <div id="bx_auth_resend<?=$rand; ?>"></div>
                             <script>
                             $(document).ready(function(){
+                                var $smsCodeError = $('#auth-page-form<?=$rand; ?> .phone_code label.error');
+
+                                $('#auth-page-form<?=$rand; ?> .phone_code input').on('input', function() {
+                                    $smsCodeError.hide().text('');
+                                });
+
                                 $('#auth-page-form<?=$rand; ?> .phone_code input[type=text]').phonecode(
                                     <?=CUtil::PhpToJSObject(
                                         [
@@ -177,6 +184,8 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                             typeof response !== 'undefined' &&
                                             response === 'true'
                                         ) {
+                                            $smsCodeError.hide().text('');
+
                                             let $form = $(input).closest('form');
 
                                             if (
@@ -187,6 +196,8 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                                 $form.find('button[type=submit]').closest('.form-footer').addClass('hide_on_submit');
                                                 $form.find('button[type=submit]').eq(0).trigger('click');
                                             }
+                                        } else if (response === 'false') {
+                                            $smsCodeError.text('<?=CUtil::JSEscape(GetMessage('AUTH_SMS_CODE_ERROR')); ?>').show();
                                         }
                                     }
                                 );
@@ -203,14 +214,15 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                 onError:
                                     function(response)
                                     {
-                                        var errorDiv = BX('bx_auth_error<?=$rand; ?>');
-                                        var errorNode = BX.findChildByClassName(errorDiv, 'errortext');
-                                        errorNode.innerHTML = '';
+                                        var $smsCodeError = $('#auth-page-form<?=$rand; ?> .phone_code label.error');
+                                        var errorMessage = '';
+
                                         for(var i = 0; i < response.errors.length; i++)
                                         {
-                                            errorNode.innerHTML = errorNode.innerHTML + BX.util.htmlspecialchars(response.errors[i].message) + '<br>';
+                                            errorMessage += BX.util.htmlspecialchars(response.errors[i].message) + '<br>';
                                         }
-                                        errorDiv.style.display = '';
+
+                                        $smsCodeError.html(errorMessage).show();
                                     }
                             });
                             </script>

@@ -14,8 +14,8 @@
 !/bitrix/templates/aspro-premier_copy/css/custom.css
 /bitrix/templates/aspro-premier-mobile_copy/css/*
 !/bitrix/templates/aspro-premier-mobile_copy/css/custom.css
-/bitrix/templates/aspro-premier_copy/js/
-/bitrix/templates/aspro-premier-mobile_copy/js/
+/bitrix/templates/aspro-premier_copy/js/*
+/bitrix/templates/aspro-premier-mobile_copy/js/*
 /bitrix/templates/aspro-premier_copy/vendor/
 /bitrix/templates/aspro-premier-mobile_copy/vendor/
 /bitrix/templates/aspro-premier_copy/footer.php
@@ -62,6 +62,14 @@
 
 # --- Personal ---
 /personal/
+
+# --- Ajax ---
+/ajax/check-phonecode.php
+/ajax/auth.php
+/ajax/form.php
+
+# --- Auth ---
+/auth/
 
 # --- IDE / OS ---
 .idea/
