@@ -32,3 +32,7 @@
 .personal__block #change-password {
     display: none !important;
 }
+
+.properties-wrapper.grid-list__item {
+    display: none !important;
+}
