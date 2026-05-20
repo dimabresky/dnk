@@ -13,6 +13,7 @@ $MESS['CAPTCHA_PROMT'] = 'Введите код';
 $MESS['RELOAD'] = 'Обновить';
 $MESS['SOCSERV_AS_USER_FORM'] = 'Быстрый вход через соцсети';
 $MESS['AUTH_ERROR'] = 'Неверный номер телефона или код из СМС';
+$MESS['AUTH_SMS_CODE_ERROR'] = 'Неверный код из СМС';
 $MESS['REFRESH'] = 'Поменять картинку';
 $MESS['AUTH_SMS_SENDED_TITLE'] = 'Введите код из СМС';
 $MESS['auth_phone_number'] = 'Номер телефона';

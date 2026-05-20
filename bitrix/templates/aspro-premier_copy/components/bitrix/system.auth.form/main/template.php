@@ -165,6 +165,10 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                             <div id="bx_auth_resend<?=$rand; ?>"></div>
                             <script>
                             $(document).ready(function(){
+                                $('#auth-page-form<?=$rand; ?> .phone_code input').on('input', function() {
+                                    BX('bx_auth_error<?=$rand; ?>').style.display = 'none';
+                                });
+
                                 $('#auth-page-form<?=$rand; ?> .phone_code input[type=text]').phonecode(
                                     <?=CUtil::PhpToJSObject(
                                         [
@@ -173,10 +177,15 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                         ]
                                     ); ?>,
                                     function(input, data, response) {
+                                        var errorDiv = BX('bx_auth_error<?=$rand; ?>');
+                                        var errorNode = BX.findChildByClassName(errorDiv, 'errortext');
+
                                         if (
                                             typeof response !== 'undefined' &&
                                             response === 'true'
                                         ) {
+                                            errorDiv.style.display = 'none';
+
                                             let $form = $(input).closest('form');
 
                                             if (
@@ -187,6 +196,9 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                                 $form.find('button[type=submit]').closest('.form-footer').addClass('hide_on_submit');
                                                 $form.find('button[type=submit]').eq(0).trigger('click');
                                             }
+                                        } else if (response === 'false') {
+                                            errorNode.innerHTML = '<?=CUtil::JSEscape(GetMessage('AUTH_SMS_CODE_ERROR')); ?>';
+                                            errorDiv.style.display = '';
                                         }
                                     }
                                 );
