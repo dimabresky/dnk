@@ -85,3 +85,28 @@ body .catalog-detail__main-parts {
     flex-direction: column;
   }
 }
+
+/* Детальное описание: свёртка до 7 строк + «Развернуть» / «Свернуть» */
+.catalog-detail__description-expand .catalog-detail__description-text--collapsed {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 7;
+  line-clamp: 7;
+}
+
+.catalog-detail__description-expand .catalog-detail__description-text--expanded {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
+/* Ссылка скрыта по умолчанию; показ только при модификаторе после проверки в JS */
+.catalog-detail__description-expand:not(.catalog-detail__description-expand--expandable) .js-detail-description-toggle {
+  display: none !important;
+}
+
+.catalog-detail__description-expand--expandable .js-detail-description-toggle {
+  display: inline !important;
+}
