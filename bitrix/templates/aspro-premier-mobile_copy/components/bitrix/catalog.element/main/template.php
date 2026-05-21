@@ -308,29 +308,10 @@ if ($isShowBrandBlock) {
     ob_start();
     ?>
     <div class="line-block__item catalog-detail__brand no-shrinked">
-        <div class="brand-detail flexbox line-block--gap line-block--gap-12 catalog-detail__brand-detail--inline">
-            <div class="brand-detail-info">
-                <div class="brand-detail-info__image rounded-x">
-                    <a href="<?=$arResult['BRAND_ITEM']['DETAIL_PAGE_URL']; ?>">
-                        <img src="<?=$arResult['BRAND_ITEM']['IMAGE']['src']; ?>" alt="<?=$arResult['BRAND_ITEM']['NAME']; ?>" title="<?=$arResult['BRAND_ITEM']['NAME']; ?>">
-                    </a>
-                </div>
-            </div>
-
-            <div class="brand-detail-info__preview line-block line-block--gap line-block--gap-8 flexbox--wrap font_14">
-                <div class="line-block__item">
-                    <a class="chip chip--transparent bordered" href="<?=$arResult['BRAND_ITEM']['DETAIL_PAGE_URL']; ?>" target="_blank">
-                        <span class="chip__label"><?=GetMessage('ITEMS_BY_BRAND', ['#BRAND#' => $arResult['BRAND_ITEM']['NAME']]); ?></span>
-                    </a>
-                </div>
-                <?if ($arResult['SECTION']):?>
-                    <div class="line-block__item">
-                        <a class="chip chip--transparent bordered" href="<?=$arResult['BRAND_ITEM']['CATALOG_PAGE_URL']; ?>" target="_blank">
-                            <span class="chip__label"><?=GetMessage('ITEMS_BY_SECTION'); ?></span>
-                        </a>
-                    </div>
-                <?endif; ?>
-            </div>
+        <div class="brand-detail-info__image rounded-x catalog-detail__brand-image">
+            <a href="<?=$arResult['BRAND_ITEM']['DETAIL_PAGE_URL']; ?>">
+                <img src="<?=$arResult['BRAND_ITEM']['IMAGE']['src']; ?>" alt="<?=$arResult['BRAND_ITEM']['NAME']; ?>" title="<?=$arResult['BRAND_ITEM']['NAME']; ?>">
+            </a>
         </div>
     </div>
     <?php
