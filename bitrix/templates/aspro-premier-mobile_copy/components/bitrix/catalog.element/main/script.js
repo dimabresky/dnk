@@ -17,8 +17,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	const detailExpandRoots = document.querySelectorAll('[data-catalog-detail-detail-text-expand]');
 	if (detailExpandRoots.length) {
+		/**
+		 * При -webkit-line-clamp часто scrollHeight === clientHeight, хотя текст обрезан.
+		 * Сравниваем высоту блока со снятым clamp (клон) с видимой высотой.
+		 */
 		const measureOverflow = function(inner) {
-			return inner.scrollHeight > inner.clientHeight + 1;
+			const visibleH = inner.offsetHeight || inner.getBoundingClientRect().height;
+
+			let width = inner.offsetWidth || inner.getBoundingClientRect().width;
+
+			const ghost = inner.cloneNode(true);
+			ghost.classList.remove('catalog-detail__detail-text-inner');
+
+			ghost.style.position = 'absolute';
+			ghost.style.left = '0';
+			ghost.style.top = '0';
+			ghost.style.width = width ? width + 'px' : '100%';
+			ghost.style.visibility = 'hidden';
+			ghost.style.pointerEvents = 'none';
+			ghost.style.zIndex = '-1';
+			ghost.style.display = 'block';
+			ghost.style.overflow = 'visible';
+			ghost.style.setProperty('-webkit-line-clamp', 'unset');
+			ghost.style.setProperty('-webkit-box-orient', 'unset');
+
+			inner.parentNode.insertBefore(ghost, inner.nextSibling);
+			let fullHeight = ghost.offsetHeight;
+			const scrollHeight = ghost.scrollHeight;
+
+			if (scrollHeight > fullHeight + 2) {
+				fullHeight = scrollHeight;
+			}
+
+			ghost.remove();
+
+			return fullHeight > visibleH + 4;
 		};
 
 		const bindExpand = function(wrap) {
@@ -44,6 +77,13 @@ document.addEventListener('DOMContentLoaded', function() {
 				wrap.classList.toggle('catalog-detail__detail-text-wrap--expanded');
 				requestAnimationFrame(updateToggleVisibility);
 			});
+
+			if (typeof ResizeObserver !== 'undefined') {
+				const resizeObserver = new ResizeObserver(function() {
+					requestAnimationFrame(updateToggleVisibility);
+				});
+				resizeObserver.observe(inner);
+			}
 		};
 
 		for (let j = 0; j < detailExpandRoots.length; j++) {

@@ -317,8 +317,8 @@ $statusCode = $arStatus['CODE'];
                 <?endif; ?>
             </div>
             <button type="button" class="btn--no-btn-appearance catalog-detail__detail-text-expand-btn font_13 link-opacity-color link-opacity-color--hover mt mt--8 catalog-detail__detail-text-expand-btn--toggle">
-                <span class="catalog-detail__detail-text-expand-btn-label-expand"><?=Loc::getMessage('EXPAND_DESCRIPTION'); ?></span>
-                <span class="catalog-detail__detail-text-expand-btn-label-collapse"><?=Loc::getMessage('COLLAPSE_DESCRIPTION'); ?></span>
+                <span class="catalog-detail__detail-text-expand-btn-label-expand"><?=GetMessage('EXPAND_DESCRIPTION'); ?></span>
+                <span class="catalog-detail__detail-text-expand-btn-label-collapse"><?=GetMessage('COLLAPSE_DESCRIPTION'); ?></span>
             </button>
         </div>
     <?$this->EndViewTarget(); ?>
