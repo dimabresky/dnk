@@ -308,12 +308,18 @@ $statusCode = $arStatus['CODE'];
 <?$templateData['DETAIL_TEXT'] = boolval(strlen($arResult['DETAIL_TEXT']) || $bSKUDescription); ?>
 <?if ($templateData['DETAIL_TEXT']):?>
     <?$this->SetViewTarget('PRODUCT_DETAIL_TEXT_INFO'); ?>
-        <div class="content content--max-width js-detail-description" itemprop="description">
-            <?if ($bSKUDescription):?>
-                <?=$arResult['SKU']['CURRENT']['DETAIL_TEXT']; ?>
-            <?else:?>
-                <?=$arResult['DETAIL_TEXT']; ?>
-            <?endif; ?>
+        <div class="catalog-detail__detail-text-wrap" data-catalog-detail-detail-text-expand>
+            <div class="content content--max-width js-detail-description catalog-detail__detail-text-inner" itemprop="description">
+                <?if ($bSKUDescription):?>
+                    <?=$arResult['SKU']['CURRENT']['DETAIL_TEXT']; ?>
+                <?else:?>
+                    <?=$arResult['DETAIL_TEXT']; ?>
+                <?endif; ?>
+            </div>
+            <button type="button" class="btn--no-btn-appearance catalog-detail__detail-text-expand-btn font_13 link-opacity-color link-opacity-color--hover mt mt--8 catalog-detail__detail-text-expand-btn--toggle">
+                <span class="catalog-detail__detail-text-expand-btn-label-expand"><?=GetMessage('EXPAND_DESCRIPTION'); ?></span>
+                <span class="catalog-detail__detail-text-expand-btn-label-collapse"><?=GetMessage('COLLAPSE_DESCRIPTION'); ?></span>
+            </button>
         </div>
     <?$this->EndViewTarget(); ?>
 <?endif; ?>

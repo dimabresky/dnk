@@ -29,4 +29,6 @@ $MESS["ONE_REVIEW"] = "отзыв";
 $MESS["TWO_REVIEWS"] = "отзыва";
 $MESS["FIVE_REVIEWS"] = "отзывов";
 $MESS['TABLE_SIZES'] = 'Подбор размера';
+$MESS['DESC_EXPAND'] = 'Развернуть';
+$MESS['DESC_COLLAPSE'] = 'Свернуть';
 ?>

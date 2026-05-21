@@ -309,12 +309,23 @@ $statusCode = $arStatus['CODE'];
 <?$templateData['DETAIL_TEXT'] = boolval(strlen($arResult['DETAIL_TEXT']) || $bSKUDescription); ?>
 <?if($templateData['DETAIL_TEXT']):?>
     <?$this->SetViewTarget('PRODUCT_DETAIL_TEXT_INFO'); ?>
-        <div class="content content--max-width js-detail-description" itemprop="description">
-            <?if($bSKUDescription):?>
-                <?=$arResult['SKU']['CURRENT']['DETAIL_TEXT']; ?>
-            <?else:?>
-                <?=$arResult['DETAIL_TEXT']; ?>
-            <?endif; ?>
+        <div class="catalog-detail__description-expand js-detail-description-expand">
+            <div class="content content--max-width text-block catalog-detail__description-text catalog-detail__description-text--collapsed js-detail-description-text" itemprop="description">
+                <?if($bSKUDescription):?>
+                    <?=$arResult['SKU']['CURRENT']['DETAIL_TEXT']; ?>
+                <?else:?>
+                    <?=$arResult['DETAIL_TEXT']; ?>
+                <?endif; ?>
+            </div>
+            <a
+                href="#"
+                class="catalog-detail__pseudo-link link-opacity-color link-opacity-color--hover pointer font_13 mt mt--8 js-detail-description-toggle"
+                hidden
+                role="button"
+                aria-expanded="false"
+                data-expand="<?=htmlspecialcharsbx(Loc::getMessage('DESC_EXPAND')); ?>"
+                data-collapse="<?=htmlspecialcharsbx(Loc::getMessage('DESC_COLLAPSE')); ?>"
+            ><?=Loc::getMessage('DESC_EXPAND'); ?></a>
         </div>
     <?$this->EndViewTarget(); ?>
 <?endif; ?>

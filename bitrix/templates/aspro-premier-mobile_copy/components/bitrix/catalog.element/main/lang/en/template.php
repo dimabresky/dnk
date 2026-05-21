@@ -28,4 +28,6 @@ $MESS["ONE_REVIEW"] = "review";
 $MESS["TWO_REVIEWS"] = "reviews";
 $MESS["FIVE_REVIEWS"] = "reviews";
 $MESS['TABLE_SIZES'] = 'Selection of size';
+$MESS['EXPAND_DESCRIPTION'] = 'Show more';
+$MESS['COLLAPSE_DESCRIPTION'] = 'Show less';
 ?>

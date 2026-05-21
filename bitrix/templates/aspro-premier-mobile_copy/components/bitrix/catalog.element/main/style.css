@@ -100,3 +100,47 @@ body .catalog-detail__main-parts {
     width: auto;
   }
 }
+
+.catalog-detail__previewtext {
+  display: none !important;
+}
+
+.catalog-detail__detail-text-inner {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 7;
+  overflow: hidden;
+}
+
+.catalog-detail__detail-text-wrap--expanded .catalog-detail__detail-text-inner {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.catalog-detail__detail-text-expand-btn--toggle {
+  cursor: pointer;
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 0.2em;
+}
+
+.catalog-detail__detail-text-expand-btn--toggle span {
+  text-decoration: inherit;
+}
+
+.catalog-detail__detail-text-expand-btn-label-collapse {
+  display: none;
+}
+
+.catalog-detail__detail-text-wrap--expanded .catalog-detail__detail-text-expand-btn-label-expand {
+  display: none;
+}
+
+.catalog-detail__detail-text-wrap--expanded .catalog-detail__detail-text-expand-btn-label-collapse {
+  display: inline;
+}
+
+.catalog-detail__detail-text-expand-btn--toggle[hidden] {
+  display: none !important;
+}
