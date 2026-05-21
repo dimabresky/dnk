@@ -130,3 +130,7 @@ body .catalog-detail__main-parts {
     max-width: 50%;
   }
 }
+
+.catalog-detail__previewtext {
+  display: none !important;
+}
