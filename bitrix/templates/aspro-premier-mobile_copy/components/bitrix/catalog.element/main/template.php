@@ -301,6 +301,22 @@ if ($bShowSelectOffer) {
 $status = $arStatus['NAME'];
 $statusCode = $arStatus['CODE'];
 /* sku replace end */
+
+$isShowBrandBlock = ($arResult['BRAND_ITEM'] && $arResult['BRAND_ITEM']['IMAGE']);
+$brandBlockHtml = '';
+if ($isShowBrandBlock) {
+    ob_start();
+    ?>
+    <div class="line-block__item catalog-detail__brand no-shrinked">
+        <div class="brand-detail-info__image rounded-x catalog-detail__brand-image">
+            <a href="<?=$arResult['BRAND_ITEM']['DETAIL_PAGE_URL']; ?>">
+                <img src="<?=$arResult['BRAND_ITEM']['IMAGE']['src']; ?>" alt="<?=$arResult['BRAND_ITEM']['NAME']; ?>" title="<?=$arResult['BRAND_ITEM']['NAME']; ?>">
+            </a>
+        </div>
+    </div>
+    <?php
+    $brandBlockHtml = trim(ob_get_clean());
+}
 ?>
 
 <?// detail description?>
@@ -308,12 +324,18 @@ $statusCode = $arStatus['CODE'];
 <?$templateData['DETAIL_TEXT'] = boolval(strlen($arResult['DETAIL_TEXT']) || $bSKUDescription); ?>
 <?if ($templateData['DETAIL_TEXT']):?>
     <?$this->SetViewTarget('PRODUCT_DETAIL_TEXT_INFO'); ?>
-        <div class="content content--max-width js-detail-description" itemprop="description">
-            <?if ($bSKUDescription):?>
-                <?=$arResult['SKU']['CURRENT']['DETAIL_TEXT']; ?>
-            <?else:?>
-                <?=$arResult['DETAIL_TEXT']; ?>
-            <?endif; ?>
+        <div class="catalog-detail__detail-text-wrap" data-catalog-detail-detail-text-expand>
+            <div class="content content--max-width js-detail-description catalog-detail__detail-text-inner" itemprop="description">
+                <?if ($bSKUDescription):?>
+                    <?=$arResult['SKU']['CURRENT']['DETAIL_TEXT']; ?>
+                <?else:?>
+                    <?=$arResult['DETAIL_TEXT']; ?>
+                <?endif; ?>
+            </div>
+            <button type="button" class="btn--no-btn-appearance catalog-detail__detail-text-expand-btn font_13 link-opacity-color link-opacity-color--hover mt mt--8 catalog-detail__detail-text-expand-btn--toggle">
+                <span class="catalog-detail__detail-text-expand-btn-label-expand"><?=Loc::getMessage('EXPAND_DESCRIPTION'); ?></span>
+                <span class="catalog-detail__detail-text-expand-btn-label-collapse"><?=Loc::getMessage('COLLAPSE_DESCRIPTION'); ?></span>
+            </button>
         </div>
     <?$this->EndViewTarget(); ?>
 <?endif; ?>
@@ -657,9 +679,12 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                         $arPriceConfig
                     );
                     ?>
-                    <div class="visible-by-container-rule">
-                        <div class="line-block__item catalog-detail__price catalog-detail__info--margined js-popup-price" data-price-config='<?=str_replace('\'', '"', CUtil::PhpToJSObject($arPriceConfig, false, true)); ?>'>
-                            <?$prices->show(); ?>
+                    <div class="visible-by-container-rule catalog-detail__price-brand-row">
+                        <div class="line-block line-block--gap-16 flexbox--justify-between flexbox--align-start catalog-detail__price-brand-row-inner">
+                            <div class="line-block__item catalog-detail__price catalog-detail__info--margined js-popup-price" data-price-config='<?=str_replace('\'', '"', CUtil::PhpToJSObject($arPriceConfig, false, true)); ?>'>
+                                <?$prices->show(); ?>
+                            </div>
+                            <?=$brandBlockHtml; ?>
                         </div>
                     </div>
 
@@ -920,8 +945,13 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                         <div class="catalog-detail__buy-block catalog-detail__cell-block outer-rounded-x bordered p p--20 pt pt--24">
                             <div class="js-popup-block-adaptive grid-list grid-list--items gap gap--24">
                                 <?if (!$arResult['PRODUCT_ANALOG']):?>
-                                    <div class=" catalog-detail__price catalog-detail__info--margined js-popup-price  <?=$prices->isFilled() ? '' : 'hidden'; ?>" data-price-config='<?=str_replace('\'', '"', CUtil::PhpToJSObject($arPriceConfig, false, true)); ?>'>
-                                        <?$prices->show(); ?>
+                                    <div class="catalog-detail__price-brand-row catalog-detail__price-brand-row--buy-block">
+                                        <div class="line-block line-block--gap-16 flexbox--justify-between flexbox--align-start catalog-detail__price-brand-row-inner">
+                                            <div class="line-block__item catalog-detail__price catalog-detail__info--margined js-popup-price <?=$prices->isFilled() ? '' : 'hidden'; ?>" data-price-config='<?=str_replace('\'', '"', CUtil::PhpToJSObject($arPriceConfig, false, true)); ?>'>
+                                                <?$prices->show(); ?>
+                                            </div>
+                                            <?=$brandBlockHtml; ?>
+                                        </div>
                                     </div>
                                 <?endif;?>
 
@@ -1052,36 +1082,6 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                                 </div>
                             </div>
                         <?endif; ?>
-                    <?endif; ?>
-
-                    <?$isShowBrandBlock = ($arResult['BRAND_ITEM'] && $arResult['BRAND_ITEM']['IMAGE']); ?>
-                    <?if ($isShowBrandBlock):?>
-                        <div class="grid-list__item">
-                            <div class="brand-detail flexbox line-block--gap line-block--gap-12">
-                                <div class="brand-detail-info">
-                                    <div class="brand-detail-info__image rounded-x">
-                                        <a href="<?=$arResult['BRAND_ITEM']['DETAIL_PAGE_URL']; ?>">
-                                            <img src="<?=$arResult['BRAND_ITEM']['IMAGE']['src']; ?>" alt="<?=$arResult['BRAND_ITEM']['NAME']; ?>" title="<?=$arResult['BRAND_ITEM']['NAME']; ?>">
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <div class="brand-detail-info__preview line-block line-block--gap line-block--gap-8 flexbox--wrap font_14">
-                                    <div class="line-block__item">
-                                        <a class="chip chip--transparent bordered" href="<?=$arResult['BRAND_ITEM']['DETAIL_PAGE_URL']; ?>" target="_blank">
-                                            <span class="chip__label"><?=GetMessage('ITEMS_BY_BRAND', ['#BRAND#' => $arResult['BRAND_ITEM']['NAME']]); ?></span>
-                                        </a>
-                                    </div>
-                                    <?if ($arResult['SECTION']):?>
-                                        <div class="line-block__item">
-                                            <a class="chip chip--transparent bordered" href="<?=$arResult['BRAND_ITEM']['CATALOG_PAGE_URL']; ?>" target="_blank">
-                                                <span class="chip__label"><?=GetMessage('ITEMS_BY_SECTION'); ?></span>
-                                            </a>
-                                        </div>
-                                    <?endif; ?>
-                                </div>
-                            </div>
-                        </div>
                     <?endif; ?>
 
                     <?$isShowTizersBlock = ($templateData['TIZERS']['VALUE'] && $templateData['TIZERS']['IBLOCK_ID']); ?>
