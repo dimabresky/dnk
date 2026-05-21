@@ -101,36 +101,6 @@ body .catalog-detail__main-parts {
   }
 }
 
-.catalog-detail__price-brand-row-inner {
-  width: 100%;
-}
-
-.catalog-detail__price-brand-row .catalog-detail__price {
-  flex: 1;
-  min-width: 0;
-}
-
-.catalog-detail__price-brand-row .catalog-detail__brand {
-  flex-shrink: 0;
-  max-width: 48%;
-}
-
-.catalog-detail__price-brand-row .catalog-detail__brand-image {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.catalog-detail__price-brand-row .catalog-detail__brand-image img {
-  max-height: 40px;
-  width: auto;
-}
-
-@container side-info (width < 600px) {
-  .catalog-detail__price-brand-row .catalog-detail__brand {
-    max-width: 50%;
-  }
-}
-
 .catalog-detail__previewtext {
   display: none !important;
 }
