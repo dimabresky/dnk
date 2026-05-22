@@ -13,8 +13,12 @@ if (TSolution::GetFrontParametrValue('USE_INTL_PHONE') === 'Y') {
 TSolution\Extensions::init($arExtensions);
 
 TSolution\PhoneAuth::modifyResult($arResult, $arParams);
-if (($_REQUEST['USER_REMEMBER'] ?? '') === 'Y') {
-    $arResult['USER_REMEMBER'] = 'Y';
+if (
+    ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+    && ($_REQUEST['AUTH_FORM'] ?? '') === 'Y'
+    && ($_REQUEST['TYPE'] ?? '') === 'AUTH'
+) {
+    $arResult['USER_REMEMBER'] = (($_REQUEST['USER_REMEMBER'] ?? '') === 'Y') ? 'Y' : 'N';
 }
 
 echo CJSCore::Init('phone_auth', true);
