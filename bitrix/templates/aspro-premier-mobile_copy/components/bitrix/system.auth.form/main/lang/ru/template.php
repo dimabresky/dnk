@@ -22,4 +22,4 @@ $MESS['auth_get_sms_code'] = 'Выслать код';
 $MESS['auth_sms_code'] = 'Код авторизации из СМС';
 $MESS['auth_code_sent'] = 'Мы отправили код подтверждения на номер <span style=\"white-space: nowrap;\">#PHONE_NUMBER#</span>';
 $MESS['AUTH_REGISTER_ASK_ACCOUNT'] = 'Нет аккаунта?';
-$MESS['AUTH_REMEMBER_SHORT'] = 'Запомнить меня на этом компьютере';
+$MESS['AUTH_REMEMBER_SHORT'] = 'Запомнить меня на этом устройстве';
