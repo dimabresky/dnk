@@ -1,4 +1,5 @@
-<?
+<?php
+
 $MESS['AUTH_LOGIN_BUTTON'] = 'Login';
 $MESS['AUTH_REGISTER'] = 'Register';
 $MESS['AUTH_REGISTER_NEW'] = 'Register';
@@ -21,3 +22,4 @@ $MESS['auth_get_sms_code'] = 'Send Code';
 $MESS['auth_sms_code'] = 'SMS authorization code';
 $MESS['auth_code_sent'] = 'We have sent a confirmation code to <span style=\"white-space: nowrap;\">#PHONE_NUMBER#</span>';
 $MESS['AUTH_REGISTER_ASK_ACCOUNT'] = "Don't have an account?";
+$MESS['AUTH_REMEMBER_SHORT'] = 'Remember me on this computer';

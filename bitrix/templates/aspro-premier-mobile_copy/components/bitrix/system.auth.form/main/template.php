@@ -13,6 +13,13 @@ if (TSolution::GetFrontParametrValue('USE_INTL_PHONE') === 'Y') {
 TSolution\Extensions::init($arExtensions);
 
 TSolution\PhoneAuth::modifyResult($arResult, $arParams);
+if (
+    ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+    && ($_REQUEST['AUTH_FORM'] ?? '') === 'Y'
+    && ($_REQUEST['TYPE'] ?? '') === 'AUTH'
+) {
+    $arResult['USER_REMEMBER'] = (($_REQUEST['USER_REMEMBER'] ?? '') === 'Y') ? 'Y' : 'N';
+}
 
 echo CJSCore::Init('phone_auth', true);
 TSolution\Extensions::init('phonecode');
@@ -69,6 +76,9 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                             <?if($arResult['SHOW_SMS_FIELD']):?>
                                 <input type="hidden" name="USER_PHONE_NUMBER" value="<?=htmlspecialcharsbx($arResult['USER_PHONE_NUMBER']); ?>" />
                                 <input type="hidden" name="SIGNED_DATA" value="<?=htmlspecialcharsbx($arResult['SIGNED_DATA']); ?>" />
+                                <?if(($arResult['STORE_PASSWORD'] ?? '') === 'Y' && ($arResult['USER_REMEMBER'] ?? '') === 'Y'):?>
+                                    <input type="hidden" name="USER_REMEMBER" value="Y" />
+                                <?endif; ?>
 
                                 <div class="form-group fill-animate phone_code">
                                     <label for="SMS_CODE_POPUP<?=$rand; ?>"><span><?=GetMessage('auth_sms_code'); ?>&nbsp;<span class="required-star">*</span></span></label>
@@ -84,6 +94,14 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                         <input id="USER_PHONE_NUMBER<?=$rand; ?>" class="form-control required phone" type="tel" name="USER_PHONE_NUMBER" maxlength="50" autocomplete="tel" value="<?=isset($arResult['USER_PHONE_NUMBER']) ? htmlspecialcharsbx($arResult['USER_PHONE_NUMBER']) : ''; ?>" tabindex="1" />
                                     </div>
                                 </div>
+                                <?if(($arResult['STORE_PASSWORD'] ?? '') === 'Y'):?>
+                                    <div class="form-group auth-remember font_13">
+                                        <label for="USER_REMEMBER<?=$rand; ?>">
+                                            <input type="checkbox" name="USER_REMEMBER" id="USER_REMEMBER<?=$rand; ?>" value="Y" tabindex="2"<?= ($arResult['USER_REMEMBER'] ?? '') === 'Y' ? ' checked="checked"' : ''; ?> />
+                                            <?=GetMessage('AUTH_REMEMBER_SHORT'); ?>
+                                        </label>
+                                    </div>
+                                <?endif; ?>
                             <?endif; ?>
 
                             <?if($arResult['CAPTCHA_CODE']):?>
@@ -117,7 +135,7 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                         <?if($arResult['SHOW_SMS_FIELD']):?>
                                             <button class="btn btn-default btn-lg btn-wide" type="submit" name="Login1" value="Y" tabindex="2"><span><?=GetMessage('AUTH_LOGIN_BUTTON'); ?></span></button>
                                         <?else:?>
-                                            <button class="btn btn-default btn-lg btn-wide" type="submit" name="Login1" value="Y" tabindex="2"><span><?=GetMessage('auth_get_sms_code'); ?></span></button>
+                                            <button class="btn btn-default btn-lg btn-wide" type="submit" name="Login1" value="Y" tabindex="3"><span><?=GetMessage('auth_get_sms_code'); ?></span></button>
                                         <?endif; ?>
                                     </div>
 
@@ -196,7 +214,7 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                                 $form.find('button[type=submit]').closest('.form-footer').addClass('hide_on_submit');
                                                 $form.find('button[type=submit]').eq(0).trigger('click');
                                             }
-                                        } else if (response === 'false') {
+                                        } else if (response === 'false' && String($(input).val() || '').length >= 6) {
                                             $smsCodeError.text('<?=CUtil::JSEscape(GetMessage('AUTH_SMS_CODE_ERROR')); ?>').show();
                                         }
                                     }
