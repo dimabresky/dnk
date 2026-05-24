@@ -63,6 +63,9 @@
 # --- Personal ---
 /personal/
 
+# --- Certs ---
+/sertifikaty/
+
 # --- Ajax ---
 /ajax/check-phonecode.php
 /ajax/auth.php

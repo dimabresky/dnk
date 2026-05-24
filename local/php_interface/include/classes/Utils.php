@@ -979,4 +979,103 @@ final class Utils
 
         return $id > 0 ? $id : null;
     }
+
+    /**
+     * Детальный текст заявки на покупку сертификатов: plain для DETAIL_TEXT, HTML для #DETAIL_INFO# в письме.
+     *
+     * @param array{
+     *     contactName: string,
+     *     contactPhone: string,
+     *     contactEmail?: string,
+     *     deliveryLabel: string,
+     *     paymentLabel: string,
+     *     lines: list<array{name: string, nominal: float, qty: int, lineSum: float}>,
+     *     total: float,
+     *     comment?: string
+     * } $data
+     * @return array{plain: string, html: string}
+     */
+    public static function buildCertificateRequestOrderDetails(array $data): array
+    {
+        $name = trim((string)($data['contactName'] ?? ''));
+        $phone = trim((string)($data['contactPhone'] ?? ''));
+        $email = trim((string)($data['contactEmail'] ?? ''));
+        $delivery = trim((string)($data['deliveryLabel'] ?? ''));
+        $payment = trim((string)($data['paymentLabel'] ?? ''));
+        $lines = isset($data['lines']) && is_array($data['lines']) ? $data['lines'] : [];
+        $total = round((float)($data['total'] ?? 0), 2);
+        $comment = trim((string)($data['comment'] ?? ''));
+
+        $plainLines = [];
+        $htmlLi = [];
+        foreach ($lines as $line) {
+            if (!is_array($line)) {
+                continue;
+            }
+            $n = trim((string)($line['name'] ?? ''));
+            if ($n === '') {
+                $n = 'Сертификат';
+            }
+            $nom = round((float)($line['nominal'] ?? 0), 4);
+            $qty = (int)($line['qty'] ?? 0);
+            if ($qty < 1) {
+                continue;
+            }
+            $sum = round((float)($line['lineSum'] ?? 0), 2);
+            $fmtNom = self::formatCertificateMoneyAmount($nom);
+            $fmtSum = self::formatCertificateMoneyAmount($sum);
+            $plainLines[] = $n . ' — ' . $fmtNom . ' × ' . $qty . ' = ' . $fmtSum;
+            $htmlLi[] = '<li>' . self::escapeHtmlForCertificateEmail($n) . ' — '
+                . self::escapeHtmlForCertificateEmail($fmtNom) . ' × ' . (string)$qty
+                . ' = ' . self::escapeHtmlForCertificateEmail($fmtSum) . '</li>';
+        }
+
+        $plain = "Контакт\n";
+        $plain .= 'Имя: ' . $name . "\n";
+        $plain .= 'Телефон: ' . $phone . "\n";
+        if ($email !== '') {
+            $plain .= 'E-mail: ' . $email . "\n";
+        }
+        $plain .= "\nДоставка: " . $delivery . "\n";
+        $plain .= 'Оплата: ' . $payment . "\n\n";
+        $plain .= "Состав заказа\n";
+        $plain .= implode("\n", $plainLines);
+        $plain .= "\n\nИтого: " . self::formatCertificateMoneyAmount($total);
+        if ($comment !== '') {
+            $plain .= "\n\nКомментарий\n" . $comment;
+        }
+
+        $html = '<p><strong>Контакт</strong><br>'
+            . self::escapeHtmlForCertificateEmail('Имя: ' . $name) . '<br>'
+            . self::escapeHtmlForCertificateEmail('Телефон: ' . $phone);
+        if ($email !== '') {
+            $html .= '<br>' . self::escapeHtmlForCertificateEmail('E-mail: ' . $email);
+        }
+        $html .= '</p>'
+            . '<p><strong>Доставка</strong><br>' . self::escapeHtmlForCertificateEmail($delivery) . '</p>'
+            . '<p><strong>Оплата</strong><br>' . self::escapeHtmlForCertificateEmail($payment) . '</p>'
+            . '<p><strong>Состав заказа</strong></p>'
+            . '<ul>' . implode('', $htmlLi) . '</ul>'
+            . '<p><strong>Итого</strong>: ' . self::escapeHtmlForCertificateEmail(self::formatCertificateMoneyAmount($total)) . '</p>';
+        if ($comment !== '') {
+            $html .= '<p><strong>Комментарий</strong><br>'
+                . nl2br(self::escapeHtmlForCertificateEmail($comment), false) . '</p>';
+        }
+
+        return ['plain' => $plain, 'html' => $html];
+    }
+
+    private static function formatCertificateMoneyAmount(float $amount): string
+    {
+        if (Loader::includeModule('currency')) {
+            return (string)\CCurrencyLang::CurrencyFormat($amount, 'BYN', true);
+        }
+
+        return number_format($amount, 2, ',', '') . ' BYN';
+    }
+
+    private static function escapeHtmlForCertificateEmail(string $text): string
+    {
+        return htmlspecialcharsbx($text, ENT_QUOTES | ENT_SUBSTITUTE);
+    }
 }

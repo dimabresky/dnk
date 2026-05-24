@@ -26,7 +26,21 @@
 1. Установить Битрикс в соответствии с [документацией](https://dev.1c-bitrix.ru/).
 2. Восстановить конфигурацию подключения к БД: `bitrix/php_interface/dbconn.php`, `bitrix/.settings.php` (не коммитить секреты в публичный репозиторий).
 3. Настроить константы и интеграции в `local/php_interface/include/constants.php` и окружении под целевой сервер.
-4. Каталог `upload/` и кэши ядра обычно не хранятся в репозитории — см. `.gitignore`.
+4. **Сертификаты:** в `.env` указывается `DNK_CERTIFICATE_CATALOG_IBLOCK_ID` — ID инфоблока номинальных сертификатов (`NOMINAL`, `DETAIL_PICTURE`). Инфоблок заявок: из CLI — `php local/tools/install_certificate_requests_iblock.php` (ID из `.env`) или с аргументом `<ID>`; из браузера под администратором — `/local/tools/install_certificate_requests_iblock.php?run=Y[&cert_iblock_id=<ID>]` (`$GLOBALS['USER']->IsAdmin()`). Добавьте `DNK_CERTIFICATE_REQUEST_IBLOCK_ID` по выводу скрипта. Для создания заявок от гостей выдайте нужной группе право добавления элементов в ИБ заявок. Уведомление менеджера по почте: тип события `CUSTOM_MAIL`, в `.env` задайте `DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID` — ID строки нужного почтового шаблона (параметры письма `#IBLOCK_ID#`, `#ID#`, `#DETAIL_INFO#`).
+5. Каталог `upload/` и кэши ядра обычно не хранятся в репозитории — см. `.gitignore`.
+
+## Компонент покупки сертификатов
+
+- Компонент: `dnk:certificate.buy` (`local/components/dnk/certificate.buy/`).
+- Инфоблок каталога и инфоблок заявок задаются только в `.env` / `constants.php`: `DNK_CERTIFICATE_CATALOG_IBLOCK_ID`, `DNK_CERTIFICATE_REQUEST_IBLOCK_ID` — через параметры подключения не передаются.
+- На странице вставьте:
+
+```php
+$APPLICATION->IncludeComponent('dnk:certificate.buy', '', [], false);
+```
+
+- Дополнительно доступен параметр только **время кеширования списка** (`CACHE_TIME` через настройку компонента или массив `IncludeComponent`; по умолчанию 3600).
+- Почтовое событие `CUSTOM_MAIL`: после успешной заявки в очередь ставится отправка через `Bitrix\Main\Mail\Event::send` по шаблону из `DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID`; у шаблона должна быть привязка к сайту.
 
 ## Документация для разработки
 

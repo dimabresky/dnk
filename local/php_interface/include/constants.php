@@ -78,6 +78,15 @@ define('DNK_CATALOG_IBLOCK_ID', $dnkEnvInt('DNK_CATALOG_IBLOCK_ID'));
 /** Инфоблок узкого промо-баннера в шапке (CODE dnk_header_promo). */
 define('DNK_HEADER_PROMO_IBLOCK_ID', $dnkEnvInt('DNK_HEADER_PROMO_IBLOCK_ID'));
 
+/** Заявки на покупку подарочных сертификатов (CODE dnk_certificate_requests). */
+define('DNK_CERTIFICATE_REQUEST_IBLOCK_ID', $dnkEnvInt('DNK_CERTIFICATE_REQUEST_IBLOCK_ID'));
+
+/** Инфоблок номинальных сертификатов (DETAIL_PICTURE, свойство NOMINAL). */
+define('DNK_CERTIFICATE_CATALOG_IBLOCK_ID', $dnkEnvInt('DNK_CERTIFICATE_CATALOG_IBLOCK_ID'));
+
+/** ID почтового шаблона (событие CUSTOM_MAIL): уведомление менеджера о новой заявке на сертификаты. */
+define('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID', $dnkEnvInt('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID'));
+
 /** URL (GET): полный список данных по бонусам. */
 define('DNK_BONUS_ENDPOINT', $dnkEnv('DNK_BONUS_ENDPOINT'));
 
