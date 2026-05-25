@@ -11,7 +11,7 @@
 - **Bitrix Framework** — стандартные модули, события, хуки и компоненты.
 - **Кастомная логика** — в основном в каталоге `local/`: PHP-интерфейс, классы, миграции.
 - **Вспомогательные методы** — централизованы в `local/php_interface/include/classes/Utils.php`.
-- **Бонусы** — при доработках учитывать модуль `bitrix/modules/aspro.bonus`.
+- **Бонусы** — при доработках учитывать модуль `bitrix/modules/aspro.bonus`. Массовый импорт остатков — из JSON в `upload/clientbonus` (агент `BonusFetchAgent`); подробности в [`local/BONUSES.md`](local/BONUSES.md).
 
 ## Структура (кратко)
 
@@ -28,6 +28,7 @@
 3. Настроить константы и интеграции в `local/php_interface/include/constants.php` и окружении под целевой сервер.
 4. **Сертификаты:** в `.env` указывается `DNK_CERTIFICATE_CATALOG_IBLOCK_ID` — ID инфоблока номинальных сертификатов (`NOMINAL`, `DETAIL_PICTURE`). Инфоблок заявок: из CLI — `php local/tools/install_certificate_requests_iblock.php` (ID из `.env`) или с аргументом `<ID>`; из браузера под администратором — `/local/tools/install_certificate_requests_iblock.php?run=Y[&cert_iblock_id=<ID>]` (`$GLOBALS['USER']->IsAdmin()`). Добавьте `DNK_CERTIFICATE_REQUEST_IBLOCK_ID` по выводу скрипта. Для создания заявок от гостей выдайте нужной группе право добавления элементов в ИБ заявок. Уведомление менеджера по почте: тип события `CUSTOM_MAIL`, в `.env` задайте `DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID` — ID строки нужного почтового шаблона (параметры письма `#IBLOCK_ID#`, `#ID#`, `#DETAIL_INFO#`).
 5. Каталог `upload/` и кэши ядра обычно не хранятся в репозитории — см. `.gitignore`.
+6. **Импорт бонусов:** в `.env` задайте `DNK_BONUS_CLIENT_IMPORT_DIR` (по умолчанию `upload/clientbonus`) и `DNK_BONUS_CLIENT_IMPORT_LOG_DIR` (`upload/clientbonus_logs`). Внешняя система кладёт JSON-массив объектов с полями `НачисленоОстаток` и `ПартнерНомерТелефона` (ключи — `DNK_BONUS_JSON_KEY_BALANCE`, `DNK_BONUS_JSON_KEY_PARTNER_PHONE`). Агент `\Dnk\PhpInterface\BonusFetchAgent::runBonusAgent()` сортирует файлы по имени, сопоставляет пользователей по телефону и синхронизирует баланс Aspro Bonus; после успешного разбора файл удаляется, ошибки — в логах каталога `clientbonus_logs`. Подробнее: [`local/BONUSES.md`](local/BONUSES.md).
 
 ## Компонент покупки сертификатов
 

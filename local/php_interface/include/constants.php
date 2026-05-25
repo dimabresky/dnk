@@ -135,6 +135,12 @@ define('DNK_BONUS_JSON_KEY_BALANCE', $dnkEnv('DNK_BONUS_JSON_KEY_BALANCE'));
 /** Ключ JSON: номер телефона партнёра (сопоставление при синхронизации по телефону). */
 define('DNK_BONUS_JSON_KEY_PARTNER_PHONE', $dnkEnv('DNK_BONUS_JSON_KEY_PARTNER_PHONE'));
 
+/** Каталог JSON-выгрузок остатков бонусов (относительно DOCUMENT_ROOT). */
+define('DNK_BONUS_CLIENT_IMPORT_DIR', $dnkEnv('DNK_BONUS_CLIENT_IMPORT_DIR'));
+
+/** Каталог логов импорта бонусов из файлов (относительно DOCUMENT_ROOT). */
+define('DNK_BONUS_CLIENT_IMPORT_LOG_DIR', $dnkEnv('DNK_BONUS_CLIENT_IMPORT_LOG_DIR'));
+
 /** URL (POST JSON): регистрация клиента после OnAfterUserRegister; пустая строка — отправка отключена. */
 define('DNK_USER_REGISTER_EXPORT_ENDPOINT', $dnkEnv('DNK_USER_REGISTER_EXPORT_ENDPOINT'));
 

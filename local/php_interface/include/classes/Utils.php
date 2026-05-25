@@ -90,6 +90,242 @@ final class Utils
     }
 
     /**
+     * Строка в лог импорта бонусов из файла (upload/clientbonus_logs/{basename}.log).
+     */
+    public static function logClientBonusImportLine(string $logDirRel, string $sourceBasename, string $message): void
+    {
+        $logDirRel = trim(str_replace('\\', '/', $logDirRel), '/');
+        if ($logDirRel === '') {
+            return;
+        }
+
+        $docRoot = rtrim(str_replace('\\', '/', (string)($_SERVER['DOCUMENT_ROOT'] ?? '')), '/');
+        if ($docRoot === '') {
+            return;
+        }
+
+        $logDir = $docRoot . '/' . $logDirRel;
+        if (!is_dir($logDir) && !\CheckDirPath($logDir . '/')) {
+            return;
+        }
+
+        $base = pathinfo($sourceBasename, PATHINFO_FILENAME);
+        if ($base === '') {
+            $base = 'import';
+        }
+
+        $line = date('Y-m-d H:i:s') . ' ' . $message . PHP_EOL;
+        file_put_contents($logDir . '/' . $base . '.log', $line, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * Абсолютный путь к каталогу относительно DOCUMENT_ROOT.
+     */
+    public static function resolveDocumentRootSubdir(string $relativePath): string
+    {
+        $relativePath = trim(str_replace('\\', '/', $relativePath), '/');
+        $docRoot = rtrim(str_replace('\\', '/', (string)($_SERVER['DOCUMENT_ROOT'] ?? '')), '/');
+
+        return $relativePath === '' ? $docRoot : $docRoot . '/' . $relativePath;
+    }
+
+    /**
+     * Поиск ID пользователя по телефону из JSON-выгрузки бонусов.
+     */
+    public static function findUserIdByBonusImportPhone(string $rawPhone): ?int
+    {
+        $resolved = self::resolveUserIdsByBonusImportPhones([$rawPhone]);
+
+        return $resolved['found'][self::normalizeBonusPhoneDigits($rawPhone)] ?? null;
+    }
+
+    /**
+     * Сопоставление телефонов из выгрузки с пользователями сайта.
+     *
+     * @param list<string> $rawPhones
+     * @return array{
+     *     found: array<string, int>,
+     *     not_found: list<string>,
+     *     ambiguous: list<string>
+     * }
+     */
+    public static function resolveUserIdsByBonusImportPhones(array $rawPhones): array
+    {
+        $digitsByRaw = [];
+        foreach ($rawPhones as $rawPhone) {
+            $digits = self::normalizeBonusPhoneDigits((string)$rawPhone);
+            if ($digits === '') {
+                continue;
+            }
+            $digitsByRaw[$digits] = (string)$rawPhone;
+        }
+
+        $uniqueDigits = array_keys($digitsByRaw);
+        if ($uniqueDigits === []) {
+            return [
+                'found' => [],
+                'not_found' => [],
+                'ambiguous' => [],
+            ];
+        }
+
+        $found = [];
+        $ambiguous = [];
+        $pending = array_fill_keys($uniqueDigits, true);
+
+        $variantToDigits = [];
+        foreach ($uniqueDigits as $digits) {
+            foreach (self::buildBonusImportPhoneAuthVariants($digitsByRaw[$digits]) as $variant) {
+                $variantToDigits[$variant][$digits] = true;
+            }
+        }
+
+        $variants = array_keys($variantToDigits);
+        foreach (array_chunk($variants, 500) as $variantChunk) {
+            $res = UserPhoneAuthTable::getList([
+                'filter' => ['@PHONE_NUMBER' => $variantChunk],
+                'select' => ['USER_ID', 'PHONE_NUMBER'],
+            ]);
+            while ($row = $res->fetch()) {
+                $phoneKey = (string)($row['PHONE_NUMBER'] ?? '');
+                if ($phoneKey === '' || !isset($variantToDigits[$phoneKey])) {
+                    continue;
+                }
+                $userId = (int)($row['USER_ID'] ?? 0);
+                if ($userId <= 0) {
+                    continue;
+                }
+                foreach (array_keys($variantToDigits[$phoneKey]) as $digits) {
+                    if (!isset($pending[$digits])) {
+                        continue;
+                    }
+                    if (isset($found[$digits]) && $found[$digits] !== $userId) {
+                        $ambiguous[$digits] = true;
+                        unset($found[$digits], $pending[$digits]);
+                        continue;
+                    }
+                    if (isset($ambiguous[$digits])) {
+                        continue;
+                    }
+                    $found[$digits] = $userId;
+                    unset($pending[$digits]);
+                }
+            }
+        }
+
+        $stillPending = array_keys($pending);
+        foreach ($stillPending as $digits) {
+            if (isset($ambiguous[$digits])) {
+                continue;
+            }
+
+            $userIds = self::findUserIdsByBonusPhoneDigitsFallback($digits);
+            if (count($userIds) > 1) {
+                $ambiguous[$digits] = true;
+                unset($found[$digits]);
+                continue;
+            }
+            if (count($userIds) === 1) {
+                $found[$digits] = $userIds[0];
+                unset($pending[$digits]);
+            }
+        }
+
+        $notFound = array_keys($pending);
+
+        return [
+            'found' => $found,
+            'not_found' => $notFound,
+            'ambiguous' => array_keys($ambiguous),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function buildBonusImportPhoneAuthVariants(string $rawPhone): array
+    {
+        $rawPhone = trim($rawPhone);
+        if ($rawPhone === '') {
+            return [];
+        }
+
+        $variants = [];
+        $addVariant = static function (string $value) use (&$variants): void {
+            $value = trim($value);
+            if ($value !== '') {
+                $variants[$value] = true;
+            }
+        };
+
+        try {
+            $addVariant(UserPhoneAuthTable::normalizePhoneNumber($rawPhone));
+        } catch (\Throwable) {
+        }
+
+        $digits = self::normalizeBonusPhoneDigits($rawPhone);
+        if ($digits !== '') {
+            $addVariant($digits);
+            if ($rawPhone[0] !== '+') {
+                try {
+                    $addVariant(UserPhoneAuthTable::normalizePhoneNumber('+' . $digits));
+                } catch (\Throwable) {
+                }
+            }
+        }
+
+        return array_keys($variants);
+    }
+
+    /**
+     * Fallback: PERSONAL_PHONE / WORK_PHONE с точным совпадением нормализованных цифр.
+     *
+     * @return list<int>
+     */
+    private static function findUserIdsByBonusPhoneDigitsFallback(string $digits): array
+    {
+        if ($digits === '') {
+            return [];
+        }
+
+        $candidates = [$digits, '+' . $digits];
+        try {
+            $normalized = UserPhoneAuthTable::normalizePhoneNumber('+' . $digits);
+            if ($normalized !== '') {
+                $candidates[] = $normalized;
+            }
+        } catch (\Throwable) {
+        }
+
+        $candidates = array_values(array_unique($candidates));
+        $filter = ['LOGIC' => 'OR'];
+        foreach ($candidates as $candidate) {
+            $filter[] = ['=PERSONAL_PHONE' => $candidate];
+            $filter[] = ['=WORK_PHONE' => $candidate];
+        }
+
+        $matched = [];
+        $res = UserTable::getList([
+            'filter' => $filter,
+            'select' => ['ID', 'PERSONAL_PHONE', 'WORK_PHONE'],
+        ]);
+        while ($row = $res->fetch()) {
+            $userId = (int)($row['ID'] ?? 0);
+            if ($userId <= 0) {
+                continue;
+            }
+            foreach (['PERSONAL_PHONE', 'WORK_PHONE'] as $field) {
+                $fieldDigits = self::normalizeBonusPhoneDigits((string)($row[$field] ?? ''));
+                if ($fieldDigits === $digits) {
+                    $matched[$userId] = true;
+                }
+            }
+        }
+
+        return array_keys($matched);
+    }
+
+    /**
      * Текущий бонусный баланс пользователя Aspro (aspro.bonus). 0 при выключенном модуле или неверном ID.
      */
     public static function getAsproBonusBalance(int $userId): float
