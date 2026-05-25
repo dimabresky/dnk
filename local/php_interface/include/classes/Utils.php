@@ -109,6 +109,8 @@ final class Utils
             return;
         }
 
+        self::ensureBonusImportLogDirHtaccess($logDir);
+
         $base = pathinfo($sourceBasename, PATHINFO_FILENAME);
         if ($base === '') {
             $base = 'import';
@@ -116,6 +118,19 @@ final class Utils
 
         $line = date('Y-m-d H:i:s') . ' ' . $message . PHP_EOL;
         file_put_contents($logDir . '/' . $base . '.log', $line, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * Запрет HTTP-доступа к каталогу логов импорта бонусов (Apache 2.2).
+     */
+    private static function ensureBonusImportLogDirHtaccess(string $logDir): void
+    {
+        $htaccessPath = rtrim($logDir, '/\\') . '/.htaccess';
+        if (is_file($htaccessPath)) {
+            return;
+        }
+
+        file_put_contents($htaccessPath, "deny from all\n");
     }
 
     /**
