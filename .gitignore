@@ -74,6 +74,10 @@
 # --- Auth ---
 /auth/
 
+# --- include ---
+/include/
+!/include/footer
+
 # --- IDE / OS ---
 .idea/
 .vscode/
