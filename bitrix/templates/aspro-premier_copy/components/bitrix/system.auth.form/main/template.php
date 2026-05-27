@@ -315,13 +315,18 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                                         $('#ajax_auth<?=$rand; ?>').parent().html(html);
                                                     }
                                                     else{
-                                                        const match = html.match(/location\.href\s*=\s*['"]([^'"]*)['"]/);
+                                                        <?php if($arParams['POPUP_AUTH'] !== 'Y' || $_POST['USER_REMEMBER'] !== 'Y'):?>
+                                                            const match = html.match(/location\.href\s*=\s*['"]([^'"]*)['"]/);
 
-                                                        if(match){
-                                                            location.href = match[1]
-                                                        }else{
-                                                            BX.reload(false);
-                                                        }
+                                                            if(match){
+                                                                location.href = match[1]
+                                                            }else{
+                                                                BX.reload(false);
+                                                            }
+                                                        <?php else:?>
+    
+                                                            location.href='/local/tools/auth_redirect.php';
+                                                        <?php endif?>
                                                     }
                                                 });
                                             }
