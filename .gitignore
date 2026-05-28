@@ -75,6 +75,9 @@
 # --- Auth ---
 /auth/
 
+# --- urlrewrite ---
+/urlrewrite.php
+
 # --- include ---
 /include/
 !/include/footer

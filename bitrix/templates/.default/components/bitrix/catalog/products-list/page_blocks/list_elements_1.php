@@ -96,7 +96,6 @@
 	$html = ob_get_clean();
 	$APPLICATION->AddViewContent('top_content', $html);
 	?>
-
 	<?ob_start();?>
 		<?if($arSeoItem["PREVIEW_PICTURE"]):?>
 			<div class="seo-block-main line-block line-block--48 line-block--24-1100 line-block--align-normal flexbox--direction-row-reverse">

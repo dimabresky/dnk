@@ -61,7 +61,7 @@ if ($arSectionFilter) {
 $typeSKU = '';
 $bSetElementsLineRow = false;
 
-if ($section) {
+/*if ($section) {
     $NextSectionID = $arSection['ID'] = $section['ID'];
     $arSection['NAME'] = $section['NAME'];
     $arSection['IBLOCK_SECTION_ID'] = $section['IBLOCK_SECTION_ID'];
@@ -209,8 +209,8 @@ if ($section) {
     }
 
     $itemsCnt = TSolution\Cache::CIBlockElement_GetList(['CACHE' => ['TAG' => TSolution\Cache::GetIBlockCacheTag($arParams['IBLOCK_ID'])]], TSolution::makeElementFilterInRegion($arElementFilter), []);
-}
-
+}*/
+$arElementFilter = isset($arParams['PRODUCTS_PREFILTER']) ? $arParams['PRODUCTS_PREFILTER'] : [];
 $bHideSideSectionBlock = ('Y' == $arParams['SHOW_SIDE_BLOCK_LAST_LEVEL'] && $iSectionsCount && 'N' == $arParams['INCLUDE_SUBSECTIONS']);
 if ($bHideSideSectionBlock) {
     $APPLICATION->SetPageProperty('MENU', 'N');
@@ -230,13 +230,13 @@ if (!$arParams['FILTER_VIEW']) {
 <div class="main-wrapper flexbox flexbox--direction-row" itemscope itemtype="https://schema.org/ProductCollection">
     <?(new TSolution\Scheme\CatalogSection($section))->show();?>
     <div class="section-content-wrapper <?= $bShowLeftBlock ? 'with-leftblock' : ''; ?> flex-1">
-        <?if (!$section) { ?>
+        <?/*if (!$section) { ?>
             <?Bitrix\Iblock\Component\Tools::process404(
                 '', 'Y' === $arParams['SET_STATUS_404'], 'Y' === $arParams['SET_STATUS_404'], 'Y' === $arParams['SHOW_404'], $arParams['FILE_404']
             ); ?>
-        <?}?>
+        <?}*/?>
 
-        <?if ($section) { ?>
+        <?//if ($section) { ?>
             <?php
             // seo
             $catalogInfoIblockId = $arParams['LANDING_IBLOCK_ID'];
@@ -326,11 +326,11 @@ if (!$arParams['FILTER_VIEW']) {
             </div>
             <?TSolution::checkBreadcrumbsChain($arParams, $arSection);?>
             <?$APPLICATION->AddHeadScript(SITE_TEMPLATE_PATH.'/js/jquery.history.js'); ?>
-        <?} else { ?>
+        <?/*} else { ?>
             <div class="alert alert-danger">
                 <?= $arParams['MESSAGE_404'] ?: Loc::getMessage('NOT_FOUNDED_SECTION'); ?>
             </div>
-        <?}?>
+        <?}*/?>
     </div>
     <?if ($bShowLeftBlock) { ?>
         <?TSolution::ShowPageType('left_block'); ?>

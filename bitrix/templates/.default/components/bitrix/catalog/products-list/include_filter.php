@@ -15,7 +15,8 @@ if (!isset($bSearchPage)) {
     }
 }
 
-if ('N' !== $arTheme['SHOW_SMARTFILTER']['VALUE'] && ($itemsCnt || isset($bSearchPage))) {
+$GLOBALS['preFilterCatalog'] = isset($arParams['PRODUCTS_PREFILTER']) ? $arParams['PRODUCTS_PREFILTER'] : [];
+if ('N' !== $arTheme['SHOW_SMARTFILTER']['VALUE']) {
     $GLOBALS['preFilterCatalog'] = TSolution\Regionality::mergeSmartPreFilterWithRegionFilter($GLOBALS['preFilterCatalog'] ?? []);
     
     TSolution\CacheableUrl::addSmartFilterNameParam($arParams['FILTER_NAME']);
