@@ -552,7 +552,7 @@
       '      <input type="radio" name="dnk_cert_delivery" value="courier" v-model="deliveryXmlId">' +
       '      <span>{{ msgs.deliveryCourier }}</span>' +
       '    </label>' +
-      '    <label class="dnk-cert-buy__inline dnk-cert-buy__inline--spaced">' +
+      '    <label v-if="pickupStores.length" class="dnk-cert-buy__inline dnk-cert-buy__inline--spaced">' +
       '      <input type="radio" name="dnk_cert_delivery" value="pickup" v-model="deliveryXmlId">' +
       '      <span>{{ msgs.deliveryPickup }}</span>' +
       '    </label>' +
@@ -920,12 +920,15 @@
       },
       mounted: function () {
         var self = this;
+        if (self.deliveryXmlId === DELIVERY_PICKUP && !self.pickupStores.length) {
+          self.deliveryXmlId = DELIVERY_COURIER;
+        }
         Vue.nextTick(function () {
           bootPhoneMask(qs(root, '.js-dnk-cert-phone'));
           setTimeout(function () {
             bootPhoneMask(qs(root, '.js-dnk-cert-phone'));
           }, 100);
-          if (self.deliveryXmlId === DELIVERY_PICKUP) {
+          if (self.deliveryXmlId === DELIVERY_PICKUP && self.pickupStores.length) {
             self.schedulePickupMapInit();
           }
         });
@@ -939,6 +942,10 @@
         },
         deliveryXmlId: function (nextVal) {
           if (nextVal === DELIVERY_PICKUP) {
+            if (!this.pickupStores.length) {
+              this.deliveryXmlId = DELIVERY_COURIER;
+              return;
+            }
             this.schedulePickupMapInit();
           } else {
             this.selectedPickupId = null;
