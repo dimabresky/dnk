@@ -874,13 +874,13 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             return ['lat' => null, 'lon' => null];
         }
 
-        $parts = array_map('trim', explode(',', $mapValue));
-        if (count($parts) < 2) {
+        // MAP в проекте: "широта,долгота" с точкой как десятичным разделителем (см. news/stores).
+        if (!preg_match('/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/u', $mapValue, $m)) {
             return ['lat' => null, 'lon' => null];
         }
 
-        $lat = (float)str_replace(',', '.', $parts[0]);
-        $lon = (float)str_replace(',', '.', $parts[1]);
+        $lat = (float)$m[1];
+        $lon = (float)$m[2];
         if ($lat < -90 || $lat > 90 || $lon < -180 || $lon > 180) {
             return ['lat' => null, 'lon' => null];
         }
