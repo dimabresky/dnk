@@ -105,6 +105,70 @@
     return out;
   }
 
+  /**
+   * Начальный центр и zoom по координатам точек (без захардкоженного города).
+   *
+   * @param {Array<{lat: number, lon: number}>} geoStores
+   * @return {{center: number[], zoom: number}|null}
+   */
+  function computePickupMapViewport(geoStores) {
+    if (!geoStores.length) {
+      return null;
+    }
+
+    if (geoStores.length === 1) {
+      return {
+        center: [geoStores[0].lat, geoStores[0].lon],
+        zoom: 15,
+      };
+    }
+
+    var minLat = geoStores[0].lat;
+    var maxLat = geoStores[0].lat;
+    var minLon = geoStores[0].lon;
+    var maxLon = geoStores[0].lon;
+
+    for (var i = 1; i < geoStores.length; i += 1) {
+      var s = geoStores[i];
+      minLat = Math.min(minLat, s.lat);
+      maxLat = Math.max(maxLat, s.lat);
+      minLon = Math.min(minLon, s.lon);
+      maxLon = Math.max(maxLon, s.lon);
+    }
+
+    return {
+      center: [(minLat + maxLat) / 2, (minLon + maxLon) / 2],
+      zoom: 11,
+    };
+  }
+
+  /**
+   * Подогнать карту так, чтобы были видны все метки.
+   *
+   * @param {object} map
+   * @param {number} geoCount
+   */
+  function fitPickupMapToStores(map, geoCount) {
+    if (!map || geoCount < 1) {
+      return;
+    }
+
+    if (geoCount === 1) {
+      return;
+    }
+
+    var bounds = map.geoObjects.getBounds();
+    if (!bounds) {
+      return;
+    }
+
+    map.setBounds(bounds, {
+      checkZoomRange: true,
+      zoomMargin: 48,
+      duration: 0,
+    });
+  }
+
   function destroyPickupMap() {
     pickupMapRuntime.placemarks = {};
     if (pickupMapRuntime.map) {
@@ -190,24 +254,22 @@
         destroyPickupMap();
 
         var geoStores = storesWithCoords(vm.pickupStores);
-        var center = [53.9, 27.56];
-        var zoom = 11;
-        if (geoStores.length === 1) {
-          center = [geoStores[0].lat, geoStores[0].lon];
-          zoom = 15;
-        } else if (geoStores.length > 1) {
-          var latSum = 0;
-          var lonSum = 0;
-          for (var c = 0; c < geoStores.length; c += 1) {
-            latSum += geoStores[c].lat;
-            lonSum += geoStores[c].lon;
-          }
-          center = [latSum / geoStores.length, lonSum / geoStores.length];
+        if (!geoStores.length) {
+          mapEl.innerHTML =
+            '<div class="dnk-cert-buy__pickup-map-fallback muted">' +
+            (vm.msgs.pickupMapUnavailable || '') +
+            '</div>';
+          return;
+        }
+
+        var viewport = computePickupMapViewport(geoStores);
+        if (!viewport) {
+          return;
         }
 
         pickupMapRuntime.map = new window.ymaps.Map(mapEl, {
-          center: center,
-          zoom: zoom,
+          center: viewport.center,
+          zoom: viewport.zoom,
           controls: ['zoomControl'],
         });
 
@@ -234,6 +296,7 @@
           })(geoStores[i]);
         }
 
+        fitPickupMapToStores(pickupMapRuntime.map, geoStores.length);
         vm.refreshPickupMapSelection();
       })
       .catch(function () {
