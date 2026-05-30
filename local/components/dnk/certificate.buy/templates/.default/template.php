@@ -17,6 +17,9 @@ $phoneVal = htmlspecialcharsbx((string)$profile['phone']);
 $catalogJson = '{}';
 $uiJson = '{}';
 $cartSessionJson = '{}';
+$pickupStoresJson = '[]';
+$yandexApiKey = '';
+
 if (!empty($arResult['ITEMS'])) {
     $catalogForJs = [];
     foreach ($arResult['ITEMS'] as $item) {
@@ -33,14 +36,32 @@ if (!empty($arResult['ITEMS'])) {
         'buy' => GetMessage('DNK_CERT_BUY_BTN_BUY'),
         'summaryTitle' => GetMessage('DNK_CERT_BUY_SUMMARY_TITLE'),
         'summaryTotal' => GetMessage('DNK_CERT_BUY_SUMMARY_TOTAL'),
+        'summaryDelivery' => GetMessage('DNK_CERT_BUY_SUMMARY_DELIVERY'),
+        'summaryPayment' => GetMessage('DNK_CERT_BUY_SUMMARY_PAYMENT'),
+        'summaryPickup' => GetMessage('DNK_CERT_BUY_SUMMARY_PICKUP'),
         'imgAltFallback' => GetMessage('DNK_CERT_BUY_IMG_ALT'),
         'qtyAria' => GetMessage('DNK_CERT_BUY_QTY'),
+        'deliveryTitle' => GetMessage('DNK_CERT_BUY_DELIVERY_TITLE'),
+        'deliveryCourier' => GetMessage('DNK_CERT_BUY_DELIVERY_COURIER'),
+        'deliveryPickup' => GetMessage('DNK_CERT_BUY_DELIVERY_PICKUP'),
+        'pickupTitle' => GetMessage('DNK_CERT_BUY_PICKUP_TITLE'),
+        'pickupEmpty' => GetMessage('DNK_CERT_BUY_PICKUP_EMPTY'),
+        'pickupMapUnavailable' => GetMessage('DNK_CERT_BUY_PICKUP_MAP_UNAVAILABLE'),
+        'pickupRequired' => GetMessage('DNK_CERT_BUY_PICKUP_REQUIRED'),
+        'payTitle' => GetMessage('DNK_CERT_BUY_PAY_TITLE'),
+        'payCod' => GetMessage('DNK_CERT_BUY_PAY_COD'),
     ], JSON_UNESCAPED_UNICODE));
 
     $cartSnap = isset($arResult['CART_SESSION']) && is_array($arResult['CART_SESSION']) ? $arResult['CART_SESSION'] : [];
     $cartSessionJson = $cartSnap !== []
         ? htmlspecialcharsbx(\Bitrix\Main\Web\Json::encode($cartSnap, JSON_UNESCAPED_UNICODE))
         : '{}';
+
+    $pickupStores = isset($arResult['PICKUP_STORES']) && is_array($arResult['PICKUP_STORES'])
+        ? $arResult['PICKUP_STORES']
+        : [];
+    $pickupStoresJson = htmlspecialcharsbx(\Bitrix\Main\Web\Json::encode($pickupStores, JSON_UNESCAPED_UNICODE));
+    $yandexApiKey = htmlspecialcharsbx((string)($arResult['YANDEX_MAP_API_KEY'] ?? ''));
 }
 ?>
 
@@ -55,23 +76,9 @@ if (!empty($arResult['ITEMS'])) {
             data-catalog="<?= $catalogJson; ?>"
             data-ui="<?= $uiJson; ?>"
             data-cart-session="<?= $cartSessionJson; ?>"
+            data-pickup-stores="<?= $pickupStoresJson; ?>"
+            data-yandex-api-key="<?= $yandexApiKey; ?>"
             data-max-qty="99"></div>
-
-        <div class="dnk-cert-buy__section">
-            <h3 class="dnk-cert-buy__section-title font_20"><?= GetMessage('DNK_CERT_BUY_DELIVERY_TITLE'); ?></h3>
-            <label class="dnk-cert-buy__inline">
-                <input type="radio" name="dnk_cert_delivery" value="courier" checked disabled>
-                <span><?= GetMessage('DNK_CERT_BUY_DELIVERY_COURIER'); ?></span>
-            </label>
-        </div>
-
-        <div class="dnk-cert-buy__section">
-            <h3 class="dnk-cert-buy__section-title font_20"><?= GetMessage('DNK_CERT_BUY_PAY_TITLE'); ?></h3>
-            <label class="dnk-cert-buy__inline">
-                <input type="radio" name="dnk_cert_payment" value="cash_on_delivery" checked disabled>
-                <span><?= GetMessage('DNK_CERT_BUY_PAY_COD'); ?></span>
-            </label>
-        </div>
 
         <div id="dnk-cert-buy-contact-anchor" class="dnk-cert-buy__checkout-contact">
             <h3 class="dnk-cert-buy__section-title font_20"><?= GetMessage('DNK_CERT_BUY_CONTACT_TITLE'); ?></h3>

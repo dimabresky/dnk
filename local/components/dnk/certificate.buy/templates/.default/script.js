@@ -3,15 +3,19 @@
 
   var TELEPORT_TO = '#dnk-cert-buy-summary-slot';
   var CONTACT_ANCHOR = 'dnk-cert-buy-contact-anchor';
+  var DELIVERY_COURIER = 'courier';
+  var DELIVERY_PICKUP = 'pickup';
+
+  var pickupMapRuntime = {
+    map: null,
+    placemarks: {},
+    initToken: 0,
+  };
 
   function qs(root, selector) {
     return root.querySelector(selector);
   }
 
-  /**
-   * Сообщения об успехе / ошибках валидации / ответе сервера над кнопкой оформления.
-   * @param {'success'|'error'} kind — при непустом message; если message пустой, kind игнорируется
-   */
   function submitFeedback(root, kind, message) {
     var el = qs(root, '[data-role="submit-feedback"]');
     if (!el) {
@@ -85,10 +89,162 @@
     }, 40);
   }
 
-  /** Единый числовой id элемента каталога (ключи quantities всегда number). */
   function coerceItemId(raw) {
     var n = parseInt(String(raw), 10);
     return isNaN(n) || n <= 0 ? null : n;
+  }
+
+  function storesWithCoords(stores) {
+    var out = [];
+    for (var i = 0; i < stores.length; i += 1) {
+      var s = stores[i];
+      if (s && s.lat != null && s.lon != null) {
+        out.push(s);
+      }
+    }
+    return out;
+  }
+
+  function destroyPickupMap() {
+    pickupMapRuntime.placemarks = {};
+    if (pickupMapRuntime.map) {
+      try {
+        pickupMapRuntime.map.destroy();
+      } catch (eDestroy) {
+        /* ignore */
+      }
+      pickupMapRuntime.map = null;
+    }
+    var mapEl = document.getElementById('dnk-cert-buy-pickup-map');
+    if (mapEl) {
+      mapEl.innerHTML = '';
+    }
+  }
+
+  function loadYandexMaps(apiKey) {
+    return new Promise(function (resolve, reject) {
+      if (!apiKey) {
+        reject(new Error('no api key'));
+        return;
+      }
+      if (typeof window.ymaps !== 'undefined' && window.ymaps.ready) {
+        window.ymaps.ready(resolve);
+        return;
+      }
+      var existing = document.querySelector('script[data-dnk-yandex-maps="1"]');
+      if (existing) {
+        existing.addEventListener('load', function () {
+          if (window.ymaps && window.ymaps.ready) {
+            window.ymaps.ready(resolve);
+          } else {
+            reject(new Error('ymaps failed'));
+          }
+        });
+        existing.addEventListener('error', reject);
+        return;
+      }
+      var script = document.createElement('script');
+      script.src =
+        'https://api-maps.yandex.ru/2.1/?apikey=' +
+        encodeURIComponent(apiKey) +
+        '&lang=ru_RU';
+      script.async = true;
+      script.dataset.dnkYandexMaps = '1';
+      script.onload = function () {
+        if (window.ymaps && window.ymaps.ready) {
+          window.ymaps.ready(resolve);
+        } else {
+          reject(new Error('ymaps failed'));
+        }
+      };
+      script.onerror = function () {
+        reject(new Error('ymaps load error'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  function initPickupMap(vm) {
+    var mapEl = document.getElementById('dnk-cert-buy-pickup-map');
+    if (!mapEl || !vm || vm.deliveryXmlId !== DELIVERY_PICKUP) {
+      return;
+    }
+
+    pickupMapRuntime.initToken += 1;
+    var token = pickupMapRuntime.initToken;
+
+    if (!vm.yandexApiKey) {
+      mapEl.innerHTML =
+        '<div class="dnk-cert-buy__pickup-map-fallback muted">' +
+        (vm.msgs.pickupMapUnavailable || '') +
+        '</div>';
+      return;
+    }
+
+    loadYandexMaps(vm.yandexApiKey)
+      .then(function () {
+        if (pickupMapRuntime.initToken !== token || vm.deliveryXmlId !== DELIVERY_PICKUP) {
+          return;
+        }
+
+        destroyPickupMap();
+
+        var geoStores = storesWithCoords(vm.pickupStores);
+        var center = [53.9, 27.56];
+        var zoom = 11;
+        if (geoStores.length === 1) {
+          center = [geoStores[0].lat, geoStores[0].lon];
+          zoom = 15;
+        } else if (geoStores.length > 1) {
+          var latSum = 0;
+          var lonSum = 0;
+          for (var c = 0; c < geoStores.length; c += 1) {
+            latSum += geoStores[c].lat;
+            lonSum += geoStores[c].lon;
+          }
+          center = [latSum / geoStores.length, lonSum / geoStores.length];
+        }
+
+        pickupMapRuntime.map = new window.ymaps.Map(mapEl, {
+          center: center,
+          zoom: zoom,
+          controls: ['zoomControl'],
+        });
+
+        pickupMapRuntime.placemarks = {};
+        for (var i = 0; i < geoStores.length; i += 1) {
+          (function (store) {
+            var placemark = new window.ymaps.Placemark(
+              [store.lat, store.lon],
+              {
+                balloonContentHeader: store.name || '',
+                balloonContentBody:
+                  (store.address ? store.address + '<br>' : '') +
+                  (store.phone ? store.phone : ''),
+              },
+              {
+                preset: 'islands#redDotIcon',
+              }
+            );
+            placemark.events.add('click', function () {
+              vm.selectPickupStore(store.id);
+            });
+            pickupMapRuntime.map.geoObjects.add(placemark);
+            pickupMapRuntime.placemarks[store.id] = placemark;
+          })(geoStores[i]);
+        }
+
+        vm.refreshPickupMapSelection();
+      })
+      .catch(function () {
+        if (pickupMapRuntime.initToken !== token) {
+          return;
+        }
+        mapEl.innerHTML =
+          '<div class="dnk-cert-buy__pickup-map-fallback muted">' +
+          (vm.msgs.pickupMapUnavailable || '') +
+          '</div>';
+      });
   }
 
   var cartPersistTimer = null;
@@ -101,7 +257,6 @@
     }
   }
 
-  /** Сохранить корзину в сессию (немедленно), для вызова перед submit без гонки с debounce. */
   function persistCartAjax(vm) {
     if (
       typeof BX === 'undefined' ||
@@ -122,7 +277,6 @@
     });
   }
 
-  /** Debounced синхронизация корзины с сессией при изменении количеств во Vue. */
   function scheduleCertCartPersist(vm) {
     if (
       typeof BX === 'undefined' ||
@@ -153,7 +307,6 @@
     if (!btn || !btn.addEventListener) {
       return;
     }
-    /** Не навешивать дважды (повтор BX.ready / кеш с повторным init). */
     if (btn.getAttribute('data-dnk-submit-bound') === '1') {
       return;
     }
@@ -187,7 +340,6 @@
         return;
       }
 
-      /** Актуальный экземпляр Vue на корне (не замыкание со старым vm). */
       var vmSubmit = root.__dnkCertBuyVue;
       var collect =
         vmSubmit &&
@@ -209,19 +361,39 @@
         return;
       }
 
+      var deliveryXmlId =
+        collect && collect.deliveryXmlId ? collect.deliveryXmlId : DELIVERY_COURIER;
+      var pickupStoreId =
+        collect && collect.selectedPickupId ? collect.selectedPickupId : null;
+
+      if (deliveryXmlId === DELIVERY_PICKUP && !pickupStoreId) {
+        submitFeedback(
+          root,
+          'error',
+          (collect && collect.msgs && collect.msgs.pickupRequired) ||
+            'Выберите пункт самовывоза.'
+        );
+        return;
+      }
+
       if (typeof BX === 'undefined' || !BX.ajax || !BX.ajax.runComponentAction) {
         submitFeedback(root, 'error', 'Не загружены скрипты Битрикс.');
         return;
       }
 
-      var payload = JSON.stringify({
+      var payloadObj = {
         items: items,
         contactName: contactName,
         contactPhone: contactPhone,
         comment: comment,
-        deliveryXmlId: 'courier',
+        deliveryXmlId: deliveryXmlId,
         paymentXmlId: 'cash_on_delivery',
-      });
+      };
+      if (deliveryXmlId === DELIVERY_PICKUP && pickupStoreId) {
+        payloadObj.pickupStoreId = pickupStoreId;
+      }
+
+      var payload = JSON.stringify(payloadObj);
 
       btn.disabled = true;
       clearCertCartPersistSchedule();
@@ -311,6 +483,47 @@
       '      <button type="button" class="btn btn-secondary dnk-cert-buy__card-buy" @click.prevent="scrollToCheckout" :disabled="qtyOf(item.id) < 1">{{ msgs.buy }}</button>' +
       '    </article>' +
       '  </div>' +
+      '  <div class="dnk-cert-buy__section">' +
+      '    <h3 class="dnk-cert-buy__section-title font_20">{{ msgs.deliveryTitle }}</h3>' +
+      '    <label class="dnk-cert-buy__inline">' +
+      '      <input type="radio" name="dnk_cert_delivery" value="courier" v-model="deliveryXmlId">' +
+      '      <span>{{ msgs.deliveryCourier }}</span>' +
+      '    </label>' +
+      '    <label class="dnk-cert-buy__inline dnk-cert-buy__inline--spaced">' +
+      '      <input type="radio" name="dnk_cert_delivery" value="pickup" v-model="deliveryXmlId">' +
+      '      <span>{{ msgs.deliveryPickup }}</span>' +
+      '    </label>' +
+      '  </div>' +
+      '  <div v-show="deliveryXmlId === \'pickup\'" id="dnk-cert-buy-pickup" class="dnk-cert-buy__section dnk-cert-buy__pickup">' +
+      '    <h3 class="dnk-cert-buy__section-title font_20">{{ msgs.pickupTitle }}</h3>' +
+      '    <p v-if="!pickupStores.length" class="muted">{{ msgs.pickupEmpty }}</p>' +
+      '    <div v-else class="dnk-cert-buy__pickup-layout">' +
+      '      <div class="dnk-cert-buy__pickup-list" role="list">' +
+      '        <button v-for="store in pickupStores" :key="store.id" type="button"' +
+      '          class="dnk-cert-buy__pickup-item"' +
+      '          :class="{ \'dnk-cert-buy__pickup-item--active\': selectedPickupId === store.id }"' +
+      '          role="listitem"' +
+      '          :data-pickup-id="store.id"' +
+      '          @click.prevent="selectPickupStore(store.id)">' +
+      '          <img v-if="store.picture" class="dnk-cert-buy__pickup-thumb" :src="store.picture" loading="lazy" width="80" height="80" :alt="store.name">' +
+      '          <div class="dnk-cert-buy__pickup-item-body">' +
+      '            <div class="dnk-cert-buy__pickup-name font_15">{{ store.name }}</div>' +
+      '            <div v-if="store.address" class="dnk-cert-buy__pickup-meta">{{ store.address }}</div>' +
+      '            <div v-if="store.phone" class="dnk-cert-buy__pickup-meta">{{ store.phone }}</div>' +
+      '            <div v-if="store.schedule" class="dnk-cert-buy__pickup-meta">{{ store.schedule }}</div>' +
+      '          </div>' +
+      '        </button>' +
+      '      </div>' +
+      '      <div id="dnk-cert-buy-pickup-map" class="dnk-cert-buy__pickup-map" aria-hidden="false"></div>' +
+      '    </div>' +
+      '  </div>' +
+      '  <div class="dnk-cert-buy__section">' +
+      '    <h3 class="dnk-cert-buy__section-title font_20">{{ msgs.payTitle }}</h3>' +
+      '    <label class="dnk-cert-buy__inline">' +
+      '      <input type="radio" name="dnk_cert_payment" value="cash_on_delivery" checked disabled>' +
+      '      <span>{{ msgs.payCod }}</span>' +
+      '    </label>' +
+      '  </div>' +
       '  <Teleport to="' +
       TELEPORT_TO +
       '">' +
@@ -320,6 +533,11 @@
       '        <div v-for="row in selectedLines" :key="row.id" class="dnk-cert-buy__summary-line" role="listitem">' +
       '          {{ summaryLineTitle(row.NAME) }} — {{ row.NOMINAL_FORMATTED }} \u00D7 {{ row.qty }} = {{ formatLineSum(row) }}' +
       '        </div>' +
+      '      </div>' +
+      '      <div class="dnk-cert-buy__summary-meta font_13">' +
+      '        <div>{{ msgs.summaryDelivery }}: <strong>{{ currentDeliveryLabel }}</strong></div>' +
+      '        <div>{{ msgs.summaryPayment }}: <strong>{{ msgs.payCod }}</strong></div>' +
+      '        <div v-if="deliveryXmlId === \'pickup\' && selectedPickupSummary">{{ msgs.summaryPickup }}: <strong>{{ selectedPickupSummary }}</strong></div>' +
       '      </div>' +
       '      <div class="dnk-cert-buy__summary-total font_15">{{ msgs.summaryTotal }}: <strong>{{ formatMoney(grandTotal) }}</strong></div>' +
       '    </div>' +
@@ -346,6 +564,9 @@
       imgAltFallback: '',
       qtyAria: '',
     };
+    var pickupStores = [];
+    var yandexApiKey = '';
+
     try {
       items = JSON.parse(mountEl.getAttribute('data-catalog') || '[]');
       if (!Array.isArray(items)) {
@@ -359,6 +580,19 @@
         return it.id !== null && it.id !== undefined;
       });
       Object.assign(msgs, JSON.parse(mountEl.getAttribute('data-ui') || '{}'));
+
+      pickupStores = JSON.parse(mountEl.getAttribute('data-pickup-stores') || '[]');
+      if (!Array.isArray(pickupStores)) {
+        pickupStores = [];
+      }
+      for (var ps = 0; ps < pickupStores.length; ps += 1) {
+        pickupStores[ps].id = coerceItemId(pickupStores[ps].id);
+      }
+      pickupStores = pickupStores.filter(function (st) {
+        return st.id !== null && st.id !== undefined;
+      });
+
+      yandexApiKey = String(mountEl.getAttribute('data-yandex-api-key') || '').trim();
     } catch (e) {
       console.error('[dnk-cert-buy]: неверный JSON каталога', e);
       return null;
@@ -404,6 +638,10 @@
           quantities: initialQty,
           msgs: msgs,
           maxQty: maxQty,
+          deliveryXmlId: DELIVERY_COURIER,
+          pickupStores: pickupStores,
+          selectedPickupId: null,
+          yandexApiKey: yandexApiKey,
         };
       },
       computed: {
@@ -428,6 +666,35 @@
           return this.selectedLines.reduce(function (acc, row) {
             return acc + row.NOMINAL * row.qty;
           }, 0);
+        },
+        currentDeliveryLabel: function () {
+          if (this.deliveryXmlId === DELIVERY_PICKUP) {
+            return this.msgs.deliveryPickup || '';
+          }
+          return this.msgs.deliveryCourier || '';
+        },
+        selectedPickupStore: function () {
+          var self = this;
+          if (!self.selectedPickupId) {
+            return null;
+          }
+          for (var i = 0; i < self.pickupStores.length; i += 1) {
+            if (self.pickupStores[i].id === self.selectedPickupId) {
+              return self.pickupStores[i];
+            }
+          }
+          return null;
+        },
+        selectedPickupSummary: function () {
+          var store = this.selectedPickupStore;
+          if (!store) {
+            return '';
+          }
+          var parts = [store.name || ''];
+          if (store.address) {
+            parts.push(store.address);
+          }
+          return parts.filter(Boolean).join(', ');
         },
       },
       methods: {
@@ -519,7 +786,6 @@
           });
           return out;
         },
-        /** Сброс выбора после успешной заявки (повтор без нового набора невозможен). */
         resetCertificateQuantities: function () {
           var empty = {};
           for (var i = 0; i < this.items.length; i += 1) {
@@ -529,14 +795,76 @@
             }
           }
           this.quantities = empty;
+          this.deliveryXmlId = DELIVERY_COURIER;
+          this.selectedPickupId = null;
+          destroyPickupMap();
+        },
+        selectPickupStore: function (id) {
+          var storeId = coerceItemId(id);
+          if (storeId === null) {
+            return;
+          }
+          this.selectedPickupId = storeId;
+          this.refreshPickupMapSelection();
+          var self = this;
+          Vue.nextTick(function () {
+            var row = document.querySelector(
+              '.dnk-cert-buy__pickup-item[data-pickup-id="' + storeId + '"]'
+            );
+            if (row && typeof row.scrollIntoView === 'function') {
+              row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            var store = self.selectedPickupStore;
+            if (
+              store &&
+              store.lat != null &&
+              store.lon != null &&
+              pickupMapRuntime.map &&
+              pickupMapRuntime.map.setCenter
+            ) {
+              pickupMapRuntime.map.setCenter([store.lat, store.lon], 15, { duration: 300 });
+              var pm = pickupMapRuntime.placemarks[storeId];
+              if (pm && pm.balloon && pm.balloon.open) {
+                pm.balloon.open();
+              }
+            }
+          });
+        },
+        refreshPickupMapSelection: function () {
+          var selected = this.selectedPickupId;
+          var keys = Object.keys(pickupMapRuntime.placemarks);
+          for (var i = 0; i < keys.length; i += 1) {
+            var id = parseInt(keys[i], 10);
+            var pm = pickupMapRuntime.placemarks[keys[i]];
+            if (!pm || !pm.options || !pm.options.set) {
+              continue;
+            }
+            pm.options.set(
+              'preset',
+              id === selected ? 'islands#redIcon' : 'islands#redDotIcon'
+            );
+          }
+        },
+        schedulePickupMapInit: function () {
+          var self = this;
+          destroyPickupMap();
+          Vue.nextTick(function () {
+            if (self.deliveryXmlId === DELIVERY_PICKUP) {
+              initPickupMap(self);
+            }
+          });
         },
       },
       mounted: function () {
+        var self = this;
         Vue.nextTick(function () {
           bootPhoneMask(qs(root, '.js-dnk-cert-phone'));
           setTimeout(function () {
             bootPhoneMask(qs(root, '.js-dnk-cert-phone'));
           }, 100);
+          if (self.deliveryXmlId === DELIVERY_PICKUP) {
+            self.schedulePickupMapInit();
+          }
         });
       },
       watch: {
@@ -545,6 +873,14 @@
           handler: function scheduleFromVue() {
             scheduleCertCartPersist(this);
           },
+        },
+        deliveryXmlId: function (nextVal) {
+          if (nextVal === DELIVERY_PICKUP) {
+            this.schedulePickupMapInit();
+          } else {
+            this.selectedPickupId = null;
+            destroyPickupMap();
+          }
         },
       },
       template: vueTemplate(),

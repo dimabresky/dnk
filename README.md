@@ -34,6 +34,7 @@
 
 - Компонент: `dnk:certificate.buy` (`local/components/dnk/certificate.buy/`).
 - Инфоблок каталога и инфоблок заявок задаются только в `.env` / `constants.php`: `DNK_CERTIFICATE_CATALOG_IBLOCK_ID`, `DNK_CERTIFICATE_REQUEST_IBLOCK_ID` — через параметры подключения не передаются.
+- Точки самовывоза: `DNK_PICKUP_STORES_IBLOCK_ID` (обычно `11`, активные элементы с `ADDRESS`, `PHONE`, `SCHEDULE`, `MAP`). В свойстве `DELIVERY` инфоблока заявок должно быть значение списка с XML_ID `pickup` («Самовывоз»); для новых установок — через `install_certificate_requests_iblock.php`, на существующем стенде — вручную в админке.
 - На странице вставьте:
 
 ```php

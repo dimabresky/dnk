@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Bitrix\Main\Application;
+use Bitrix\Main\Config\Option;
 use Bitrix\Main\Context;
 use Bitrix\Main\Mail\Event as MailEvent;
 use Bitrix\Main\Engine\Contract\Controllerable;
@@ -23,7 +24,8 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
 {
     private const PROP_NOMINAL = 'NOMINAL';
     private const PAYMENT_XML = 'cash_on_delivery';
-    private const DELIVERY_XML = 'courier';
+    private const DELIVERY_XML_COURIER = 'courier';
+    private const DELIVERY_XML_PICKUP = 'pickup';
     private const MAX_QTY = 99;
 
     /** Ключ в Bitrix-сессии: qty по element_id активных сертификатов (разрежающий массив). */
@@ -67,6 +69,11 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         return defined('DNK_CERTIFICATE_REQUEST_IBLOCK_ID') ? (int)DNK_CERTIFICATE_REQUEST_IBLOCK_ID : 0;
     }
 
+    private function resolvePickupStoresIblockId(): int
+    {
+        return defined('DNK_PICKUP_STORES_IBLOCK_ID') ? (int)DNK_PICKUP_STORES_IBLOCK_ID : 0;
+    }
+
     public function executeComponent()
     {
         if (!Loader::includeModule('iblock')) {
@@ -91,10 +98,12 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             return;
         }
 
+        $pickupIblockId = $this->resolvePickupStoresIblockId();
+
         $cacheTime = max(0, (int)$this->arParams['CACHE_TIME']);
 
         $cachePath = '/dnk/certificate.buy';
-        $cacheId = implode('_', [$certIblockId, LANGUAGE_ID]);
+        $cacheId = implode('_', [$certIblockId, $pickupIblockId, LANGUAGE_ID]);
 
         if ($cacheTime >= 1) {
             if ($this->startResultCache($cacheTime, $cacheId, $cachePath)) {
@@ -102,13 +111,22 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
 
                 $CACHE_MANAGER->StartTagCache($cachePath);
                 $CACHE_MANAGER->RegisterTag('iblock_id_' . $certIblockId);
+                if ($pickupIblockId > 0) {
+                    $CACHE_MANAGER->RegisterTag('iblock_id_' . $pickupIblockId);
+                }
                 $CACHE_MANAGER->EndTagCache();
 
                 $this->arResult['ITEMS'] = $this->loadCertificateItems($certIblockId);
+                $this->arResult['PICKUP_STORES'] = $pickupIblockId > 0
+                    ? $this->loadPickupStores($pickupIblockId)
+                    : [];
                 $this->endResultCache();
             }
         } else {
             $this->arResult['ITEMS'] = $this->loadCertificateItems($certIblockId);
+            $this->arResult['PICKUP_STORES'] = $pickupIblockId > 0
+                ? $this->loadPickupStores($pickupIblockId)
+                : [];
         }
 
         if (!isset($this->arResult['ITEMS'])) {
@@ -131,6 +149,12 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         );
 
         $this->arResult['PROFILE'] = $this->loadProfilePrefill();
+
+        if (!isset($this->arResult['PICKUP_STORES']) || !is_array($this->arResult['PICKUP_STORES'])) {
+            $this->arResult['PICKUP_STORES'] = [];
+        }
+
+        $this->arResult['YANDEX_MAP_API_KEY'] = (string)Option::get('fileman', 'yandex_map_api_key', '');
 
         $this->includeComponentTemplate();
     }
@@ -236,13 +260,26 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_CONTACT_PHONE')]];
         }
 
-        $deliveryXml = trim((string)($decoded['deliveryXmlId'] ?? self::DELIVERY_XML));
+        $deliveryXml = trim((string)($decoded['deliveryXmlId'] ?? self::DELIVERY_XML_COURIER));
         $paymentXml = trim((string)($decoded['paymentXmlId'] ?? self::PAYMENT_XML));
-        if ($deliveryXml !== self::DELIVERY_XML) {
-            $deliveryXml = self::DELIVERY_XML;
+        if (!in_array($deliveryXml, [self::DELIVERY_XML_COURIER, self::DELIVERY_XML_PICKUP], true)) {
+            $deliveryXml = self::DELIVERY_XML_COURIER;
         }
         if ($paymentXml !== self::PAYMENT_XML) {
             $paymentXml = self::PAYMENT_XML;
+        }
+
+        $pickupStoreId = (int)($decoded['pickupStoreId'] ?? 0);
+        $pickupPoint = null;
+        if ($deliveryXml === self::DELIVERY_XML_PICKUP) {
+            $pickupIblockId = $this->resolvePickupStoresIblockId();
+            if ($pickupIblockId <= 0 || $pickupStoreId <= 0) {
+                return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_PICKUP_STORE')]];
+            }
+            $pickupPoint = $this->loadPickupStoreById($pickupIblockId, $pickupStoreId);
+            if ($pickupPoint === null) {
+                return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_PICKUP_STORE')]];
+            }
         }
 
         $lines = [];
@@ -322,7 +359,7 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             ];
         }
 
-        $orderDetails = Utils::buildCertificateRequestOrderDetails([
+        $orderDetailsPayload = [
             'contactName' => $contactName,
             'contactPhone' => $contactPhone,
             'contactEmail' => $emailSnapshot,
@@ -331,7 +368,12 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             'lines' => $detailLines,
             'total' => $total,
             'comment' => $comment,
-        ]);
+        ];
+        if ($pickupPoint !== null) {
+            $orderDetailsPayload['pickupPoint'] = $pickupPoint;
+        }
+
+        $orderDetails = Utils::buildCertificateRequestOrderDetails($orderDetailsPayload);
 
         $elName = 'Заявка на сертификаты — ' . date('d.m.Y H:i');
 
@@ -708,5 +750,157 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         }
 
         return $names;
+    }
+
+    /**
+     * Активные точки самовывоза для фронтенда.
+     *
+     * @return list<array{
+     *     id: int,
+     *     name: string,
+     *     picture: string,
+     *     address: string,
+     *     phone: string,
+     *     schedule: string,
+     *     lat: float|null,
+     *     lon: float|null
+     * }>
+     */
+    private function loadPickupStores(int $iblockId): array
+    {
+        if ($iblockId <= 0) {
+            return [];
+        }
+
+        $stores = [];
+
+        $rs = CIBlockElement::GetList(
+            ['SORT' => 'ASC', 'NAME' => 'ASC'],
+            ['IBLOCK_ID' => $iblockId, 'ACTIVE' => 'Y'],
+            false,
+            false
+        );
+
+        while ($block = $rs->GetNextElement()) {
+            $fields = $block->GetFields();
+            $props = $block->GetProperties();
+            $coords = self::parseMapCoords((string)($props['MAP']['VALUE'] ?? ''));
+
+            $stores[] = [
+                'id' => (int)$fields['ID'],
+                'name' => trim((string)$fields['NAME']),
+                'picture' => $this->resizePreviewPicture((int)$fields['PREVIEW_PICTURE']),
+                'address' => self::normalizeIblockStringProperty($props['ADDRESS']['VALUE'] ?? ''),
+                'phone' => self::normalizeIblockStringProperty($props['PHONE']['VALUE'] ?? ''),
+                'schedule' => self::normalizeScheduleProperty($props['SCHEDULE'] ?? []),
+                'lat' => $coords['lat'],
+                'lon' => $coords['lon'],
+            ];
+        }
+
+        return $stores;
+    }
+
+    /**
+     * @return array{name: string, address: string, phone: string, schedule: string}|null
+     */
+    private function loadPickupStoreById(int $iblockId, int $elementId): ?array
+    {
+        if ($iblockId <= 0 || $elementId <= 0) {
+            return null;
+        }
+
+        $rs = CIBlockElement::GetList(
+            [],
+            ['IBLOCK_ID' => $iblockId, 'ID' => $elementId, 'ACTIVE' => 'Y'],
+            false,
+            false
+        );
+
+        if (!$block = $rs->GetNextElement()) {
+            return null;
+        }
+
+        $fields = $block->GetFields();
+        $props = $block->GetProperties();
+
+        return [
+            'name' => trim((string)$fields['NAME']),
+            'address' => self::normalizeIblockStringProperty($props['ADDRESS']['VALUE'] ?? ''),
+            'phone' => self::normalizeIblockStringProperty($props['PHONE']['VALUE'] ?? ''),
+            'schedule' => self::normalizeScheduleProperty($props['SCHEDULE'] ?? []),
+        ];
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private static function normalizeIblockStringProperty($value): string
+    {
+        if (is_array($value)) {
+            $first = reset($value);
+
+            return trim((string)($first !== false ? $first : ''));
+        }
+
+        return trim((string)$value);
+    }
+
+    /**
+     * @param array<string, mixed> $scheduleProp
+     */
+    private static function normalizeScheduleProperty(array $scheduleProp): string
+    {
+        $value = $scheduleProp['~VALUE'] ?? $scheduleProp['VALUE'] ?? '';
+        if (is_array($value)) {
+            $text = (string)($value['TEXT'] ?? '');
+            if ($text !== '') {
+                return trim(strip_tags($text));
+            }
+
+            return '';
+        }
+
+        return trim(strip_tags((string)$value));
+    }
+
+    /**
+     * @return array{lat: float|null, lon: float|null}
+     */
+    private static function parseMapCoords(string $mapValue): array
+    {
+        $mapValue = trim($mapValue);
+        if ($mapValue === '') {
+            return ['lat' => null, 'lon' => null];
+        }
+
+        $parts = array_map('trim', explode(',', $mapValue));
+        if (count($parts) < 2) {
+            return ['lat' => null, 'lon' => null];
+        }
+
+        $lat = (float)str_replace(',', '.', $parts[0]);
+        $lon = (float)str_replace(',', '.', $parts[1]);
+        if ($lat < -90 || $lat > 90 || $lon < -180 || $lon > 180) {
+            return ['lat' => null, 'lon' => null];
+        }
+
+        return ['lat' => $lat, 'lon' => $lon];
+    }
+
+    private function resizePreviewPicture(int $fileId): string
+    {
+        if ($fileId <= 0) {
+            return '';
+        }
+
+        $resized = \CFile::ResizeImageGet(
+            $fileId,
+            ['width' => 80, 'height' => 80],
+            BX_RESIZE_IMAGE_PROPORTIONAL,
+            true
+        );
+
+        return is_array($resized) ? (string)($resized['src'] ?? '') : '';
     }
 }
