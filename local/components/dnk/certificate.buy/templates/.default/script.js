@@ -12,6 +12,12 @@
     initToken: 0,
   };
 
+  /** @type {{promise: Promise<void>|null, status: 'idle'|'pending'|'ok'|'error'}} */
+  var yandexMapsLoader = {
+    promise: null,
+    status: 'idle',
+  };
+
   function qs(root, selector) {
     return root.querySelector(selector);
   }
@@ -186,46 +192,93 @@
   }
 
   function loadYandexMaps(apiKey) {
-    return new Promise(function (resolve, reject) {
-      if (!apiKey) {
-        reject(new Error('no api key'));
-        return;
-      }
-      if (typeof window.ymaps !== 'undefined' && window.ymaps.ready) {
+    if (!apiKey) {
+      return Promise.reject(new Error('no api key'));
+    }
+
+    if (typeof window.ymaps !== 'undefined' && window.ymaps.ready) {
+      return new Promise(function (resolve) {
         window.ymaps.ready(resolve);
-        return;
-      }
-      var existing = document.querySelector('script[data-dnk-yandex-maps="1"]');
-      if (existing) {
-        existing.addEventListener('load', function () {
-          if (window.ymaps && window.ymaps.ready) {
-            window.ymaps.ready(resolve);
-          } else {
-            reject(new Error('ymaps failed'));
-          }
-        });
-        existing.addEventListener('error', reject);
-        return;
-      }
-      var script = document.createElement('script');
-      script.src =
-        'https://api-maps.yandex.ru/2.1/?apikey=' +
-        encodeURIComponent(apiKey) +
-        '&lang=ru_RU';
-      script.async = true;
-      script.dataset.dnkYandexMaps = '1';
-      script.onload = function () {
-        if (window.ymaps && window.ymaps.ready) {
-          window.ymaps.ready(resolve);
-        } else {
-          reject(new Error('ymaps failed'));
+      });
+    }
+
+    if (yandexMapsLoader.status === 'error') {
+      return Promise.reject(new Error('ymaps load error'));
+    }
+
+    if (yandexMapsLoader.promise) {
+      return yandexMapsLoader.promise;
+    }
+
+    yandexMapsLoader.status = 'pending';
+    yandexMapsLoader.promise = new Promise(function (resolve, reject) {
+      var markFailed = function () {
+        var failedScript = document.querySelector('script[data-dnk-yandex-maps="1"]');
+        if (failedScript) {
+          failedScript.dataset.dnkYandexMapsFailed = '1';
         }
       };
-      script.onerror = function () {
-        reject(new Error('ymaps load error'));
+
+      var failLoad = function (err) {
+        yandexMapsLoader.status = 'error';
+        yandexMapsLoader.promise = null;
+        markFailed();
+        reject(err || new Error('ymaps load error'));
       };
-      document.head.appendChild(script);
+
+      var succeedLoad = function () {
+        if (window.ymaps && window.ymaps.ready) {
+          window.ymaps.ready(function () {
+            yandexMapsLoader.status = 'ok';
+            resolve();
+          });
+        } else {
+          failLoad(new Error('ymaps failed'));
+        }
+      };
+
+      var script = document.querySelector('script[data-dnk-yandex-maps="1"]');
+      if (script && script.dataset.dnkYandexMapsFailed === '1') {
+        failLoad(new Error('ymaps load error'));
+        return;
+      }
+
+      if (script && typeof window.ymaps !== 'undefined' && window.ymaps.ready) {
+        succeedLoad();
+        return;
+      }
+
+      if (
+        script &&
+        (script.readyState === 'complete' || script.readyState === 'loaded') &&
+        (typeof window.ymaps === 'undefined' || !window.ymaps.ready)
+      ) {
+        failLoad(new Error('ymaps load error'));
+        return;
+      }
+
+      if (!script) {
+        script = document.createElement('script');
+        script.src =
+          'https://api-maps.yandex.ru/2.1/?apikey=' +
+          encodeURIComponent(apiKey) +
+          '&lang=ru_RU';
+        script.async = true;
+        script.dataset.dnkYandexMaps = '1';
+        document.head.appendChild(script);
+      }
+
+      script.addEventListener('load', succeedLoad, { once: true });
+      script.addEventListener(
+        'error',
+        function () {
+          failLoad(new Error('ymaps load error'));
+        },
+        { once: true }
+      );
     });
+
+    return yandexMapsLoader.promise;
   }
 
   function initPickupMap(vm) {
