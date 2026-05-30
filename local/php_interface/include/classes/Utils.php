@@ -1242,7 +1242,8 @@ final class Utils
      *     paymentLabel: string,
      *     lines: list<array{name: string, nominal: float, qty: int, lineSum: float}>,
      *     total: float,
-     *     comment?: string
+     *     comment?: string,
+     *     pickupPoint?: array{name: string, address?: string, phone?: string, schedule?: string}
      * } $data
      * @return array{plain: string, html: string}
      */
@@ -1288,8 +1289,27 @@ final class Utils
             $plain .= 'E-mail: ' . $email . "\n";
         }
         $plain .= "\nДоставка: " . $delivery . "\n";
-        $plain .= 'Оплата: ' . $payment . "\n\n";
-        $plain .= "Состав заказа\n";
+        $plain .= 'Оплата: ' . $payment . "\n";
+
+        $pickupPoint = isset($data['pickupPoint']) && is_array($data['pickupPoint']) ? $data['pickupPoint'] : null;
+        if ($pickupPoint !== null && trim((string)($pickupPoint['name'] ?? '')) !== '') {
+            $plain .= "\nПункт самовывоза\n";
+            $plain .= 'Название: ' . trim((string)$pickupPoint['name']) . "\n";
+            $pickupAddress = trim((string)($pickupPoint['address'] ?? ''));
+            if ($pickupAddress !== '') {
+                $plain .= 'Адрес: ' . $pickupAddress . "\n";
+            }
+            $pickupPhone = trim((string)($pickupPoint['phone'] ?? ''));
+            if ($pickupPhone !== '') {
+                $plain .= 'Телефон: ' . $pickupPhone . "\n";
+            }
+            $pickupSchedule = trim((string)($pickupPoint['schedule'] ?? ''));
+            if ($pickupSchedule !== '') {
+                $plain .= 'Режим работы: ' . $pickupSchedule . "\n";
+            }
+        }
+
+        $plain .= "\nСостав заказа\n";
         $plain .= implode("\n", $plainLines);
         $plain .= "\n\nИтого: " . self::formatCertificateMoneyAmount($total);
         if ($comment !== '') {
@@ -1304,8 +1324,27 @@ final class Utils
         }
         $html .= '</p>'
             . '<p><strong>Доставка</strong><br>' . self::escapeHtmlForCertificateEmail($delivery) . '</p>'
-            . '<p><strong>Оплата</strong><br>' . self::escapeHtmlForCertificateEmail($payment) . '</p>'
-            . '<p><strong>Состав заказа</strong></p>'
+            . '<p><strong>Оплата</strong><br>' . self::escapeHtmlForCertificateEmail($payment) . '</p>';
+
+        if ($pickupPoint !== null && trim((string)($pickupPoint['name'] ?? '')) !== '') {
+            $html .= '<p><strong>Пункт самовывоза</strong><br>'
+                . self::escapeHtmlForCertificateEmail('Название: ' . trim((string)$pickupPoint['name']));
+            $pickupAddressHtml = trim((string)($pickupPoint['address'] ?? ''));
+            if ($pickupAddressHtml !== '') {
+                $html .= '<br>' . self::escapeHtmlForCertificateEmail('Адрес: ' . $pickupAddressHtml);
+            }
+            $pickupPhoneHtml = trim((string)($pickupPoint['phone'] ?? ''));
+            if ($pickupPhoneHtml !== '') {
+                $html .= '<br>' . self::escapeHtmlForCertificateEmail('Телефон: ' . $pickupPhoneHtml);
+            }
+            $pickupScheduleHtml = trim((string)($pickupPoint['schedule'] ?? ''));
+            if ($pickupScheduleHtml !== '') {
+                $html .= '<br>' . self::escapeHtmlForCertificateEmail('Режим работы: ' . $pickupScheduleHtml);
+            }
+            $html .= '</p>';
+        }
+
+        $html .= '<p><strong>Состав заказа</strong></p>'
             . '<ul>' . implode('', $htmlLi) . '</ul>'
             . '<p><strong>Итого</strong>: ' . self::escapeHtmlForCertificateEmail(self::formatCertificateMoneyAmount($total)) . '</p>';
         if ($comment !== '') {

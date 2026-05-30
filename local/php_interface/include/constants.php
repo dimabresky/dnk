@@ -84,6 +84,9 @@ define('DNK_CERTIFICATE_REQUEST_IBLOCK_ID', $dnkEnvInt('DNK_CERTIFICATE_REQUEST_
 /** Инфоблок номинальных сертификатов (DETAIL_PICTURE, свойство NOMINAL). */
 define('DNK_CERTIFICATE_CATALOG_IBLOCK_ID', $dnkEnvInt('DNK_CERTIFICATE_CATALOG_IBLOCK_ID'));
 
+/** Инфоблок точек самовывоза (магазины: ADDRESS, PHONE, SCHEDULE, MAP). */
+define('DNK_PICKUP_STORES_IBLOCK_ID', $dnkEnvInt('DNK_PICKUP_STORES_IBLOCK_ID'));
+
 /** ID почтового шаблона (событие CUSTOM_MAIL): уведомление менеджера о новой заявке на сертификаты. */
 define('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID', $dnkEnvInt('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID'));
 

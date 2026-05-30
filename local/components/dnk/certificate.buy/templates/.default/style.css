@@ -207,6 +207,113 @@
   margin: 0;
 }
 
+.dnk-cert-buy__inline--spaced {
+  margin-top: 8px;
+}
+
+.dnk-cert-buy__pickup-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.dnk-cert-buy__pickup-list {
+  flex: 1 1 280px;
+  min-width: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dnk-cert-buy__pickup-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--stroke_black, #e5e5e5);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--card_bg_black, #fff);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dnk-cert-buy__pickup-item:hover,
+.dnk-cert-buy__pickup-item:focus {
+  border-color: color-mix(in srgb, var(--theme-base-color) 55%, var(--stroke_black, #e5e5e5));
+  outline: none;
+}
+
+.dnk-cert-buy__pickup-item--active {
+  border-color: var(--theme-base-color);
+  box-shadow: 0 0 0 1px var(--theme-base-color);
+}
+
+.dnk-cert-buy__pickup-thumb {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.dnk-cert-buy__pickup-item-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dnk-cert-buy__pickup-name {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.dnk-cert-buy__pickup-meta {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--lite_basic_text_black, #666);
+}
+
+.dnk-cert-buy__pickup-map {
+  flex: 1 1 360px;
+  min-width: 240px;
+  min-height: 360px;
+  border: 1px solid var(--stroke_black, #e5e5e5);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f6f6f6;
+}
+
+.dnk-cert-buy__pickup-map-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  padding: 16px;
+  text-align: center;
+}
+
+.dnk-cert-buy__summary-meta {
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (max-width: 991px) {
+  .dnk-cert-buy__pickup-list {
+    max-height: none;
+  }
+
+  .dnk-cert-buy__pickup-map {
+    flex: 1 1 100%;
+    min-height: 280px;
+  }
+}
+
 .dnk-cert-buy__form-row {
   display: flex;
   flex-wrap: wrap;

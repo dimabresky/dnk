@@ -151,6 +151,29 @@ if ($exists) {
     $dnkCiOut("Set .env DNK_CERTIFICATE_REQUEST_IBLOCK_ID={$iblockId}\n");
     $dnkCiOut("Ensure .env DNK_CERTIFICATE_CATALOG_IBLOCK_ID={$catalogIblockArg}\n");
 
+    $deliveryProp = CIBlockProperty::GetList([], ['IBLOCK_ID' => $iblockId, 'CODE' => 'DELIVERY'])->Fetch();
+    if (is_array($deliveryProp) && (int)$deliveryProp['ID'] > 0) {
+        $propId = (int)$deliveryProp['ID'];
+        $pickupEnum = CIBlockPropertyEnum::GetList([], ['PROPERTY_ID' => $propId, 'XML_ID' => 'pickup'])->Fetch();
+        if (!is_array($pickupEnum)) {
+            $enum = new CIBlockPropertyEnum();
+            $enumId = $enum->Add([
+                'PROPERTY_ID' => $propId,
+                'VALUE' => 'Самовывоз',
+                'XML_ID' => 'pickup',
+                'DEF' => 'N',
+                'SORT' => 200,
+            ]);
+            if ($enumId) {
+                $dnkCiOut("Added DELIVERY enum pickup (ID={$enumId}).\n");
+            } else {
+                $dnkCiErr("Failed to add DELIVERY enum pickup. Add manually in admin.\n");
+            }
+        } else {
+            $dnkCiOut("DELIVERY enum pickup already exists.\n");
+        }
+    }
+
     $dnkCiFinish();
 
     exit(0);
@@ -293,7 +316,10 @@ $fatal = static function (string $msg) use ($dnkCiErr, $dnkCiFinish): void {
 };
 
 $installer = new CIBlockProperty();
-$addList($installer, $iblockId, 'DELIVERY', 'Способ доставки', 200, ['courier' => 'Доставка курьером'], $fatal);
+$addList($installer, $iblockId, 'DELIVERY', 'Способ доставки', 200, [
+    'courier' => 'Доставка курьером',
+    'pickup' => 'Самовывоз',
+], $fatal);
 $addList($installer, $iblockId, 'PAYMENT', 'Способ оплаты', 210, ['cash_on_delivery' => 'Оплата при получении'], $fatal);
 
 $pUserNum = [
@@ -347,6 +373,7 @@ $dnkCiOut("Created iblock dnk_certificate_requests ID={$iblockId}\n");
 $dnkCiOut("Set .env variable: DNK_CERTIFICATE_REQUEST_IBLOCK_ID={$iblockId}\n");
 $dnkCiOut("Ensure .env has DNK_CERTIFICATE_CATALOG_IBLOCK_ID={$catalogIblockArg}.\n");
 $dnkCiOut('Grant ADD rights on this iblock to guests/anonymous users if anonymous certificate requests are required.' . "\n");
+$dnkCiOut('On existing installs: ensure DELIVERY list has enum XML_ID=pickup (caption: Samovyvoz).' . "\n");
 
 $dnkCiFinish();
 
