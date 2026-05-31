@@ -83,7 +83,9 @@
 !/include/footer/
 !/include/footer/**
 !/include/blocks/
+/include/blocks/*
 !/include/blocks/consent/
+/include/blocks/consent/*
 !/include/blocks/consent/dnk/
 !/include/blocks/consent/dnk/**
 
