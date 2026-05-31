@@ -2,6 +2,7 @@
 
 namespace Dnk\PhpInterface;
 
+use Bitrix\Main\Event;
 use Bitrix\Main\EventResult;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\UserTable;
@@ -37,6 +38,25 @@ final class UserConsentEvents
         ];
 
         return new EventResult(EventResult::SUCCESS, $providers);
+    }
+
+    /**
+     * После записи согласия в b_user_consent — снять отзыв, если это повторное принятие.
+     */
+    public static function onConsentAfterAdd(Event $event): void
+    {
+        $fields = $event->getParameter('fields');
+        if (!is_array($fields)) {
+            return;
+        }
+
+        $userId = (int)($fields['USER_ID'] ?? 0);
+        $agreementId = (int)($fields['AGREEMENT_ID'] ?? 0);
+        if ($userId <= 0 || $agreementId <= 0) {
+            return;
+        }
+
+        UserConsentService::clearRevokeIfReconsented($userId, $agreementId);
     }
 
     /**

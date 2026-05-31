@@ -110,7 +110,49 @@ final class UserConsentService
     }
 
     /**
-     * Снять отзыв после повторного принятия согласия на форме.
+     * Снять отзыв, если после него зафиксировано новое согласие в b_user_consent.
+     */
+    public static function clearRevokeIfReconsented(int $userId, int $agreementId): bool
+    {
+        if ($userId <= 0 || $agreementId <= 0) {
+            return false;
+        }
+
+        $revokeRow = UserConsentRevokeTable::getList([
+            'filter' => [
+                '=USER_ID' => $userId,
+                '=AGREEMENT_ID' => $agreementId,
+            ],
+            'select' => ['ID', 'DATE_REVOKE'],
+            'limit' => 1,
+        ])->fetch();
+
+        if (!$revokeRow) {
+            return true;
+        }
+
+        $latestConsent = ConsentTable::getList([
+            'filter' => [
+                '=USER_ID' => $userId,
+                '=AGREEMENT_ID' => $agreementId,
+            ],
+            'select' => ['ID', 'DATE_INSERT'],
+            'order' => ['DATE_INSERT' => 'DESC'],
+            'limit' => 1,
+        ])->fetch();
+
+        if (
+            !$latestConsent
+            || $latestConsent['DATE_INSERT'] <= $revokeRow['DATE_REVOKE']
+        ) {
+            return false;
+        }
+
+        return UserConsentRevokeTable::delete((int)$revokeRow['ID'])->isSuccess();
+    }
+
+    /**
+     * Снять отзыв после повторного принятия согласия (AJAX restore).
      */
     public static function restoreAfterAccept(int $userId, int $agreementId): bool
     {
@@ -118,21 +160,12 @@ final class UserConsentService
             return false;
         }
 
-        $row = UserConsentRevokeTable::getList([
-            'filter' => [
-                '=USER_ID' => $userId,
-                '=AGREEMENT_ID' => $agreementId,
-            ],
-            'select' => ['ID'],
-            'limit' => 1,
-        ])->fetch();
-
-        if (!$row) {
+        $hadRevoke = self::isRevoked($userId, $agreementId);
+        if (!$hadRevoke) {
             return true;
         }
 
-        $deleteResult = UserConsentRevokeTable::delete((int)$row['ID']);
-        if (!$deleteResult->isSuccess()) {
+        if (!self::clearRevokeIfReconsented($userId, $agreementId)) {
             return false;
         }
 

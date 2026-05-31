@@ -494,6 +494,9 @@
       BX.onCustomEvent(this, this.events.save, [item, data]);
 
       if (item.saved || !item.config.autoSave) {
+        if (item.inputNode.checked) {
+          this.restoreDnkRevoke(item);
+        }
         if (callback) {
           callback.apply(this, []);
         }
