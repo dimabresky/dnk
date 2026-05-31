@@ -13,6 +13,7 @@ ob_start();
 include dirname(__DIR__) . '/votes_review_consent.php';
 $consentHtml = ob_get_clean();
 
+ob_start();
 $cnt = $APPLICATION->IncludeComponent(
 	"aspro:vote.products.premier",
 	"",
