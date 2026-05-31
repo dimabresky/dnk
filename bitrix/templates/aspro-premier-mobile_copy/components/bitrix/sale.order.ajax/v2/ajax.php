@@ -47,8 +47,9 @@ function getPropsByFilter($array, $field, $value){
 
 $arUserProps = getPropsByFilter($arProps['properties'], 'USER_PROPS', 'Y');
 
-$profileNameProp = getPropsByFilter($arUserProps, 'IS_PROFILE_NAME', 'Y')[0];
-$profileName = $profileNameProp ? $arPost['ORDER_PROP_'.$profileNameProp['ID']] : '';
+$profileNameProps = getPropsByFilter($arUserProps, 'IS_PROFILE_NAME', 'Y');
+$profileNameProp = $profileNameProps ? reset($profileNameProps) : null;
+$profileName = $profileNameProp ? ($arPost['ORDER_PROP_'.$profileNameProp['ID']] ?? '') : '';
 
 
 $arFields = array(

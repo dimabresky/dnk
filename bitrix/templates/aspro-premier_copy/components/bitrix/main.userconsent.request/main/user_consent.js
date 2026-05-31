@@ -29,6 +29,7 @@
     attributeControl: "data-bx-user-consent",
     items: [],
     queue: 0,
+    hideEventInited: false,
     load: function (context) {
       var item = this.find(context)[0];
       if (!item) {
@@ -72,19 +73,30 @@
       if (item.config.submitEventName) {
         BX.addCustomEvent(item.config.submitEventName, this.onSubmit.bind(this, item));
       } else if (item.formNode) {
-        BX.bind(item.formNode, "submit", this.onSubmit.bind(this, item));
+        var formItems = BX.data(item.formNode, "userConsentItems");
+        if (!formItems) {
+          formItems = [];
+          BX.data(item.formNode, "userConsentItems", formItems);
+          BX.bind(item.formNode, "submit", BX.proxy(this.onFormSubmit, this));
+        }
+        if (formItems.indexOf(item) === -1) {
+          formItems.push(item);
+        }
       }
 
       BX.bind(item.controlNode, "click", this.onClick.bind(this, item));
       item.controlNode.classList.add("consent-inited");
 
-      BX.addCustomEvent("onUserConsentHide", () => {
-        if (this.popup.nodes.container) {
-          this.popup.hide();
+      if (!this.hideEventInited) {
+        this.hideEventInited = true;
+        BX.addCustomEvent("onUserConsentHide", () => {
+          if (this.popup.nodes.container) {
+            this.popup.hide();
 
-          BX.UserConsent.queue = 0;
-        }
-      });
+            BX.UserConsent.queue = 0;
+          }
+        });
+      }
     },
     createItem: function (context, controlNode) {
       var inputNode = controlNode.querySelector('input[type="checkbox"]');
@@ -144,6 +156,25 @@
 
         return false;
       }
+    },
+    onFormSubmit: function (e) {
+      var formNode = e.currentTarget || e.target;
+      var items = BX.data(formNode, "userConsentItems") || [];
+
+      this.isFormSubmitted = true;
+
+      for (var i = 0; i < items.length; i++) {
+        BX.UserConsent.queue = 1;
+        if (!this.check(items[i])) {
+          e.preventDefault();
+          this.isFormSubmitted = false;
+          BX.UserConsent.queue = 0;
+          return false;
+        }
+      }
+
+      BX.UserConsent.queue = 0;
+      return true;
     },
     check: function (item) {
       if (BX.UserConsent.queue > 1) {
