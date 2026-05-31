@@ -54,7 +54,7 @@ $bChangePassword = ($_REQUEST['type'] ?? '') === 'pass';
                     <?if($showLicenses):?>
                         <?
                             TSolution\Functions::showBlockHtml([
-                                'FILE' => 'consent/userconsent.php',
+                                'FILE' => 'consent/dnk/userconsent.php',
                                 'PARAMS' => [
                                     'OPTION_CODE' => 'AGREEMENT_SUBSCRIBE',
                                     'SUBMIT_TEXT' => Loc::getMessage('main_profile_send'),
@@ -297,7 +297,7 @@ $bChangePassword = ($_REQUEST['type'] ?? '') === 'pass';
                     <?if($showLicenses):?>
                         <?
                             TSolution\Functions::showBlockHtml([
-                                'FILE' => 'consent/userconsent.php',
+                                'FILE' => 'consent/dnk/userconsent.php',
                                 'PARAMS' => [
                                     'OPTION_CODE' => 'AGREEMENT_SUBSCRIBE',
                                     'SUBMIT_TEXT' => $submitText,

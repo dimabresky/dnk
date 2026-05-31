@@ -13,6 +13,9 @@ use Dnk\PhpInterface\OrderExportQueueAgent;
 use Dnk\PhpInterface\OrderExportQueueTable;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\UserRegisterExportQueueAgent;
+use Dnk\PhpInterface\UserConsentEvents;
+use Dnk\PhpInterface\UserConsentRevokeTable;
+use Dnk\PhpInterface\UserConsentService;
 use Dnk\PhpInterface\UserRegisterExportQueueTable;
 use Dnk\PhpInterface\Utils;
 
@@ -38,6 +41,9 @@ Loader::registerAutoLoadClasses(null, [
     IblockProductMarkerHitEvents::class => $classesPath . '/IblockProductMarkerHitEvents.php',
     UserRegisterExportQueueTable::class => $classesPath . '/UserRegisterExportQueueTable.php',
     UserRegisterExportQueueAgent::class => $classesPath . '/UserRegisterExportQueueAgent.php',
+    UserConsentRevokeTable::class => $classesPath . '/UserConsentRevokeTable.php',
+    UserConsentService::class => $classesPath . '/UserConsentService.php',
+    UserConsentEvents::class => $classesPath . '/UserConsentEvents.php',
 ]);
 
 

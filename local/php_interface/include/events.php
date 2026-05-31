@@ -7,6 +7,7 @@ use Dnk\PhpInterface\IblockProductBrandEvents;
 use Dnk\PhpInterface\IblockProductMarkerHitEvents;
 use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\UserAddEvents;
+use Dnk\PhpInterface\UserConsentEvents;
 
 EventManager::getInstance()->addEventHandler(
     'sale',
@@ -90,4 +91,10 @@ EventManager::getInstance()->addEventHandlerCompatible(
     'iblock',
     'OnAfterIBlockElementUpdate',
     [IblockProductMarkerHitEvents::class, 'onAfterIBlockElementUpdate']
+);
+
+EventManager::getInstance()->addEventHandler(
+    'main',
+    'OnUserConsentProviderList',
+    [UserConsentEvents::class, 'onUserConsentProviderList']
 );

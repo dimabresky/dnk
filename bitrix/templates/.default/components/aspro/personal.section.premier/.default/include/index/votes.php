@@ -10,6 +10,9 @@ $arComponentParams = [
 ];
 
 ob_start();
+include dirname(__DIR__) . '/votes_review_consent.php';
+$consentHtml = ob_get_clean();
+
 $cnt = $APPLICATION->IncludeComponent(
 	"aspro:vote.products.premier",
 	"",
@@ -31,6 +34,9 @@ if ($cnt > 0) {
 		</h3>
 	</div>
 	
+	<?if ($consentHtml !== ''):?>
+		<div class="votes-review-consent mb mb--16"><?=$consentHtml?></div>
+	<?endif;?>
 	<?=$html?>
 	<?
 }

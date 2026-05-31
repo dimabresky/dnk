@@ -361,7 +361,7 @@ if (
 
                         <?if (TSolution::GetFrontParametrValue('SHOW_LICENCE') == "Y"):?>
                             <?TSolution\Functions::showBlockHtml([
-                                'FILE' => 'consent/userconsent.php',
+                                'FILE' => 'consent/dnk/userconsent.php',
                                 'PARAMS' => [
                                     'OPTION_CODE' => "AGREEMENT_REGISTRATION",
                                     'SUBMIT_TEXT' => GetMessage("REGISTER_REGISTER"),

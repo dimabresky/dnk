@@ -5,6 +5,8 @@ use Bitrix\Main\Localization\Loc;
 
 Loc::loadMessages(__FILE__);
 
+$consentsUrl = $arResult['PATH_TO_CONSENTS'] ?? rtrim($arParams['SEF_FOLDER'] ?? '', '/') . '/consents/';
+
 if ($arParams['SET_TITLE'] === 'Y') {
 	$APPLICATION->SetTitle(Loc::getMessage('SPS_TITLE_PRIVATE'));
 }
@@ -26,4 +28,8 @@ $this->__component->correctUserPhones();
 		$component,
 		array("HIDE_ICONS" => "Y")
 	);?>
+</div>
+
+<div class="bottom-links-block mt mt--24">
+	<a class="btn btn-default btn-transparent-bg" href="<?=htmlspecialcharsbx($consentsUrl)?>"><?=Loc::getMessage('SPS_CONSENTS_LINK')?></a>
 </div>

@@ -79,8 +79,13 @@
 /urlrewrite.php
 
 # --- include ---
-/include/
-!/include/footer
+/include/*
+!/include/footer/
+!/include/footer/**
+!/include/blocks/
+!/include/blocks/consent/
+!/include/blocks/consent/dnk/
+!/include/blocks/consent/dnk/**
 
 # --- IDE / OS ---
 .idea/
