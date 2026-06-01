@@ -147,15 +147,43 @@
       }
 
       this.isFormSubmitted = true;
-      if (this.check(item)) {
-        return true;
-      } else {
-        if (e) {
+
+      if (!item.inputNode.checked) {
+        if (e && e.preventDefault) {
           e.preventDefault();
         }
+        BX.UserConsent.queue = 0;
+        this.requestForItem(item);
+        return false;
+      }
+
+      if (item.config.autoSave && !item.saved) {
+        var self = this;
+        var eventName = item.config.submitEventName;
+
+        this.saveConsent(
+          item,
+          function () {
+            BX.UserConsent.queue = 0;
+            if (eventName) {
+              BX.onCustomEvent(eventName);
+            }
+          },
+          function () {
+            BX.UserConsent.queue = 0;
+            self.isFormSubmitted = false;
+          }
+        );
 
         return false;
       }
+
+      if (item.inputNode.checked) {
+        this.restoreDnkRevoke(item);
+      }
+
+      BX.UserConsent.queue = 0;
+      return true;
     },
     onFormSubmit: function (e) {
       var formNode = e.currentTarget || e.target;
@@ -191,14 +219,24 @@
         var remaining = pendingSave.length;
 
         pendingSave.forEach(function (consentItem) {
-          self.saveConsent(consentItem, function () {
-            consentItem.saved = true;
-            remaining--;
-            if (remaining === 0) {
-              BX.UserConsent.queue = 0;
-              formNode.submit();
+          self.saveConsent(
+            consentItem,
+            function () {
+              consentItem.saved = true;
+              remaining--;
+              if (remaining === 0) {
+                BX.UserConsent.queue = 0;
+                self.submitFormAfterConsent(formNode);
+              }
+            },
+            function () {
+              remaining--;
+              if (remaining === 0) {
+                BX.UserConsent.queue = 0;
+                self.isFormSubmitted = false;
+              }
             }
-          });
+          );
         });
 
         return false;
@@ -225,6 +263,28 @@
       this.requestForItem(item);
       return false;
     },
+    submitFormAfterConsent: function (formNode) {
+      if (typeof $ !== "undefined") {
+        var $form = $(formNode);
+        if ($form.length && typeof $form.valid === "function" && $form.data("validator")) {
+          if ($form.valid()) {
+            var submitButton = formNode.querySelector('button[type="submit"]');
+            if (submitButton) {
+              submitButton.click();
+              return;
+            }
+          } else {
+            return;
+          }
+        }
+      }
+
+      if (typeof formNode.requestSubmit === "function") {
+        formNode.requestSubmit();
+      } else {
+        formNode.submit();
+      }
+    },
     requestForItem: function (item) {
       this.setCurrent(item);
       this.requestConsent(
@@ -248,36 +308,44 @@
       }
 
       var item = this.current;
-      this.saveConsent(this.current, function () {
-        BX.onCustomEvent(item, this.events.accepted, []);
-        BX.onCustomEvent(this, this.events.accepted, [item]);
+      this.saveConsent(
+        this.current,
+        function () {
+          BX.onCustomEvent(item, this.events.accepted, []);
+          BX.onCustomEvent(this, this.events.accepted, [item]);
 
-        item.saved = true;
+          item.saved = true;
 
-        if (this.isFormSubmitted && item.formNode && !item.config.submitEventName) {
-          // BX.submit(item.formNode);
-        }
+          if (this.isFormSubmitted && item.formNode && !item.config.submitEventName) {
+            // BX.submit(item.formNode);
+          }
 
-        this.current.inputNode.checked = true;
+          this.current.inputNode.checked = true;
 
-        if (
-          $(this.current.formNode).attr("id") !== "bx-soa-order-form" &&
-          typeof $.validator === "function" &&
-          $(this.current.formNode).data("validator")
-        ) {
-          $(this.current.inputNode).valid();
-        } else {
-          let eventChange = new Event("change");
-          this.current.inputNode.dispatchEvent(eventChange);
-        }
+          if (
+            $(this.current.formNode).attr("id") !== "bx-soa-order-form" &&
+            typeof $.validator === "function" &&
+            $(this.current.formNode).data("validator")
+          ) {
+            $(this.current.inputNode).valid();
+          } else {
+            let eventChange = new Event("change");
+            this.current.inputNode.dispatchEvent(eventChange);
+          }
 
-        this.current = null;
+          this.current = null;
 
-        BX.onCustomEvent(item, this.events.afterAccepted, [item]);
-        BX.onCustomEvent(this, this.events.afterAccepted, [item]);
+          BX.onCustomEvent(item, this.events.afterAccepted, [item]);
+          BX.onCustomEvent(this, this.events.afterAccepted, [item]);
 
-        BX.UserConsent.queue = 0;
-      });
+          BX.UserConsent.queue = 0;
+        }.bind(this),
+        function () {
+          this.current = null;
+          this.isFormSubmitted = false;
+          BX.UserConsent.queue = 0;
+        }.bind(this)
+      );
     },
     onRefused: function () {
       BX.onCustomEvent(this.current, this.events.refused, [this.current]);
@@ -495,8 +563,9 @@
       }
       this.popup.show(true);
     },
-    saveConsent: function (item, callback) {
+    saveConsent: function (item, callbackSuccess, callbackFailure) {
       this.setCurrent(item);
+      callbackFailure = callbackFailure || null;
 
       var data = {
         id: item.config.id,
@@ -528,16 +597,26 @@
         if (item.inputNode.checked) {
           this.restoreDnkRevoke(item);
         }
-        if (callback) {
-          callback.apply(this, []);
+        if (callbackSuccess) {
+          callbackSuccess.apply(this, []);
         }
       } else {
-        this.sendActionRequest("saveConsent", data, () => {
-          this.restoreDnkRevoke(item);
-          if (callback) {
-            callback.apply(this, []);
+        this.sendActionRequest(
+          "saveConsent",
+          data,
+          () => {
+            this.restoreDnkRevoke(item);
+            item.saved = true;
+            if (callbackSuccess) {
+              callbackSuccess.apply(this, []);
+            }
+          },
+          () => {
+            if (callbackFailure) {
+              callbackFailure.apply(this, []);
+            }
           }
-        }, callback);
+        );
       }
     },
     restoreDnkRevoke: function (item) {
