@@ -325,6 +325,9 @@
       }
       return null;
     },
+    isCartConsentControl: function (item) {
+      return !!(item && item.controlNode && item.controlNode.closest(".bx-soa-cart-conditions"));
+    },
     hasCheckedCartConsentsMissingFromPending: function (pendingItems) {
       var cartNode = document.querySelector(".bx-soa-cart-conditions");
       if (!cartNode) {
@@ -348,9 +351,6 @@
         }
 
         self.ensureOrderConsentConfig(item, codeMap);
-        if (item.config.autoSave && item.saved) {
-          continue;
-        }
 
         if (pendingItems.indexOf(item) === -1) {
           return true;
@@ -407,9 +407,7 @@
         item.config.submitEventName = "bx-soa-order-save-" + item.config.code;
       }
 
-      if (!item.saved) {
-        item.config.autoSave = true;
-      }
+      item.config.autoSave = true;
     },
     savePendingForOrder: function (callbackSuccess, callbackFailure) {
       var self = this;
@@ -432,7 +430,7 @@
 
         self.ensureOrderConsentConfig(item, codeMap);
 
-        if (item.config.autoSave && item.saved) {
+        if (!self.isCartConsentControl(item) && item.config.autoSave && item.saved) {
           return;
         }
         pendingItems.push(item);

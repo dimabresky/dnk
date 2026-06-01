@@ -8449,7 +8449,8 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
       let errors = 0;
 
       this.licensesConditions.forEach(($node) => {
-        if (!$node.querySelector("input").checked) {
+        const licenseCheckbox = $node.querySelector('input[type="checkbox"]');
+        if (!licenseCheckbox || !licenseCheckbox.checked) {
           if (
             BX.UserConsent
             && this.options.userConsents
