@@ -254,11 +254,14 @@
       return true;
     },
     submitFormAfterConsent: function (formNode) {
+      var submitButton =
+        formNode.querySelector('button[type="submit"][name="save"]') ||
+        formNode.querySelector('button[type="submit"]:not(.hidden)');
+
       if (typeof $ !== "undefined") {
         var $form = $(formNode);
         if ($form.length && typeof $form.valid === "function" && $form.data("validator")) {
           if ($form.valid()) {
-            var submitButton = formNode.querySelector('button[type="submit"]');
             if (submitButton) {
               submitButton.click();
               return;
@@ -270,7 +273,9 @@
       }
 
       if (typeof formNode.requestSubmit === "function") {
-        formNode.requestSubmit();
+        formNode.requestSubmit(submitButton || undefined);
+      } else if (submitButton) {
+        submitButton.click();
       } else {
         formNode.submit();
       }
