@@ -178,7 +178,7 @@
         return false;
       }
 
-      if (item.inputNode.checked) {
+      if (item.inputNode.checked && !(item.config.autoSave && item.saved)) {
         this.restoreDnkRevoke(item);
       }
 
@@ -209,32 +209,40 @@
         var consentItem = items[j];
         if (consentItem.config.autoSave && !consentItem.saved) {
           pendingSave.push(consentItem);
-        } else if (consentItem.inputNode.checked) {
+        } else if (consentItem.inputNode.checked && !(consentItem.config.autoSave && consentItem.saved)) {
           this.restoreDnkRevoke(consentItem);
         }
       }
 
       if (pendingSave.length > 0) {
         e.preventDefault();
-        var remaining = pendingSave.length;
+        var pendingCount = pendingSave.length;
+        var successCount = 0;
+        var failureCount = 0;
+
+        function checkAllSavesDone() {
+          if (successCount + failureCount !== pendingCount) {
+            return;
+          }
+          BX.UserConsent.queue = 0;
+          if (failureCount > 0) {
+            self.isFormSubmitted = false;
+          } else {
+            self.submitFormAfterConsent(formNode);
+          }
+        }
 
         pendingSave.forEach(function (consentItem) {
           self.saveConsent(
             consentItem,
             function () {
               consentItem.saved = true;
-              remaining--;
-              if (remaining === 0) {
-                BX.UserConsent.queue = 0;
-                self.submitFormAfterConsent(formNode);
-              }
+              successCount++;
+              checkAllSavesDone();
             },
             function () {
-              remaining--;
-              if (remaining === 0) {
-                BX.UserConsent.queue = 0;
-                self.isFormSubmitted = false;
-              }
+              failureCount++;
+              checkAllSavesDone();
             }
           );
         });
