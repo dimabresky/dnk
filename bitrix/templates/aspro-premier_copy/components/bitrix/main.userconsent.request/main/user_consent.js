@@ -245,24 +245,6 @@
       BX.UserConsent.queue = 0;
       return true;
     },
-    check: function (item) {
-      if (BX.UserConsent.queue > 1) {
-        return;
-      }
-
-      if (item.inputNode.checked) {
-        BX.UserConsent.queue = 0;
-
-        this.saveConsent(item, () => {
-          item.saved = true;
-        });
-
-        return true;
-      }
-
-      this.requestForItem(item);
-      return false;
-    },
     submitFormAfterConsent: function (formNode) {
       if (typeof $ !== "undefined") {
         var $form = $(formNode);
