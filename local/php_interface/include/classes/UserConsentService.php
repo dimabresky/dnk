@@ -131,15 +131,7 @@ final class UserConsentService
             return true;
         }
 
-        $latestConsent = ConsentTable::getList([
-            'filter' => [
-                '=USER_ID' => $userId,
-                '=AGREEMENT_ID' => $agreementId,
-            ],
-            'select' => ['ID', 'DATE_INSERT'],
-            'order' => ['DATE_INSERT' => 'DESC'],
-            'limit' => 1,
-        ])->fetch();
+        $latestConsent = self::findLatestNonAuditConsent($userId, $agreementId);
 
         if (
             !$latestConsent
@@ -149,6 +141,34 @@ final class UserConsentService
         }
 
         return UserConsentRevokeTable::delete((int)$revokeRow['ID'])->isSuccess();
+    }
+
+    /**
+     * Последняя запись согласия, не являющаяся служебным аудитом DNK.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function findLatestNonAuditConsent(int $userId, int $agreementId): ?array
+    {
+        $rows = ConsentTable::getList([
+            'filter' => [
+                '=USER_ID' => $userId,
+                '=AGREEMENT_ID' => $agreementId,
+            ],
+            'select' => ['ID', 'DATE_INSERT', 'ORIGINATOR_ID'],
+            'order' => ['DATE_INSERT' => 'DESC'],
+        ]);
+
+        while ($row = $rows->fetch()) {
+            $originatorId = (string)($row['ORIGINATOR_ID'] ?? '');
+            if (in_array($originatorId, [self::ORIGINATOR_REVOKE, self::ORIGINATOR_ACCEPT], true)) {
+                continue;
+            }
+
+            return $row;
+        }
+
+        return null;
     }
 
     /**

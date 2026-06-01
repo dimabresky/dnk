@@ -50,6 +50,11 @@ final class UserConsentEvents
             return;
         }
 
+        $originatorId = (string)($fields['ORIGINATOR_ID'] ?? '');
+        if (in_array($originatorId, [UserConsentService::ORIGINATOR_REVOKE, UserConsentService::ORIGINATOR_ACCEPT], true)) {
+            return;
+        }
+
         $userId = (int)($fields['USER_ID'] ?? 0);
         $agreementId = (int)($fields['AGREEMENT_ID'] ?? 0);
         if ($userId <= 0 || $agreementId <= 0) {
