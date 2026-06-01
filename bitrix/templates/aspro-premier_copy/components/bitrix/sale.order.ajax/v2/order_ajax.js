@@ -8445,7 +8445,8 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
       let errors = 0;
 
       this.licensesConditions.forEach(($node) => {
-        if (!$node.querySelector("input").checked) {
+        const licenseCheckbox = $node.querySelector('input[type="checkbox"]');
+        if (!licenseCheckbox || !licenseCheckbox.checked) {
           if (
             BX.UserConsent
             && this.options.userConsents
@@ -9096,11 +9097,9 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
               })
             );
 
-            if (BX.UserConsent && typeof BX.UserConsent.patchOrderConsentDom === "function") {
-              BX.UserConsent.patchOrderConsentDom();
+            if (BX.UserConsent && typeof BX.UserConsent.syncOrderCartConsents === "function") {
+              BX.UserConsent.syncOrderCartConsents();
             }
-
-            BX.UserConsent?.loadFromForms();
 
             let checkboxes = document.querySelectorAll(".bx-soa-cart-conditions input[type=checkbox]");
             checkboxes.forEach((checkbox) => {
@@ -9117,6 +9116,8 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
                 }
               });
             });
+          } else if (BX.UserConsent && typeof BX.UserConsent.syncOrderCartConsents === "function") {
+            BX.UserConsent.syncOrderCartConsents();
           }
 
           if (appAspro.userConsent?.order) {
