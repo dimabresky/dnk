@@ -301,6 +301,64 @@
         } catch (e) {}
       });
     },
+    pruneDetachedItems: function () {
+      this.items = this.items.filter(function (item) {
+        return item.controlNode && document.contains(item.controlNode);
+      });
+    },
+    syncOrderCartConsents: function () {
+      var cartNode = document.querySelector(".bx-soa-cart-conditions");
+      if (!cartNode) {
+        return;
+      }
+
+      this.pruneDetachedItems();
+      this.patchOrderConsentDom();
+      this.loadAll(cartNode);
+    },
+    findItemByControlNode: function (controlNode) {
+      var items = this.getItems();
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].controlNode === controlNode) {
+          return items[i];
+        }
+      }
+      return null;
+    },
+    hasCheckedCartConsentsMissingFromPending: function (pendingItems) {
+      var cartNode = document.querySelector(".bx-soa-cart-conditions");
+      if (!cartNode) {
+        return false;
+      }
+
+      var self = this;
+      var codeMap = this.getOrderConsentCodeMap();
+      var controls = cartNode.querySelectorAll("[" + this.attributeControl + "]");
+
+      for (var i = 0; i < controls.length; i++) {
+        var control = controls[i];
+        var input = control.querySelector('input[type="checkbox"]');
+        if (!input || !input.checked) {
+          continue;
+        }
+
+        var item = self.findItemByControlNode(control);
+        if (!item) {
+          return true;
+        }
+
+        self.ensureOrderConsentConfig(item, codeMap);
+        if (item.config.autoSave && item.saved) {
+          continue;
+        }
+
+        if (pendingItems.indexOf(item) === -1) {
+          return true;
+        }
+      }
+
+      return false;
+    },
     getOrderConsentCodeMap: function () {
       var map = {};
 
@@ -358,6 +416,8 @@
       callbackSuccess = callbackSuccess || function () {};
       callbackFailure = callbackFailure || function () {};
 
+      this.syncOrderCartConsents();
+
       var pendingItems = [];
       var items = this.getItems();
       var codeMap = this.getOrderConsentCodeMap();
@@ -379,7 +439,11 @@
       });
 
       if (pendingItems.length === 0) {
-        callbackSuccess.apply(this, []);
+        if (this.hasCheckedCartConsentsMissingFromPending(pendingItems)) {
+          callbackFailure.apply(this, []);
+        } else {
+          callbackSuccess.apply(this, []);
+        }
         return;
       }
 
