@@ -39,6 +39,12 @@ if (empty($action) && !$arProps) {
 	return;
 }
 
+if (!is_array($arProps) || !isset($arProps['properties']) || !is_array($arProps['properties'])) {
+	header('Content-Type: application/json');
+	echo \Bitrix\Main\Web\Json::encode(['profileID' => 0, 'error' => []]);
+	return;
+}
+
 function getPropsByFilter($array, $field, $value){
     return array_filter($array, function($item) use ($field, $value){
         return $item[$field] === $value;

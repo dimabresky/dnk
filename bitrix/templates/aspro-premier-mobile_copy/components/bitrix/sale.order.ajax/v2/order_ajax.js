@@ -9464,12 +9464,32 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
 
       if (appAspro.userConsent?.order) {
         this.options.userConsents = [];
+        const hiddenAgreementIds = window.DNK_HIDDEN_AGREEMENT_IDS || [];
         for (let consent in appAspro.userConsent.order) {
           if (appAspro.userConsent.order[consent].USE_BITRIX) {
+            const consentHtml = appAspro.userConsent.order[consent].HTML || "";
+            const isHiddenByServer = !String(consentHtml).trim();
+            let agreementId = null;
+
+            if (!isHiddenByServer && consentHtml) {
+              const tmpDiv = BX.create("div");
+              tmpDiv.innerHTML = consentHtml;
+              const controlNode = tmpDiv.querySelector("[data-bx-user-consent]");
+              if (controlNode) {
+                try {
+                  agreementId = parseInt(JSON.parse(controlNode.getAttribute("data-bx-user-consent")).id, 10);
+                } catch (e) {}
+              }
+            }
+
+            const isAlreadyGiven =
+              isHiddenByServer ||
+              (agreementId > 0 && hiddenAgreementIds.indexOf(agreementId) !== -1);
+
             this.options.userConsents.push({
               code: appAspro.userConsent.order[consent]?.CODE,
-              checked: appAspro.userConsent.order[consent]?.IS_CHECKED || "N",
-              required: "Y",
+              checked: isAlreadyGiven ? "Y" : appAspro.userConsent.order[consent]?.IS_CHECKED || "N",
+              required: isAlreadyGiven ? "N" : "Y",
             });
           }
         }
