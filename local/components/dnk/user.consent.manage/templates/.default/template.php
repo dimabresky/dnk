@@ -9,6 +9,7 @@ use Bitrix\Main\Localization\Loc;
 Loc::loadMessages(__FILE__);
 
 $this->setFrameMode(false);
+$this->addExternalCss($templateFolder . '/style.css');
 ?>
 <div class="personal__block personal__block--consents">
     <?if (empty($arResult['AGREEMENTS'])):?>

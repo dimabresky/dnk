@@ -1,0 +1,5 @@
+.table-consents thead th {
+	background-color: var(--theme-base-color);
+	border-color: var(--theme-base-color);
+	color: var(--white_text_black);
+}
