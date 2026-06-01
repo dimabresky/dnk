@@ -160,17 +160,48 @@
     onFormSubmit: function (e) {
       var formNode = e.currentTarget || e.target;
       var items = BX.data(formNode, "userConsentItems") || [];
+      var self = this;
 
       this.isFormSubmitted = true;
 
       for (var i = 0; i < items.length; i++) {
         BX.UserConsent.queue = 1;
-        if (!this.check(items[i])) {
+
+        if (!items[i].inputNode.checked) {
           e.preventDefault();
           this.isFormSubmitted = false;
           BX.UserConsent.queue = 0;
+          this.requestForItem(items[i]);
           return false;
         }
+      }
+
+      var pendingSave = [];
+      for (var j = 0; j < items.length; j++) {
+        var consentItem = items[j];
+        if (consentItem.config.autoSave && !consentItem.saved) {
+          pendingSave.push(consentItem);
+        } else if (consentItem.inputNode.checked) {
+          this.restoreDnkRevoke(consentItem);
+        }
+      }
+
+      if (pendingSave.length > 0) {
+        e.preventDefault();
+        var remaining = pendingSave.length;
+
+        pendingSave.forEach(function (consentItem) {
+          self.saveConsent(consentItem, function () {
+            consentItem.saved = true;
+            remaining--;
+            if (remaining === 0) {
+              BX.UserConsent.queue = 0;
+              formNode.submit();
+            }
+          });
+        });
+
+        return false;
       }
 
       BX.UserConsent.queue = 0;
@@ -514,16 +545,43 @@
         return;
       }
 
+      var data = {
+        action: "restore",
+        agreement_id: item.config.id,
+        sessid: BX.bitrix_sessid(),
+      };
+
+      var source = this.getRestoreSource(item);
+      if (source) {
+        data.source = source;
+      }
+
       BX.ajax({
         url: "/local/ajax/user_consent.php",
         method: "POST",
         dataType: "json",
-        data: {
-          action: "restore",
-          agreement_id: item.config.id,
-          sessid: BX.bitrix_sessid(),
-        },
+        data: data,
       });
+    },
+    getRestoreSource: function (item) {
+      if (!item || !item.formNode) {
+        return "";
+      }
+
+      var formId = item.formNode.id || "";
+      if (formId === "profile-form") {
+        return "profile";
+      }
+
+      if (formId === "bx-soa-order-form") {
+        return "order";
+      }
+
+      if (item.controlNode && item.controlNode.closest(".bx-soa-cart-conditions")) {
+        return "order";
+      }
+
+      return "";
     },
     sendActionRequest: function (action, sendData, callbackSuccess, callbackFailure) {
       callbackSuccess = callbackSuccess || null;

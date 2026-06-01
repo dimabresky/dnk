@@ -16,6 +16,9 @@ final class UserConsentService
 {
     public const ORIGINATOR_REVOKE = 'dnk/revoke';
     public const ORIGINATOR_ACCEPT = 'dnk/accept';
+    public const ORIGINATOR_PROFILE = 'dnk/profile';
+    public const ORIGINATOR_ORDER = 'dnk/order';
+    public const ORIGINATOR_REACCEPT = 'dnk/reaccept';
 
     /** Коды опций темы Aspro → соглашения для страницы «Мои согласия». */
     private const MANAGEABLE_THEME_OPTIONS = [
@@ -172,31 +175,72 @@ final class UserConsentService
     }
 
     /**
-     * Снять отзыв после повторного принятия согласия (AJAX restore).
+     * Повторное принятие соглашения: запись в b_user_consent и снятие отзыва.
      */
-    public static function restoreAfterAccept(int $userId, int $agreementId): bool
+    public static function acceptConsent(int $userId, int $agreementId, string $originatorId): bool
     {
-        if ($userId <= 0 || $agreementId <= 0) {
-            return false;
-        }
-
-        $hadRevoke = self::isRevoked($userId, $agreementId);
-        if (!$hadRevoke) {
-            return true;
-        }
-
-        if (!self::clearRevokeIfReconsented($userId, $agreementId)) {
+        if ($userId <= 0 || $agreementId <= 0 || $originatorId === '') {
             return false;
         }
 
         Consent::addByContext(
             $agreementId,
-            self::ORIGINATOR_ACCEPT,
+            $originatorId,
             (string)$userId,
             ['USER_ID' => $userId]
         );
 
-        return true;
+        if (!self::isRevoked($userId, $agreementId)) {
+            return true;
+        }
+
+        $revokeRow = UserConsentRevokeTable::getList([
+            'filter' => [
+                '=USER_ID' => $userId,
+                '=AGREEMENT_ID' => $agreementId,
+            ],
+            'select' => ['ID'],
+            'limit' => 1,
+        ])->fetch();
+
+        if (!$revokeRow) {
+            return true;
+        }
+
+        return UserConsentRevokeTable::delete((int)$revokeRow['ID'])->isSuccess();
+    }
+
+    public static function resolveOriginatorBySource(string $source): string
+    {
+        return match ($source) {
+            'profile' => self::ORIGINATOR_PROFILE,
+            'order' => self::ORIGINATOR_ORDER,
+            default => self::ORIGINATOR_REACCEPT,
+        };
+    }
+
+    /**
+     * Снять отзыв после повторного принятия согласия (AJAX restore).
+     */
+    public static function restoreAfterAccept(int $userId, int $agreementId, string $source = ''): bool
+    {
+        if ($userId <= 0 || $agreementId <= 0) {
+            return false;
+        }
+
+        if (!self::isRevoked($userId, $agreementId)) {
+            return true;
+        }
+
+        if (self::clearRevokeIfReconsented($userId, $agreementId)) {
+            return true;
+        }
+
+        return self::acceptConsent(
+            $userId,
+            $agreementId,
+            self::resolveOriginatorBySource($source)
+        );
     }
 
     /**

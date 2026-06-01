@@ -50,7 +50,8 @@ switch ($action) {
         break;
 
     case 'restore':
-        $response['success'] = UserConsentService::restoreAfterAccept($userId, $agreementId);
+        $source = (string)$request->getPost('source');
+        $response['success'] = UserConsentService::restoreAfterAccept($userId, $agreementId, $source);
         if (!$response['success']) {
             $response['error'] = 'Restore failed';
         }
