@@ -1642,9 +1642,23 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
         BX.Sale.OrderAjaxComponent.consentQueue = true;
 
         if (!this.getCountValidationErrorInLicensesBlock()) {
-          this.allowOrderSave();
+          var self = this;
 
-          this.doSaveAction();
+          if (BX.UserConsent && typeof BX.UserConsent.savePendingForOrder === "function") {
+            BX.UserConsent.savePendingForOrder(
+              function () {
+                self.allowOrderSave();
+                self.doSaveAction();
+              },
+              function () {
+                BX.Sale.OrderAjaxComponent.consentQueue = false;
+                self.disallowOrderSave();
+              }
+            );
+          } else {
+            this.allowOrderSave();
+            this.doSaveAction();
+          }
         }
       }
 
@@ -9081,6 +9095,10 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
                 ],
               })
             );
+
+            if (BX.UserConsent && typeof BX.UserConsent.patchOrderConsentDom === "function") {
+              BX.UserConsent.patchOrderConsentDom();
+            }
 
             BX.UserConsent?.loadFromForms();
 

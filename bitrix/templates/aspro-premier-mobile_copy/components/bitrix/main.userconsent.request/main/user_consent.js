@@ -280,6 +280,138 @@
         formNode.submit();
       }
     },
+    patchOrderConsentDom: function () {
+      var self = this;
+      var codeMap = this.getOrderConsentCodeMap();
+
+      document.querySelectorAll(".bx-soa-cart-conditions [" + this.attributeControl + "]").forEach(function (node) {
+        try {
+          var config = JSON.parse(node.getAttribute(self.attributeControl));
+
+          if (!config.code && codeMap[config.id]) {
+            config.code = codeMap[config.id];
+          }
+
+          if (!config.submitEventName && config.code) {
+            config.submitEventName = "bx-soa-order-save-" + config.code;
+          }
+
+          config.autoSave = true;
+          node.setAttribute(self.attributeControl, JSON.stringify(config));
+        } catch (e) {}
+      });
+    },
+    getOrderConsentCodeMap: function () {
+      var map = {};
+
+      if (!window.appAspro || !appAspro.userConsent || !appAspro.userConsent.order) {
+        return map;
+      }
+
+      for (var key in appAspro.userConsent.order) {
+        if (!Object.prototype.hasOwnProperty.call(appAspro.userConsent.order, key)) {
+          continue;
+        }
+
+        var entry = appAspro.userConsent.order[key];
+        if (!entry || !entry.USE_BITRIX || !entry.CODE) {
+          continue;
+        }
+
+        var tmp = document.createElement("div");
+        tmp.innerHTML = entry.HTML || "";
+        var control = tmp.querySelector("[data-bx-user-consent]");
+
+        if (!control) {
+          continue;
+        }
+
+        try {
+          var cfg = JSON.parse(control.getAttribute(this.attributeControl));
+          if (cfg.id) {
+            map[cfg.id] = entry.CODE;
+          }
+        } catch (e) {}
+      }
+
+      return map;
+    },
+    ensureOrderConsentConfig: function (item, codeMap) {
+      if (!item || !item.config || !item.controlNode || !item.controlNode.closest(".bx-soa-cart-conditions")) {
+        return;
+      }
+
+      if (!item.config.code && codeMap[item.config.id]) {
+        item.config.code = codeMap[item.config.id];
+      }
+
+      if (!item.config.submitEventName && item.config.code) {
+        item.config.submitEventName = "bx-soa-order-save-" + item.config.code;
+      }
+
+      if (!item.saved) {
+        item.config.autoSave = true;
+      }
+    },
+    savePendingForOrder: function (callbackSuccess, callbackFailure) {
+      var self = this;
+      callbackSuccess = callbackSuccess || function () {};
+      callbackFailure = callbackFailure || function () {};
+
+      var pendingItems = [];
+      var items = this.getItems();
+      var codeMap = this.getOrderConsentCodeMap();
+
+      items.forEach(function (item) {
+        if (!item.controlNode || !item.controlNode.closest(".bx-soa-cart-conditions")) {
+          return;
+        }
+        if (!item.inputNode || !item.inputNode.checked) {
+          return;
+        }
+
+        self.ensureOrderConsentConfig(item, codeMap);
+
+        if (item.config.autoSave && item.saved) {
+          return;
+        }
+        pendingItems.push(item);
+      });
+
+      if (pendingItems.length === 0) {
+        callbackSuccess.apply(this, []);
+        return;
+      }
+
+      var pendingCount = pendingItems.length;
+      var successCount = 0;
+      var failureCount = 0;
+
+      function checkAllDone() {
+        if (successCount + failureCount !== pendingCount) {
+          return;
+        }
+        if (failureCount > 0) {
+          callbackFailure.apply(self, []);
+        } else {
+          callbackSuccess.apply(self, []);
+        }
+      }
+
+      pendingItems.forEach(function (item) {
+        self.saveConsent(
+          item,
+          function () {
+            successCount++;
+            checkAllDone();
+          },
+          function () {
+            failureCount++;
+            checkAllDone();
+          }
+        );
+      });
+    },
     requestForItem: function (item) {
       this.setCurrent(item);
       this.requestConsent(
@@ -590,9 +722,8 @@
 
       if (item.saved || !item.config.autoSave) {
         if (item.inputNode.checked) {
-          this.restoreDnkRevoke(item);
-        }
-        if (callbackSuccess) {
+          this.restoreDnkRevoke(item, callbackSuccess, callbackFailure);
+        } else if (callbackSuccess) {
           callbackSuccess.apply(this, []);
         }
       } else {
@@ -600,9 +731,10 @@
           "saveConsent",
           data,
           () => {
-            this.restoreDnkRevoke(item);
             item.saved = true;
-            if (callbackSuccess) {
+            if (item.inputNode.checked) {
+              this.restoreDnkRevoke(item, callbackSuccess, callbackFailure);
+            } else if (callbackSuccess) {
               callbackSuccess.apply(this, []);
             }
           },
@@ -614,10 +746,16 @@
         );
       }
     },
-    restoreDnkRevoke: function (item) {
+    restoreDnkRevoke: function (item, callbackSuccess, callbackFailure) {
       if (!item || !item.config || !item.config.id) {
+        if (callbackSuccess) {
+          callbackSuccess.apply(this, []);
+        }
         return;
       }
+
+      callbackSuccess = callbackSuccess || null;
+      callbackFailure = callbackFailure || null;
 
       var data = {
         action: "restore",
@@ -635,10 +773,33 @@
         method: "POST",
         dataType: "json",
         data: data,
+        onsuccess: BX.proxy(function (response) {
+          response = response || {};
+          if (response.success === false) {
+            if (callbackFailure) {
+              callbackFailure.apply(this, [response]);
+            }
+          } else if (callbackSuccess) {
+            callbackSuccess.apply(this, []);
+          }
+        }, this),
+        onfailure: BX.proxy(function () {
+          if (callbackFailure) {
+            callbackFailure.apply(this, [{ error: true }]);
+          }
+        }, this),
       });
     },
     getRestoreSource: function (item) {
-      if (!item || !item.formNode) {
+      if (!item) {
+        return "";
+      }
+
+      if (item.controlNode && item.controlNode.closest(".bx-soa-cart-conditions")) {
+        return "order";
+      }
+
+      if (!item.formNode) {
         return "";
       }
 
@@ -648,10 +809,6 @@
       }
 
       if (formId === "bx-soa-order-form") {
-        return "order";
-      }
-
-      if (item.controlNode && item.controlNode.closest(".bx-soa-cart-conditions")) {
         return "order";
       }
 
