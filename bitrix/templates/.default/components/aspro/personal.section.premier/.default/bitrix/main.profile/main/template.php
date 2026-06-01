@@ -57,6 +57,7 @@ $bChangePassword = ($_REQUEST['type'] ?? '') === 'pass';
                                 'FILE' => 'consent/dnk/userconsent.php',
                                 'PARAMS' => [
                                     'OPTION_CODE' => 'AGREEMENT_SUBSCRIBE',
+                                    'AUTO_SAVE' => 'Y',
                                     'SUBMIT_TEXT' => Loc::getMessage('main_profile_send'),
                                     'REPLACE_FIELDS' => [],
                                     'INPUT_NAME' => "licenses_popup",
@@ -300,6 +301,7 @@ $bChangePassword = ($_REQUEST['type'] ?? '') === 'pass';
                                 'FILE' => 'consent/dnk/userconsent.php',
                                 'PARAMS' => [
                                     'OPTION_CODE' => 'AGREEMENT_SUBSCRIBE',
+                                    'AUTO_SAVE' => 'Y',
                                     'SUBMIT_TEXT' => $submitText,
                                     'REPLACE_FIELDS' => [],
                                     'INPUT_NAME' => "licenses_popup",

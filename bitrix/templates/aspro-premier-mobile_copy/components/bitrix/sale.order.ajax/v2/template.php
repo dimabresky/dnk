@@ -459,7 +459,7 @@ else
 									'ID' => $arParams['USER_CONSENT_ID'],
 									'IS_CHECKED' => $arParams['USER_CONSENT_IS_CHECKED'],
 									'IS_LOADED' => $arParams['USER_CONSENT_IS_LOADED'],
-									'AUTO_SAVE' => 'N',
+									'AUTO_SAVE' => 'Y',
 									'SUBMIT_EVENT_NAME' => 'bx-soa-order-save',
 									'REPLACE' => array(
 										'button_caption' => isset($arParams['~MESS_ORDER']) ? $arParams['~MESS_ORDER'] : $arParams['MESS_ORDER'],

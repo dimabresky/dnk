@@ -19,7 +19,7 @@ $APPLICATION->IncludeComponent(
     'bitrix:main.userconsent.request',
     'main',
     [
-        'AUTO_SAVE' => $arOptions['AUTO_SAVE'] ?? 'N',
+        'AUTO_SAVE' => $arOptions['AUTO_SAVE'] ?? (!empty($arOptions['SUBMIT_EVENT_NAME']) ? 'Y' : 'N'),
         'COMPOSITE_FRAME_MODE' => 'A',
         'COMPOSITE_FRAME_TYPE' => 'AUTO',
         'BLOCK_NAME' => 'offer_block',
