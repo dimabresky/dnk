@@ -1,6 +1,6 @@
 <?php
 
-$MESS['DNK_UC_MANAGE_TITLE'] = 'My consents';
+$MESS['DNK_UC_MANAGE_TITLE'] = 'My agreements';
 $MESS['DNK_UC_MANAGE_EMPTY'] = 'No saved consents';
 $MESS['DNK_UC_MANAGE_COL_NAME'] = 'Agreement';
 $MESS['DNK_UC_MANAGE_COL_STATUS'] = 'Status';

@@ -1,6 +1,6 @@
 <?php
 
-$MESS['DNK_UC_MANAGE_TITLE'] = 'Мои согласия';
+$MESS['DNK_UC_MANAGE_TITLE'] = 'Мои соглашения';
 $MESS['DNK_UC_MANAGE_EMPTY'] = 'Нет сохранённых согласий';
 $MESS['DNK_UC_MANAGE_COL_NAME'] = 'Соглашение';
 $MESS['DNK_UC_MANAGE_COL_STATUS'] = 'Статус';

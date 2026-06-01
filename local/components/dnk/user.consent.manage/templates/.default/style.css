@@ -1,5 +1,19 @@
 .table-consents thead th {
-	background-color: var(--theme-base-color);
+	background: var(--theme-base-color)!important;
 	border-color: var(--theme-base-color);
 	color: var(--white_text_black);
+}
+
+.table-consents th:nth-child(2),
+.table-consents th:nth-child(3),
+.table-consents td:nth-child(2),
+.table-consents td:nth-child(3) {
+	text-align: center;
+	vertical-align: middle;
+}
+
+@media (min-width: 768px) {
+	.table-consents .th-mobile {
+		display: none;
+	}
 }
