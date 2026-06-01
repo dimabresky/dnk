@@ -742,7 +742,8 @@
             if (callbackFailure) {
               callbackFailure.apply(this, []);
             }
-          }
+          },
+          item.config.actionUrl
         );
       }
     },
@@ -814,7 +815,7 @@
 
       return "";
     },
-    sendActionRequest: function (action, sendData, callbackSuccess, callbackFailure) {
+    sendActionRequest: function (action, sendData, callbackSuccess, callbackFailure, requestUrl) {
       callbackSuccess = callbackSuccess || null;
       callbackFailure = callbackFailure || null;
 
@@ -823,7 +824,7 @@
       sendData.action = action;
 
       BX.ajax({
-        url: this.actionRequestUrl,
+        url: requestUrl || this.actionRequestUrl,
         method: "POST",
         data: sendData,
         timeout: 10,
