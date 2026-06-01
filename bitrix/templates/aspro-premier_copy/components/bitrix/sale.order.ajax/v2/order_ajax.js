@@ -1644,10 +1644,6 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
         if (!this.getCountValidationErrorInLicensesBlock()) {
           var self = this;
 
-          if (BX.UserConsent && typeof BX.UserConsent.syncOrderCartConsents === "function") {
-            BX.UserConsent.syncOrderCartConsents();
-          }
-
           if (BX.UserConsent && typeof BX.UserConsent.savePendingForOrder === "function") {
             BX.UserConsent.savePendingForOrder(
               function () {
