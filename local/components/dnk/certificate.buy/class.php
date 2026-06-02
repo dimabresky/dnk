@@ -347,9 +347,11 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             ? CertificateBuyPhoneAuth::SCENARIO_LOGIN
             : CertificateBuyPhoneAuth::SCENARIO_REGISTER;
 
-        if (!in_array($scenario, [CertificateBuyPhoneAuth::SCENARIO_LOGIN, CertificateBuyPhoneAuth::SCENARIO_REGISTER], true)) {
+        $signedPhone = trim((string)($signedDataPayload['phoneNumber'] ?? ''));
+        if ($signedPhone === '') {
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
         }
+        $verifyPhone = CertificateBuyPhoneAuth::normalizePhone($signedPhone);
 
         $decodedResult = $this->decodeSubmitPayloadFromRequest();
         if (empty($decodedResult['ok'])) {
@@ -358,11 +360,18 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
 
         $decoded = (array)$decodedResult['payload'];
         $contactPhone = trim((string)($decoded['contactPhone'] ?? ''));
+        if ($contactPhone !== '') {
+            $payloadPhone = CertificateBuyPhoneAuth::normalizePhone($contactPhone);
+            if ($payloadPhone !== $verifyPhone) {
+                return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
+            }
+        }
         if ($smsCode === '') {
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_CODE')]];
         }
 
-        $authResult = CertificateBuyPhoneAuth::verifyAndAuthorize($contactPhone, $smsCode, $scenario);
+        $decoded['contactPhone'] = $verifyPhone;
+        $authResult = CertificateBuyPhoneAuth::verifyAndAuthorize($verifyPhone, $smsCode, $scenario);
         if (!($authResult['ok'] ?? false)) {
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
         }

@@ -77,6 +77,7 @@ if (!empty($arResult['ITEMS'])) {
      data-msg-error="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_ERROR')); ?>"
      data-is-authorized="<?= $isAuthorized ? '1' : '0'; ?>"
      data-phone-auth-enabled="<?= $phoneAuthEnabled ? '1' : '0'; ?>"
+     data-msg-phone-auth-off="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_PHONE_AUTH_OFF')); ?>"
      data-license-input-name="<?= htmlspecialcharsbx($licenseInputName); ?>">
     <?php if (empty($arResult['ITEMS'])) { ?>
         <div class="dnk-cert-buy__empty muted"><?= GetMessage('DNK_CERT_BUY_EMPTY'); ?></div>
@@ -113,7 +114,7 @@ if (!empty($arResult['ITEMS'])) {
                             <textarea class="dnk-cert-buy__textarea form-control" name="dnk_cert_comment" rows="3" maxlength="2000" placeholder="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_COMMENT_HINT')); ?>"></textarea>
                         </label>
 
-                        <?php if (!$isAuthorized) { ?>
+                        <?php if (!$isAuthorized && $phoneAuthEnabled) { ?>
                             <div class="dnk-cert-buy__auth-consents" data-role="auth-consents">
                                 <?php if ($orderConsentId > 0) {
                                     $APPLICATION->IncludeComponent(

@@ -6,6 +6,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
 
 $MESS['DNK_CERT_BUY_JS_SUCCESS'] = 'Заявка отправлена. Номер: #REQUEST_ID#.';
 $MESS['DNK_CERT_BUY_JS_ERROR'] = 'Не удалось отправить заявку. Проверьте данные.';
+$MESS['DNK_CERT_BUY_JS_PHONE_AUTH_OFF'] = 'Авторизация по телефону временно недоступна.';
 $MESS['DNK_CERT_BUY_EMPTY'] = 'Нет доступных сертификатов.';
 $MESS['DNK_CERT_BUY_IMG_ALT'] = 'Сертификат';
 $MESS['DNK_CERT_BUY_QTY'] = 'Количество';

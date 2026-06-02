@@ -716,6 +716,7 @@
 
       var payload = JSON.stringify(payloadObj);
       var isAuthorized = root.getAttribute('data-is-authorized') === '1';
+      var phoneAuthEnabled = root.getAttribute('data-phone-auth-enabled') === '1';
 
       btn.disabled = true;
       clearCertCartPersistSchedule();
@@ -741,6 +742,17 @@
               root.getAttribute('data-msg-error') || 'Ошибка запроса.'
             );
           }
+        );
+        return;
+      }
+
+      if (!phoneAuthEnabled) {
+        btn.disabled = false;
+        submitFeedback(
+          root,
+          'error',
+          root.getAttribute('data-msg-phone-auth-off') ||
+            'Авторизация по телефону временно недоступна.'
         );
         return;
       }
