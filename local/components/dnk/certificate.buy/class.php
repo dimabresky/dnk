@@ -9,6 +9,7 @@ use Bitrix\Main\Mail\Event as MailEvent;
 use Bitrix\Main\Engine\Contract\Controllerable;
 use Bitrix\Main\Engine\ActionFilter;
 use Bitrix\Main\Engine\CurrentUser;
+use Bitrix\Main\Controller\PhoneAuth as MainPhoneAuthController;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UserTable;
@@ -330,10 +331,22 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         $httpRequest = Context::getCurrent()->getRequest();
         $smsCode = trim((string)$httpRequest->getPost('smsCode'));
         $signedData = trim((string)$httpRequest->getPost('signedData'));
-        $scenario = trim((string)$httpRequest->getPost('scenario'));
         if ($signedData === '') {
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
         }
+
+        $signedDataPayload = MainPhoneAuthController::extractData($signedData);
+        if (!is_array($signedDataPayload)) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
+        }
+        $smsTemplate = (string)($signedDataPayload['smsTemplate'] ?? '');
+        if ($smsTemplate === '') {
+            $smsTemplate = 'SMS_USER_CONFIRM_NUMBER';
+        }
+        $scenario = $smsTemplate === 'SMS_USER_AUTH_CODE'
+            ? CertificateBuyPhoneAuth::SCENARIO_LOGIN
+            : CertificateBuyPhoneAuth::SCENARIO_REGISTER;
+
         if (!in_array($scenario, [CertificateBuyPhoneAuth::SCENARIO_LOGIN, CertificateBuyPhoneAuth::SCENARIO_REGISTER], true)) {
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
         }
