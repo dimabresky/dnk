@@ -22,6 +22,21 @@ final class CertificateBuyPhoneAuth
     public const SCENARIO_REGISTER = 'register';
 
     private const SMS_LOGIN = 'SMS_USER_AUTH_CODE';
+    private const SMS_REGISTER = 'SMS_USER_CONFIRM_NUMBER';
+
+    public static function isUserActive(int $userId): bool
+    {
+        if ($userId <= 0) {
+            return false;
+        }
+
+        $userRow = UserTable::getRow([
+            'select' => ['ACTIVE'],
+            'filter' => ['=ID' => $userId],
+        ]);
+
+        return is_array($userRow) && (string)($userRow['ACTIVE'] ?? 'N') === 'Y';
+    }
 
     public static function isEnabled(): bool
     {
@@ -115,6 +130,27 @@ final class CertificateBuyPhoneAuth
      */
     public static function sendLoginCode(int $userId): array
     {
+        return self::sendPhoneCode($userId, self::SMS_LOGIN);
+    }
+
+    public static function sendRegistrationCode(int $userId): array
+    {
+        return self::sendPhoneCode($userId, self::SMS_REGISTER);
+    }
+
+    /**
+     * @return array{
+     *     ok: bool,
+     *     signedData?: string,
+     *     resendInterval?: int,
+     *     phoneMasked?: string,
+     *     error?: string,
+     *     alreadySent?: bool,
+     *     smsErrors?: list<string>
+     * }
+     */
+    private static function sendPhoneCode(int $userId, string $smsTemplate): array
+    {
         if ($userId <= 0) {
             return ['ok' => false, 'error' => 'user_not_found'];
         }
@@ -145,7 +181,7 @@ final class CertificateBuyPhoneAuth
         }
 
         if ($bGenerate) {
-            $sms = new SmsEvent(self::SMS_LOGIN, [
+            $sms = new SmsEvent($smsTemplate, [
                 'USER_PHONE' => $phoneNumber,
                 'CODE' => $smsCode,
             ]);
@@ -171,7 +207,7 @@ final class CertificateBuyPhoneAuth
             'ok' => true,
             'signedData' => PhoneAuthController::signData([
                 'phoneNumber' => $phoneNumber,
-                'smsTemplate' => self::SMS_LOGIN,
+                'smsTemplate' => $smsTemplate,
             ]),
             'resendInterval' => $resendInterval,
             'phoneMasked' => self::maskPhone($phoneNumber),
@@ -202,7 +238,11 @@ final class CertificateBuyPhoneAuth
             return ['ok' => false, 'error' => (string)($existing['error'] ?? 'lookup_failed')];
         }
         if (!empty($existing['userId'])) {
-            return self::sendLoginCode((int)$existing['userId']);
+            $existingUserId = (int)$existing['userId'];
+
+            return self::isUserActive($existingUserId)
+                ? self::sendLoginCode($existingUserId)
+                : self::sendRegistrationCode($existingUserId);
         }
 
         $digits = preg_replace('/\D+/', '', $normalized) ?: '';

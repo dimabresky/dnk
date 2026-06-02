@@ -285,8 +285,17 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
 
         $userId = $lookup['userId'] ?? null;
         if ($userId !== null && (int)$userId > 0) {
-            $smsResult = CertificateBuyPhoneAuth::sendLoginCode((int)$userId);
-            $scenario = CertificateBuyPhoneAuth::SCENARIO_LOGIN;
+            if (CertificateBuyPhoneAuth::isUserActive((int)$userId)) {
+                $smsResult = CertificateBuyPhoneAuth::sendLoginCode((int)$userId);
+                $scenario = CertificateBuyPhoneAuth::SCENARIO_LOGIN;
+            } else {
+                if (!$this->isRegistrationConsentAccepted($httpRequest)) {
+                    return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_REG_CONSENT')]];
+                }
+
+                $smsResult = CertificateBuyPhoneAuth::sendRegistrationCode((int)$userId);
+                $scenario = CertificateBuyPhoneAuth::SCENARIO_REGISTER;
+            }
         } else {
             if (!$this->isRegistrationConsentAccepted($httpRequest)) {
                 return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_REG_CONSENT')]];
