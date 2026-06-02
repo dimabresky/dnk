@@ -383,7 +383,12 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
 
         $this->persistConsentsAfterAuth($userId, $scenario, $httpRequest);
 
-        return $this->createCertificateRequest($decoded);
+        $result = $this->createCertificateRequest($decoded);
+        if (empty($result['success'])) {
+            $result['authenticated'] = true;
+        }
+
+        return $result;
     }
 
     /**

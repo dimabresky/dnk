@@ -520,21 +520,11 @@
     var smsConfirmBtn = qs(root, '[data-role="sms-confirm"]');
     var smsResendBtn = qs(root, '[data-role="sms-resend"]');
 
-    function finalizeSuccess(data) {
+    function syncAuthorizedSession() {
       root.setAttribute('data-is-authorized', '1');
       var authConsents = qs(root, '[data-role="auth-consents"]');
       if (authConsents) {
         authConsents.hidden = true;
-      }
-      var msgTpl = root.getAttribute('data-msg-success') || '';
-      submitFeedback(root, 'success', msgTpl.replace('#REQUEST_ID#', String(data.requestId)));
-      var vmOk = root.__dnkCertBuyVue;
-      if (
-        vmOk &&
-        vmOk.resetCertificateQuantities &&
-        typeof vmOk.resetCertificateQuantities === 'function'
-      ) {
-        vmOk.resetCertificateQuantities();
       }
       pendingAuth.active = false;
       pendingAuth.payload = '';
@@ -544,6 +534,20 @@
       setSmsState(root, false);
       if (smsCodeInput) {
         smsCodeInput.value = '';
+      }
+    }
+
+    function finalizeSuccess(data) {
+      syncAuthorizedSession();
+      var msgTpl = root.getAttribute('data-msg-success') || '';
+      submitFeedback(root, 'success', msgTpl.replace('#REQUEST_ID#', String(data.requestId)));
+      var vmOk = root.__dnkCertBuyVue;
+      if (
+        vmOk &&
+        vmOk.resetCertificateQuantities &&
+        typeof vmOk.resetCertificateQuantities === 'function'
+      ) {
+        vmOk.resetCertificateQuantities();
       }
     }
 
@@ -625,6 +629,9 @@
             if (data.success && data.requestId) {
               finalizeSuccess(data);
               return;
+            }
+            if (data.authenticated) {
+              syncAuthorizedSession();
             }
             var errors = collectResponseErrors(response);
             submitFeedback(root, 'error', errors.join(' ') || (root.getAttribute('data-msg-error') || ''));
