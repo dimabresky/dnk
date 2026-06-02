@@ -637,18 +637,20 @@
         }
         smsResendBtn.disabled = true;
         BX.ajax
-          .runAction('main:phoneAuth.resendCode', { data: { signedData: pendingAuth.signedData } })
+          .runAction('main.phoneAuth.resendCode', { data: { signedData: pendingAuth.signedData } })
           .then(
             function (res) {
               var data = res && res.data ? res.data : {};
               if (data.DATA_SIGN) {
                 pendingAuth.signedData = data.DATA_SIGN;
               }
+              setSmsState(root, true, 'Код отправлен повторно.');
               setTimeout(function () {
                 smsResendBtn.disabled = false;
               }, 1500);
             },
             function () {
+              submitFeedback(root, 'error', 'Не удалось отправить код повторно.');
               setTimeout(function () {
                 smsResendBtn.disabled = false;
               }, 1500);
