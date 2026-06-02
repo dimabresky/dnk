@@ -242,12 +242,12 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             ];
         }
 
-        $decoded = $this->decodeSubmitPayloadFromRequest();
-        if (isset($decoded['errors'])) {
-            return ['success' => false, 'errors' => $decoded['errors']];
+        $decodedResult = $this->decodeSubmitPayloadFromRequest();
+        if (empty($decodedResult['ok'])) {
+            return ['success' => false, 'errors' => (array)($decodedResult['errors'] ?? [])];
         }
 
-        return $this->createCertificateRequest($decoded);
+        return $this->createCertificateRequest((array)$decodedResult['payload']);
     }
 
     public function phoneAuthStartAction(): array
@@ -338,11 +338,12 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
         }
 
-        $decoded = $this->decodeSubmitPayloadFromRequest();
-        if (isset($decoded['errors'])) {
-            return ['success' => false, 'errors' => $decoded['errors']];
+        $decodedResult = $this->decodeSubmitPayloadFromRequest();
+        if (empty($decodedResult['ok'])) {
+            return ['success' => false, 'errors' => (array)($decodedResult['errors'] ?? [])];
         }
 
+        $decoded = (array)$decodedResult['payload'];
         $contactPhone = trim((string)($decoded['contactPhone'] ?? ''));
         if ($smsCode === '') {
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_CODE')]];
@@ -364,19 +365,19 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
     }
 
     /**
-     * @return array<string, mixed>|array{errors: list<string>}
+     * @return array{ok: bool, payload?: array<string, mixed>, errors?: list<string>}
      */
     private function decodeSubmitPayloadFromRequest(): array
     {
         $httpRequest = Context::getCurrent()->getRequest();
         $payload = trim((string)$httpRequest->getPost('payload'));
         if ($payload === '') {
-            return ['errors' => [GetMessage('DNK_CERT_BUY_ERR_SUBMIT_JSON')]];
+            return ['ok' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SUBMIT_JSON')]];
         }
 
         $decoded = json_decode($payload, true);
         if (!is_array($decoded)) {
-            return ['errors' => [GetMessage('DNK_CERT_BUY_ERR_SUBMIT_JSON')]];
+            return ['ok' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SUBMIT_JSON')]];
         }
 
         $contactName = trim(strip_tags((string)($decoded['contactName'] ?? '')));
@@ -384,19 +385,19 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         $comment = trim(strip_tags((string)($decoded['comment'] ?? '')));
 
         if (mb_strlen($comment) > 2000) {
-            return ['errors' => [GetMessage('DNK_CERT_BUY_ERR_COMMENT_LONG')]];
+            return ['ok' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_COMMENT_LONG')]];
         }
 
         $nameError = $this->validateContactFields($contactName, $contactPhone);
         if ($nameError !== null) {
-            return ['errors' => [$nameError]];
+            return ['ok' => false, 'errors' => [$nameError]];
         }
 
         $decoded['contactName'] = $contactName;
         $decoded['contactPhone'] = $contactPhone;
         $decoded['comment'] = $comment;
 
-        return $decoded;
+        return ['ok' => true, 'payload' => $decoded];
     }
 
     private function validateContactFields(string $contactName, string $contactPhone): ?string
