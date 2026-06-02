@@ -19,6 +19,7 @@ $phoneAuthEnabled = !empty($arResult['PHONE_AUTH_ENABLED']);
 $orderConsentId = (int)($arResult['USER_CONSENT_ID'] ?? 0);
 $registrationConsentOption = (string)($arResult['REGISTRATION_CONSENT_OPTION'] ?? 'AGREEMENT_REGISTRATION');
 $licenseInputName = class_exists(\TSolution\Validation::class) ? (string)\TSolution\Validation::LICENSE_INPUT_NAME : 'licenses_register';
+$phoneResendInterval = max(1, (int)($arResult['PHONE_CODE_RESEND_INTERVAL'] ?? 60));
 
 $catalogJson = '{}';
 $uiJson = '{}';
@@ -78,7 +79,8 @@ if (!empty($arResult['ITEMS'])) {
      data-is-authorized="<?= $isAuthorized ? '1' : '0'; ?>"
      data-phone-auth-enabled="<?= $phoneAuthEnabled ? '1' : '0'; ?>"
      data-msg-phone-auth-off="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_PHONE_AUTH_OFF')); ?>"
-     data-license-input-name="<?= htmlspecialcharsbx($licenseInputName); ?>">
+     data-license-input-name="<?= htmlspecialcharsbx($licenseInputName); ?>"
+     data-phone-resend-interval="<?= $phoneResendInterval; ?>">
     <?php if (empty($arResult['ITEMS'])) { ?>
         <div class="dnk-cert-buy__empty muted"><?= GetMessage('DNK_CERT_BUY_EMPTY'); ?></div>
     <?php } else { ?>

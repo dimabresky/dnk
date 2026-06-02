@@ -470,6 +470,16 @@
     return errors.filter(Boolean);
   }
 
+  function buildRegistrationConsentPost(root) {
+    var checked =
+      !!qs(root, '#dnk-cert-buy-register-consent') &&
+      qs(root, '#dnk-cert-buy-register-consent').checked;
+    var licenseName = root.getAttribute('data-license-input-name') || 'licenses_register';
+    var post = { registrationConsent: checked ? 'Y' : 'N' };
+    post[licenseName] = checked ? 'Y' : 'N';
+    return post;
+  }
+
   function setRegistrationConsentVisible(root, visible) {
     var block = qs(root, '[data-role="registration-consent"]');
     if (!block) {
@@ -519,6 +529,48 @@
     var smsCodeInput = qs(root, 'input[name="dnk_cert_sms_code"]');
     var smsConfirmBtn = qs(root, '[data-role="sms-confirm"]');
     var smsResendBtn = qs(root, '[data-role="sms-resend"]');
+    var smsResendTimerId = null;
+    var smsResendDefaultLabel = smsResendBtn ? smsResendBtn.textContent : '';
+
+    function getResendIntervalSeconds(fallback) {
+      var fromRoot = parseInt(root.getAttribute('data-phone-resend-interval') || '', 10);
+      if (!isNaN(fromRoot) && fromRoot > 0) {
+        return fromRoot;
+      }
+      return fallback > 0 ? fallback : 60;
+    }
+
+    function startSmsResendCountdown(seconds) {
+      if (!smsResendBtn) {
+        return;
+      }
+      var sec = parseInt(seconds, 10);
+      if (isNaN(sec) || sec <= 0) {
+        smsResendBtn.disabled = false;
+        if (smsResendDefaultLabel) {
+          smsResendBtn.textContent = smsResendDefaultLabel;
+        }
+        return;
+      }
+      if (smsResendTimerId) {
+        clearInterval(smsResendTimerId);
+        smsResendTimerId = null;
+      }
+      smsResendBtn.disabled = true;
+      var left = sec;
+      smsResendBtn.textContent = 'Повторная отправка через ' + left + ' сек.';
+      smsResendTimerId = setInterval(function () {
+        left -= 1;
+        if (left <= 0) {
+          clearInterval(smsResendTimerId);
+          smsResendTimerId = null;
+          smsResendBtn.disabled = false;
+          smsResendBtn.textContent = smsResendDefaultLabel;
+          return;
+        }
+        smsResendBtn.textContent = 'Повторная отправка через ' + left + ' сек.';
+      }, 1000);
+    }
 
     function syncAuthorizedSession() {
       root.setAttribute('data-is-authorized', '1');
@@ -594,30 +646,28 @@
         smsConfirmBtn.disabled = true;
       }
 
+      var confirmData = {
+        payload: pendingAuth.payload,
+        smsCode: smsCode,
+        signedData: pendingAuth.signedData,
+        scenario: pendingAuth.scenario,
+        contactPhone: pendingAuth.phone,
+        orderConsent:
+          qs(root, 'input[name="orderConsent"]') && qs(root, 'input[name="orderConsent"]').checked
+            ? 'Y'
+            : 'N',
+      };
+      var confirmRegConsent = buildRegistrationConsentPost(root);
+      for (var confirmKey in confirmRegConsent) {
+        if (Object.prototype.hasOwnProperty.call(confirmRegConsent, confirmKey)) {
+          confirmData[confirmKey] = confirmRegConsent[confirmKey];
+        }
+      }
+
       BX.ajax
         .runComponentAction('dnk:certificate.buy', 'phoneAuthConfirm', {
           mode: 'class',
-          data: {
-            payload: pendingAuth.payload,
-            smsCode: smsCode,
-            signedData: pendingAuth.signedData,
-            scenario: pendingAuth.scenario,
-            contactPhone: pendingAuth.phone,
-            orderConsent: qs(root, 'input[name="orderConsent"]') &&
-              qs(root, 'input[name="orderConsent"]').checked
-              ? 'Y'
-              : 'N',
-            registrationConsent:
-              !!qs(root, '#dnk-cert-buy-register-consent') &&
-              qs(root, '#dnk-cert-buy-register-consent').checked
-                ? 'Y'
-                : 'N',
-            licenses_register:
-              !!qs(root, '#dnk-cert-buy-register-consent') &&
-              qs(root, '#dnk-cert-buy-register-consent').checked
-                ? 'Y'
-                : 'N',
-          },
+          data: confirmData,
         })
         .then(
           function (response) {
@@ -671,15 +721,15 @@
                 pendingAuth.signedData = data.DATA_SIGN;
               }
               setSmsState(root, true, 'Код отправлен повторно.');
-              setTimeout(function () {
-                smsResendBtn.disabled = false;
-              }, 1500);
+              var waitSec = parseInt(data.DATE_SEND, 10);
+              if (isNaN(waitSec) || waitSec <= 0) {
+                waitSec = getResendIntervalSeconds(60);
+              }
+              startSmsResendCountdown(waitSec);
             },
             function () {
               submitFeedback(root, 'error', 'Не удалось отправить код повторно.');
-              setTimeout(function () {
-                smsResendBtn.disabled = false;
-              }, 1500);
+              startSmsResendCountdown(getResendIntervalSeconds(60));
             }
           );
       });
@@ -801,27 +851,24 @@
           return null;
         })
         .then(function () {
-          return BX.ajax.runComponentAction('dnk:certificate.buy', 'phoneAuthStart', {
-            mode: 'class',
-            data: {
-              contactName: contactName,
-              contactPhone: contactPhone,
-              payload: payload,
-              orderConsent: qs(root, 'input[name="orderConsent"]') &&
-                qs(root, 'input[name="orderConsent"]').checked
+          var startData = {
+            contactName: contactName,
+            contactPhone: contactPhone,
+            payload: payload,
+            orderConsent:
+              qs(root, 'input[name="orderConsent"]') && qs(root, 'input[name="orderConsent"]').checked
                 ? 'Y'
                 : 'N',
-              registrationConsent:
-                !!qs(root, '#dnk-cert-buy-register-consent') &&
-                qs(root, '#dnk-cert-buy-register-consent').checked
-                  ? 'Y'
-                  : 'N',
-              licenses_register:
-                !!qs(root, '#dnk-cert-buy-register-consent') &&
-                qs(root, '#dnk-cert-buy-register-consent').checked
-                  ? 'Y'
-                  : 'N',
-            },
+          };
+          var startRegConsent = buildRegistrationConsentPost(root);
+          for (var startKey in startRegConsent) {
+            if (Object.prototype.hasOwnProperty.call(startRegConsent, startKey)) {
+              startData[startKey] = startRegConsent[startKey];
+            }
+          }
+          return BX.ajax.runComponentAction('dnk:certificate.buy', 'phoneAuthStart', {
+            mode: 'class',
+            data: startData,
           });
         })
         .then(
@@ -837,9 +884,11 @@
               pendingAuth.collectVm = collect;
               setRegistrationConsentVisible(root, pendingAuth.scenario === 'register');
               setSmsState(root, true, data.phoneMasked ? 'Код отправлен на ' + data.phoneMasked : '');
-              if (smsResendBtn) {
-                smsResendBtn.disabled = false;
+              var intervalSec = parseInt(data.resendInterval, 10);
+              if (isNaN(intervalSec) || intervalSec <= 0) {
+                intervalSec = getResendIntervalSeconds(60);
               }
+              startSmsResendCountdown(intervalSec);
               if (smsCodeInput) {
                 smsCodeInput.focus();
               }
