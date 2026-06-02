@@ -509,6 +509,11 @@
     var smsResendBtn = qs(root, '[data-role="sms-resend"]');
 
     function finalizeSuccess(data) {
+      root.setAttribute('data-is-authorized', '1');
+      var authConsents = qs(root, '[data-role="auth-consents"]');
+      if (authConsents) {
+        authConsents.hidden = true;
+      }
       var msgTpl = root.getAttribute('data-msg-success') || '';
       submitFeedback(root, 'success', msgTpl.replace('#REQUEST_ID#', String(data.requestId)));
       var vmOk = root.__dnkCertBuyVue;
