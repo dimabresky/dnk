@@ -331,6 +331,9 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         $smsCode = trim((string)$httpRequest->getPost('smsCode'));
         $signedData = trim((string)$httpRequest->getPost('signedData'));
         $scenario = trim((string)$httpRequest->getPost('scenario'));
+        if ($signedData === '') {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
+        }
         if (!in_array($scenario, [CertificateBuyPhoneAuth::SCENARIO_LOGIN, CertificateBuyPhoneAuth::SCENARIO_REGISTER], true)) {
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
         }

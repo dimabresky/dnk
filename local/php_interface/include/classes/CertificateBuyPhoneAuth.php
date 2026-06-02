@@ -22,7 +22,6 @@ final class CertificateBuyPhoneAuth
     public const SCENARIO_REGISTER = 'register';
 
     private const SMS_LOGIN = 'SMS_USER_AUTH_CODE';
-    private const SMS_REGISTER = 'SMS_USER_CONFIRM_NUMBER';
 
     public static function isEnabled(): bool
     {
@@ -288,9 +287,12 @@ final class CertificateBuyPhoneAuth
             return ['ok' => false, 'error' => 'user_not_found'];
         }
 
-        if ((string)($userRow['ACTIVE'] ?? 'N') !== 'Y') {
+        $isActive = (string)($userRow['ACTIVE'] ?? 'N') === 'Y';
+        if (!$isActive && $scenario === self::SCENARIO_REGISTER) {
             $cUser = new CUser();
             $cUser->Update($userId, ['ACTIVE' => 'Y']);
+        } elseif (!$isActive) {
+            return ['ok' => false, 'error' => 'user_inactive'];
         }
 
         if (!is_object($USER)) {
@@ -305,13 +307,15 @@ final class CertificateBuyPhoneAuth
     public static function maskPhone(string $normalizedPhone): string
     {
         $digits = preg_replace('/\D+/', '', $normalizedPhone) ?: '';
-        if (mb_strlen($digits) < 4) {
+        $digitsLen = mb_strlen($digits);
+        if ($digitsLen < 6) {
             return $normalizedPhone;
         }
-
+        $head = mb_substr($digits, 0, 3);
         $tail = mb_substr($digits, -2);
+        $middleMask = str_repeat('*', max(1, $digitsLen - 5));
 
-        return preg_replace('/\d{2}$/', '**-' . $tail, $normalizedPhone, 1) ?? $normalizedPhone;
+        return '+' . $head . $middleMask . $tail;
     }
 
     /**
