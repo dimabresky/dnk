@@ -17,5 +17,10 @@ $arComponentParameters = [
             'TYPE' => 'STRING',
             'DEFAULT' => '3600',
         ],
+        'USER_CONSENT_ID' => [
+            'NAME' => GetMessage('DNK_CERT_BUY_PARAM_USER_CONSENT_ID'),
+            'TYPE' => 'STRING',
+            'DEFAULT' => '',
+        ],
     ],
 ];

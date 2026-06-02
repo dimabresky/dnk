@@ -9,9 +9,12 @@ use Bitrix\Main\Mail\Event as MailEvent;
 use Bitrix\Main\Engine\Contract\Controllerable;
 use Bitrix\Main\Engine\ActionFilter;
 use Bitrix\Main\Engine\CurrentUser;
+use Bitrix\Main\Controller\PhoneAuth as MainPhoneAuthController;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UserTable;
+use Dnk\PhpInterface\CertificateBuyPhoneAuth;
+use Dnk\PhpInterface\UserConsentService;
 use Dnk\PhpInterface\Utils;
 
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
@@ -47,6 +50,18 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
                     new ActionFilter\Csrf(),
                 ],
             ],
+            'phoneAuthStart' => [
+                'prefilters' => [
+                    new ActionFilter\HttpMethod([ActionFilter\HttpMethod::METHOD_POST]),
+                    new ActionFilter\Csrf(),
+                ],
+            ],
+            'phoneAuthConfirm' => [
+                'prefilters' => [
+                    new ActionFilter\HttpMethod([ActionFilter\HttpMethod::METHOD_POST]),
+                    new ActionFilter\Csrf(),
+                ],
+            ],
         ];
     }
 
@@ -55,6 +70,7 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         $params = parent::onPrepareComponentParams($params);
 
         $params['CACHE_TIME'] = (int)($params['CACHE_TIME'] ?? 3600);
+        $params['USER_CONSENT_ID'] = (int)($params['USER_CONSENT_ID'] ?? 0);
 
         return $params;
     }
@@ -156,6 +172,11 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
 
         $this->arResult['YANDEX_MAP_API_KEY'] = (string)Option::get('fileman', 'yandex_map_api_key', '');
 
+        $this->arResult['PHONE_AUTH_ENABLED'] = CertificateBuyPhoneAuth::isEnabled();
+        $this->arResult['USER_CONSENT_ID'] = $this->resolveOrderConsentAgreementId();
+        $this->arResult['REGISTRATION_CONSENT_OPTION'] = 'AGREEMENT_REGISTRATION';
+        $this->arResult['PHONE_CODE_RESEND_INTERVAL'] = (int)\CUser::PHONE_CODE_RESEND_INTERVAL;
+
         $this->includeComponentTemplate();
     }
 
@@ -212,18 +233,233 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         return ['success' => true];
     }
 
-    /**
-     * @return array{item_id?: int, qty?: int, ...}[]
-     */
     public function submitAction(): array
+    {
+        if ((int)CurrentUser::get()->getId() <= 0) {
+            return [
+                'success' => false,
+                'needAuth' => true,
+                'errors' => [GetMessage('DNK_CERT_BUY_ERR_NEED_AUTH')],
+            ];
+        }
+
+        $decodedResult = $this->decodeSubmitPayloadFromRequest();
+        if (empty($decodedResult['ok'])) {
+            return ['success' => false, 'errors' => (array)($decodedResult['errors'] ?? [])];
+        }
+
+        return $this->createCertificateRequest((array)$decodedResult['payload']);
+    }
+
+    public function phoneAuthStartAction(): array
+    {
+        if ((int)CurrentUser::get()->getId() > 0) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_ALREADY_AUTH')]];
+        }
+
+        if (!CertificateBuyPhoneAuth::isEnabled()) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_PHONE_AUTH_OFF')]];
+        }
+
+        $httpRequest = Context::getCurrent()->getRequest();
+        $contactName = trim(strip_tags((string)$httpRequest->getPost('contactName')));
+        $contactPhone = trim((string)$httpRequest->getPost('contactPhone'));
+
+        $validationError = $this->validateContactFields($contactName, $contactPhone);
+        if ($validationError !== null) {
+            return ['success' => false, 'errors' => [$validationError]];
+        }
+
+        if (!$this->isOrderConsentAccepted($httpRequest)) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_ORDER_CONSENT')]];
+        }
+
+        $lookup = CertificateBuyPhoneAuth::resolveUserIdByPhone($contactPhone);
+        if (!($lookup['ok'] ?? false)) {
+            if (!empty($lookup['ambiguous'])) {
+                return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_PHONE_AMBIGUOUS')]];
+            }
+
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_PHONE_LOOKUP')]];
+        }
+
+        $userId = $lookup['userId'] ?? null;
+        if ($userId !== null && (int)$userId > 0) {
+            if (CertificateBuyPhoneAuth::isUserActive((int)$userId)) {
+                $smsResult = CertificateBuyPhoneAuth::sendLoginCode((int)$userId);
+                $scenario = CertificateBuyPhoneAuth::SCENARIO_LOGIN;
+            } else {
+                if (!$this->isRegistrationConsentAccepted($httpRequest)) {
+                    return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_REG_CONSENT')]];
+                }
+
+                $smsResult = CertificateBuyPhoneAuth::sendRegistrationCode((int)$userId);
+                $scenario = CertificateBuyPhoneAuth::SCENARIO_REGISTER;
+            }
+        } else {
+            if (!$this->isRegistrationConsentAccepted($httpRequest)) {
+                return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_REG_CONSENT')]];
+            }
+
+            $smsResult = CertificateBuyPhoneAuth::registerAndSendCode($contactPhone, $contactName);
+            $scenario = CertificateBuyPhoneAuth::SCENARIO_REGISTER;
+        }
+
+        if (!($smsResult['ok'] ?? false)) {
+            $errors = [GetMessage('DNK_CERT_BUY_ERR_SMS_SEND')];
+            if (!empty($smsResult['registerMessage'])) {
+                $errors[] = (string)$smsResult['registerMessage'];
+            }
+            if (!empty($smsResult['smsErrors']) && is_array($smsResult['smsErrors'])) {
+                $errors = array_merge($errors, $smsResult['smsErrors']);
+            }
+
+            return ['success' => false, 'errors' => $errors];
+        }
+
+        return [
+            'success' => true,
+            'scenario' => $scenario,
+            'signedData' => (string)($smsResult['signedData'] ?? ''),
+            'resendInterval' => (int)($smsResult['resendInterval'] ?? \CUser::PHONE_CODE_RESEND_INTERVAL),
+            'phoneMasked' => (string)($smsResult['phoneMasked'] ?? ''),
+            'alreadySent' => !empty($smsResult['alreadySent']),
+        ];
+    }
+
+    public function phoneAuthConfirmAction(): array
+    {
+        if ((int)CurrentUser::get()->getId() > 0) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_ALREADY_AUTH')]];
+        }
+
+        if (!CertificateBuyPhoneAuth::isEnabled()) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_PHONE_AUTH_OFF')]];
+        }
+
+        $httpRequest = Context::getCurrent()->getRequest();
+        $smsCode = trim((string)$httpRequest->getPost('smsCode'));
+        $signedData = trim((string)$httpRequest->getPost('signedData'));
+        if ($signedData === '') {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
+        }
+
+        $signedDataPayload = MainPhoneAuthController::extractData($signedData);
+        if (!is_array($signedDataPayload)) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
+        }
+        $smsTemplate = (string)($signedDataPayload['smsTemplate'] ?? '');
+        if ($smsTemplate === '') {
+            $smsTemplate = 'SMS_USER_CONFIRM_NUMBER';
+        }
+        $scenario = $smsTemplate === 'SMS_USER_AUTH_CODE'
+            ? CertificateBuyPhoneAuth::SCENARIO_LOGIN
+            : CertificateBuyPhoneAuth::SCENARIO_REGISTER;
+
+        $signedPhone = trim((string)($signedDataPayload['phoneNumber'] ?? ''));
+        if ($signedPhone === '') {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
+        }
+        $verifyPhone = CertificateBuyPhoneAuth::normalizePhone($signedPhone);
+
+        $decodedResult = $this->decodeSubmitPayloadFromRequest();
+        if (empty($decodedResult['ok'])) {
+            return ['success' => false, 'errors' => (array)($decodedResult['errors'] ?? [])];
+        }
+
+        $decoded = (array)$decodedResult['payload'];
+        $contactPhone = trim((string)($decoded['contactPhone'] ?? ''));
+        if ($contactPhone !== '') {
+            $payloadPhone = CertificateBuyPhoneAuth::normalizePhone($contactPhone);
+            if ($payloadPhone !== $verifyPhone) {
+                return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
+            }
+        }
+        if ($smsCode === '') {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_CODE')]];
+        }
+
+        $decoded['contactPhone'] = $verifyPhone;
+        $authResult = CertificateBuyPhoneAuth::verifyAndAuthorize($verifyPhone, $smsCode, $scenario);
+        if (!($authResult['ok'] ?? false)) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
+        }
+
+        $userId = (int)($authResult['userId'] ?? 0);
+        if ($userId <= 0) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SMS_VERIFY')]];
+        }
+
+        $this->persistConsentsAfterAuth($userId, $scenario, $httpRequest);
+
+        $result = $this->createCertificateRequest($decoded);
+        if (empty($result['success'])) {
+            $result['authenticated'] = true;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array{ok: bool, payload?: array<string, mixed>, errors?: list<string>}
+     */
+    private function decodeSubmitPayloadFromRequest(): array
+    {
+        $httpRequest = Context::getCurrent()->getRequest();
+        $payload = trim((string)$httpRequest->getPost('payload'));
+        if ($payload === '') {
+            return ['ok' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SUBMIT_JSON')]];
+        }
+
+        $decoded = json_decode($payload, true);
+        if (!is_array($decoded)) {
+            return ['ok' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SUBMIT_JSON')]];
+        }
+
+        $contactName = trim(strip_tags((string)($decoded['contactName'] ?? '')));
+        $contactPhone = trim((string)($decoded['contactPhone'] ?? ''));
+        $comment = trim(strip_tags((string)($decoded['comment'] ?? '')));
+
+        if (mb_strlen($comment) > 2000) {
+            return ['ok' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_COMMENT_LONG')]];
+        }
+
+        $nameError = $this->validateContactFields($contactName, $contactPhone);
+        if ($nameError !== null) {
+            return ['ok' => false, 'errors' => [$nameError]];
+        }
+
+        $decoded['contactName'] = $contactName;
+        $decoded['contactPhone'] = $contactPhone;
+        $decoded['comment'] = $comment;
+
+        return ['ok' => true, 'payload' => $decoded];
+    }
+
+    private function validateContactFields(string $contactName, string $contactPhone): ?string
+    {
+        if ($contactName === '') {
+            return GetMessage('DNK_CERT_BUY_ERR_CONTACT_NAME');
+        }
+
+        $digitsPhone = preg_replace('/\D+/', '', $contactPhone) ?: '';
+        if (mb_strlen($digitsPhone) < 9) {
+            return GetMessage('DNK_CERT_BUY_ERR_CONTACT_PHONE');
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $decoded
+     */
+    private function createCertificateRequest(array $decoded): array
     {
         Loader::includeModule('iblock');
         Loader::includeModule('currency');
 
         $certIblockId = $this->resolveCertificateCatalogIblockId();
         $requestIblockId = $this->resolveCertificateRequestIblockId();
-
-        $httpRequest = Context::getCurrent()->getRequest();
 
         if ($certIblockId <= 0) {
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_PARAM_CERT_IBLOCK')]];
@@ -233,32 +469,10 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_PARAM_REQUEST_IBLOCK')]];
         }
 
-        $payload = trim((string)$httpRequest->getPost('payload'));
-        if ($payload === '') {
-            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SUBMIT_JSON')]];
-        }
-
-        $decoded = json_decode($payload, true);
-        if (!is_array($decoded)) {
-            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_SUBMIT_JSON')]];
-        }
-
         $itemsIn = isset($decoded['items']) && is_array($decoded['items']) ? $decoded['items'] : [];
-        $contactName = trim(strip_tags((string)($decoded['contactName'] ?? '')));
-        $contactPhone = trim((string)($decoded['contactPhone'] ?? ''));
-        $comment = trim(strip_tags((string)($decoded['comment'] ?? '')));
-
-        if (mb_strlen($comment) > 2000) {
-            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_COMMENT_LONG')]];
-        }
-
-        if ($contactName === '') {
-            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_CONTACT_NAME')]];
-        }
-        $digitsPhone = preg_replace('/\D+/', '', $contactPhone) ?: '';
-        if (mb_strlen($digitsPhone) < 9) {
-            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_CONTACT_PHONE')]];
-        }
+        $contactName = (string)($decoded['contactName'] ?? '');
+        $contactPhone = (string)($decoded['contactPhone'] ?? '');
+        $comment = (string)($decoded['comment'] ?? '');
 
         $deliveryXml = trim((string)($decoded['deliveryXmlId'] ?? self::DELIVERY_XML_COURIER));
         $paymentXml = trim((string)($decoded['paymentXmlId'] ?? self::PAYMENT_XML));
@@ -336,16 +550,21 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         $paymentCaption = $this->resolveListEnumCaption((int)$paymentEnumId);
 
         $userId = (int)CurrentUser::get()->getId();
+        if ($userId <= 0) {
+            return [
+                'success' => false,
+                'needAuth' => true,
+                'errors' => [GetMessage('DNK_CERT_BUY_ERR_NEED_AUTH')],
+            ];
+        }
 
         $emailSnapshot = '';
-        if ($userId > 0) {
-            $u = UserTable::getRow([
-                'select' => ['EMAIL'],
-                'filter' => ['=ID' => $userId],
-            ]);
-            if (is_array($u)) {
-                $emailSnapshot = trim((string)($u['EMAIL'] ?? ''));
-            }
+        $u = UserTable::getRow([
+            'select' => ['EMAIL'],
+            'filter' => ['=ID' => $userId],
+        ]);
+        if (is_array($u)) {
+            $emailSnapshot = trim((string)($u['EMAIL'] ?? ''));
         }
 
         $detailLines = [];
@@ -390,11 +609,9 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             'CONTACT_NAME' => $contactName,
             'CONTACT_PHONE' => $contactPhone,
             'COMMENT' => $comment !== '' ? $comment : '',
+            'USER' => $userId,
         ];
 
-        if ($userId > 0) {
-            $propVals['USER'] = $userId;
-        }
         if ($emailSnapshot !== '') {
             $propVals['CONTACT_EMAIL'] = $emailSnapshot;
         }
@@ -469,6 +686,61 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         $this->clearCertificateCartSession();
 
         return ['success' => true, 'requestId' => $newId];
+    }
+
+    private function resolveOrderConsentAgreementId(): int
+    {
+        $fromParams = (int)($this->arParams['USER_CONSENT_ID'] ?? 0);
+        if ($fromParams > 0) {
+            return $fromParams;
+        }
+
+        $resolved = UserConsentService::resolveAgreementIdByOption('AGREEMENT_PUBLIC_OFFER');
+
+        return $resolved ?? 0;
+    }
+
+    private function isOrderConsentAccepted(\Bitrix\Main\HttpRequest $request): bool
+    {
+        $agreementId = $this->resolveOrderConsentAgreementId();
+        if ($agreementId <= 0) {
+            return true;
+        }
+
+        return $request->getPost('orderConsent') === 'Y';
+    }
+
+    private function isRegistrationConsentAccepted(\Bitrix\Main\HttpRequest $request): bool
+    {
+        $licenseName = class_exists(\TSolution\Validation::class)
+            ? \TSolution\Validation::LICENSE_INPUT_NAME
+            : 'licenses_register';
+
+        return $request->getPost($licenseName) === 'Y'
+            || $request->getPost('registrationConsent') === 'Y';
+    }
+
+    private function persistConsentsAfterAuth(int $userId, string $scenario, \Bitrix\Main\HttpRequest $request): void
+    {
+        $orderAgreementId = $this->resolveOrderConsentAgreementId();
+        if ($orderAgreementId > 0 && $this->isOrderConsentAccepted($request)) {
+            UserConsentService::acceptConsent(
+                $userId,
+                $orderAgreementId,
+                UserConsentService::ORIGINATOR_ORDER
+            );
+        }
+
+        if ($scenario === CertificateBuyPhoneAuth::SCENARIO_REGISTER) {
+            $regAgreementId = UserConsentService::resolveAgreementIdByOption('AGREEMENT_REGISTRATION');
+            if ($regAgreementId !== null && $regAgreementId > 0 && $this->isRegistrationConsentAccepted($request)) {
+                UserConsentService::acceptConsent(
+                    $userId,
+                    $regAgreementId,
+                    UserConsentService::ORIGINATOR_ACCEPT
+                );
+            }
+        }
     }
 
     /**

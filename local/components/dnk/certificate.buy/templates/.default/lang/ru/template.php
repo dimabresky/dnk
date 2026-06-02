@@ -6,6 +6,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
 
 $MESS['DNK_CERT_BUY_JS_SUCCESS'] = 'Заявка отправлена. Номер: #REQUEST_ID#.';
 $MESS['DNK_CERT_BUY_JS_ERROR'] = 'Не удалось отправить заявку. Проверьте данные.';
+$MESS['DNK_CERT_BUY_JS_PHONE_AUTH_OFF'] = 'Авторизация по телефону временно недоступна.';
 $MESS['DNK_CERT_BUY_EMPTY'] = 'Нет доступных сертификатов.';
 $MESS['DNK_CERT_BUY_IMG_ALT'] = 'Сертификат';
 $MESS['DNK_CERT_BUY_QTY'] = 'Количество';
@@ -30,3 +31,8 @@ $MESS['DNK_CERT_BUY_BTN_BUY'] = 'Купить';
 $MESS['DNK_CERT_BUY_SUMMARY_TITLE'] = 'Выбранные сертификаты';
 $MESS['DNK_CERT_BUY_SUMMARY_TOTAL'] = 'Итого';
 $MESS['DNK_CERT_BUY_SUBMIT'] = 'Отправить заявку';
+$MESS['DNK_CERT_BUY_SMS_TITLE'] = 'Подтверждение по SMS';
+$MESS['DNK_CERT_BUY_SMS_SENT'] = 'Введите код из SMS для подтверждения номера телефона.';
+$MESS['DNK_CERT_BUY_SMS_CODE'] = 'Код из SMS';
+$MESS['DNK_CERT_BUY_SMS_CONFIRM'] = 'Подтвердить код';
+$MESS['DNK_CERT_BUY_SMS_RESEND'] = 'Отправить код повторно';
