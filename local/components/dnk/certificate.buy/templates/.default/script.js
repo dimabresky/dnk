@@ -470,6 +470,18 @@
     return errors.filter(Boolean);
   }
 
+  function setRegistrationConsentVisible(root, visible) {
+    var block = qs(root, '[data-role="registration-consent"]');
+    if (!block) {
+      return;
+    }
+    if (visible) {
+      block.removeAttribute('hidden');
+    } else {
+      block.setAttribute('hidden', 'hidden');
+    }
+  }
+
   function setSmsState(root, isOpen, text) {
     var smsBox = qs(root, '[data-role="sms-box"]');
     if (!smsBox) {
@@ -564,6 +576,13 @@
       if (typeof BX === 'undefined' || !BX.ajax || !BX.ajax.runComponentAction) {
         submitFeedback(root, 'error', 'Не загружены скрипты Битрикс.');
         return;
+      }
+      if (pendingAuth.scenario === 'register') {
+        var regConsentInput = qs(root, '#dnk-cert-buy-register-consent');
+        if (regConsentInput && !regConsentInput.checked) {
+          submitFeedback(root, 'error', 'Необходимо согласие с условиями регистрации.');
+          return;
+        }
       }
 
       btn.disabled = true;
@@ -769,11 +788,6 @@
         submitFeedback(root, 'error', 'Необходимо согласие на обработку персональных данных.');
         return;
       }
-      if (qs(root, '#dnk-cert-buy-register-consent') && !qs(root, '#dnk-cert-buy-register-consent').checked) {
-        btn.disabled = false;
-        submitFeedback(root, 'error', 'Необходимо согласие с условиями регистрации.');
-        return;
-      }
 
       persistCartAjax(collect)
         .catch(function () {
@@ -814,6 +828,7 @@
               pendingAuth.scenario = String(data.scenario || '');
               pendingAuth.phone = contactPhone;
               pendingAuth.collectVm = collect;
+              setRegistrationConsentVisible(root, pendingAuth.scenario === 'register');
               setSmsState(root, true, data.phoneMasked ? 'Код отправлен на ' + data.phoneMasked : '');
               if (smsResendBtn) {
                 smsResendBtn.disabled = false;
