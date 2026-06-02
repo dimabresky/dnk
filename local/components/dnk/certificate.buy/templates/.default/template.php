@@ -9,10 +9,16 @@ $this->setFrameMode(false);
 
 $this->addExternalJs(SITE_DIR . 'local/js/vendor/vue.global.prod.js');
 $this->addExternalJs(SITE_DIR . 'local/js/imask.js');
+CJSCore::Init(['phone_auth']);
 
 $profile = is_array($arResult['PROFILE'] ?? null) ? $arResult['PROFILE'] : ['name' => '', 'phone' => '', 'isAuthorized' => false];
 $nameVal = htmlspecialcharsbx((string)$profile['name']);
 $phoneVal = htmlspecialcharsbx((string)$profile['phone']);
+$isAuthorized = !empty($profile['isAuthorized']);
+$phoneAuthEnabled = !empty($arResult['PHONE_AUTH_ENABLED']);
+$orderConsentId = (int)($arResult['USER_CONSENT_ID'] ?? 0);
+$registrationConsentOption = (string)($arResult['REGISTRATION_CONSENT_OPTION'] ?? 'AGREEMENT_REGISTRATION');
+$licenseInputName = class_exists(\TSolution\Validation::class) ? (string)\TSolution\Validation::LICENSE_INPUT_NAME : 'licenses_register';
 
 $catalogJson = '{}';
 $uiJson = '{}';
@@ -65,7 +71,13 @@ if (!empty($arResult['ITEMS'])) {
 }
 ?>
 
-<div id="dnk-cert-buy-root" class="dnk-cert-buy" data-msg-success="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_SUCCESS')); ?>" data-msg-error="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_ERROR')); ?>">
+<div id="dnk-cert-buy-root"
+     class="dnk-cert-buy"
+     data-msg-success="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_SUCCESS')); ?>"
+     data-msg-error="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_ERROR')); ?>"
+     data-is-authorized="<?= $isAuthorized ? '1' : '0'; ?>"
+     data-phone-auth-enabled="<?= $phoneAuthEnabled ? '1' : '0'; ?>"
+     data-license-input-name="<?= htmlspecialcharsbx($licenseInputName); ?>">
     <?php if (empty($arResult['ITEMS'])) { ?>
         <div class="dnk-cert-buy__empty muted"><?= GetMessage('DNK_CERT_BUY_EMPTY'); ?></div>
     <?php } else { ?>
@@ -95,18 +107,65 @@ if (!empty($arResult['ITEMS'])) {
                                 <input class="dnk-cert-buy__input js-dnk-cert-phone form-control" type="text" name="dnk_cert_contact_phone" value="<?= $phoneVal; ?>" maxlength="40" autocomplete="tel" inputmode="tel" required placeholder="+375 (__) ___-__-__">
                             </label>
                         </div>
+
                         <label class="dnk-cert-buy__field dnk-cert-buy__field--full">
                             <span class="dnk-cert-buy__field-label font_13"><?= GetMessage('DNK_CERT_BUY_COMMENT'); ?></span>
                             <textarea class="dnk-cert-buy__textarea form-control" name="dnk_cert_comment" rows="3" maxlength="2000" placeholder="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_COMMENT_HINT')); ?>"></textarea>
                         </label>
-                        <div
-                            class="dnk-cert-buy__submit-feedback"
-                            data-role="submit-feedback"
-                            role="status"
-                            aria-live="polite"
-                            aria-atomic="true"
-                            hidden></div>
-                        <button type="button" class="btn btn-lg btn-primary dnk-cert-buy__submit" data-role="submit"><?= GetMessage('DNK_CERT_BUY_SUBMIT'); ?></button>
+
+                        <?php if (!$isAuthorized) { ?>
+                            <div class="dnk-cert-buy__auth-consents" data-role="auth-consents">
+                                <?php if ($orderConsentId > 0) {
+                                    $APPLICATION->IncludeComponent(
+                                        'bitrix:main.userconsent.request',
+                                        'main',
+                                        [
+                                            'ID' => $orderConsentId,
+                                            'IS_CHECKED' => 'N',
+                                            'IS_LOADED' => 'N',
+                                            'AUTO_SAVE' => 'Y',
+                                            'INPUT_NAME' => 'orderConsent',
+                                            'INPUT_REQUIRED' => 'Y',
+                                            'BLOCK_NAME' => 'dnk-cert-buy__consent-order',
+                                        ]
+                                    );
+                                } ?>
+
+                                <div class="dnk-cert-buy__registration-consent" data-role="registration-consent">
+                                    <?php TSolution\Functions::showBlockHtml([
+                                        'FILE' => 'consent/dnk/userconsent.php',
+                                        'PARAMS' => [
+                                            'OPTION_CODE' => $registrationConsentOption,
+                                            'SUBMIT_TEXT' => GetMessage('DNK_CERT_BUY_SUBMIT'),
+                                            'REPLACE_FIELDS' => [],
+                                            'INPUT_NAME' => $licenseInputName,
+                                            'INPUT_ID' => 'dnk-cert-buy-register-consent',
+                                        ],
+                                    ]); ?>
+                                </div>
+                            </div>
+
+                            <div class="dnk-cert-buy__sms" data-role="sms-box" hidden>
+                                <div class="dnk-cert-buy__sms-title font_14"><?= GetMessage('DNK_CERT_BUY_SMS_TITLE'); ?></div>
+                                <p class="dnk-cert-buy__sms-caption" data-role="sms-caption"><?= GetMessage('DNK_CERT_BUY_SMS_SENT'); ?></p>
+                                <div class="dnk-cert-buy__sms-row">
+                                    <input class="dnk-cert-buy__input form-control" type="text" name="dnk_cert_sms_code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_SMS_CODE')); ?>">
+                                    <button type="button" class="btn btn-default" data-role="sms-confirm"><?= GetMessage('DNK_CERT_BUY_SMS_CONFIRM'); ?></button>
+                                </div>
+                                <button type="button" class="btn btn-link" data-role="sms-resend" disabled><?= GetMessage('DNK_CERT_BUY_SMS_RESEND'); ?></button>
+                            </div>
+                        <?php } ?>
+
+                        <div class="dnk-cert-buy__submit-feedback"
+                             data-role="submit-feedback"
+                             role="status"
+                             aria-live="polite"
+                             aria-atomic="true"
+                             hidden></div>
+
+                        <button type="button" class="btn btn-lg btn-primary dnk-cert-buy__submit" data-role="submit">
+                            <?= GetMessage('DNK_CERT_BUY_SUBMIT'); ?>
+                        </button>
                     </div>
                 </div>
                 <aside class="dnk-cert-buy__checkout-summary" aria-label="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_SUMMARY_TITLE')); ?>">

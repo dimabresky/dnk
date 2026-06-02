@@ -2,6 +2,7 @@
 
 use Bitrix\Main\Loader;
 use Dnk\PhpInterface\BonusAccrualEvents;
+use Dnk\PhpInterface\CertificateBuyPhoneAuth;
 use Dnk\PhpInterface\BonusBalanceQueueAgent;
 use Dnk\PhpInterface\HeaderPromoEvents;
 use Dnk\PhpInterface\IblockProductBrandEvents;
@@ -28,6 +29,7 @@ if (is_file($includeDir . '/constants.php')) {
 
 Loader::registerAutoLoadClasses(null, [
     Utils::class => $classesPath . '/Utils.php',
+    CertificateBuyPhoneAuth::class => $classesPath . '/CertificateBuyPhoneAuth.php',
     BonusAccrualEvents::class => $classesPath . '/BonusAccrualEvents.php',
     HeaderPromoEvents::class => $classesPath . '/HeaderPromoEvents.php',
     BonusFetchAgent::class => $classesPath . '/BonusFetchAgent.php',

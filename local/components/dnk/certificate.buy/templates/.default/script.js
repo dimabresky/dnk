@@ -418,6 +418,74 @@
     }, CART_PERSIST_DEBOUNCE_MS);
   }
 
+  function collectSubmitContext(root, vueVm) {
+    var nameInput = qs(root, 'input[name="dnk_cert_contact_name"]');
+    var phoneInput = qs(root, 'input[name="dnk_cert_contact_phone"]');
+    var commentTa = qs(root, 'textarea[name="dnk_cert_comment"]');
+    var contactName = nameInput ? nameInput.value.trim() : '';
+    var contactPhone = phoneInput ? phoneInput.value.trim() : '';
+    var comment = commentTa ? commentTa.value.trim() : '';
+    var vmSubmit = root.__dnkCertBuyVue;
+    var collect =
+      vmSubmit &&
+      vmSubmit.collectSubmitItems &&
+      typeof vmSubmit.collectSubmitItems === 'function'
+        ? vmSubmit
+        : vueVm && vueVm.collectSubmitItems && typeof vueVm.collectSubmitItems === 'function'
+          ? vueVm
+          : null;
+    var items =
+      collect && typeof collect.collectSubmitItems === 'function' ? collect.collectSubmitItems() : [];
+    var deliveryXmlId = collect && collect.deliveryXmlId ? collect.deliveryXmlId : DELIVERY_COURIER;
+    var pickupStoreId = collect && collect.selectedPickupId ? collect.selectedPickupId : null;
+
+    return {
+      nameInput: nameInput,
+      phoneInput: phoneInput,
+      contactName: contactName,
+      contactPhone: contactPhone,
+      comment: comment,
+      collect: collect,
+      items: items,
+      deliveryXmlId: deliveryXmlId,
+      pickupStoreId: pickupStoreId,
+    };
+  }
+
+  function collectResponseErrors(response) {
+    var data = response && response.data ? response.data : {};
+    var errors = [];
+    if (response && response.errors && response.errors.length) {
+      for (var e = 0; e < response.errors.length; e += 1) {
+        if (response.errors[e] && response.errors[e].message) {
+          errors.push(String(response.errors[e].message));
+        }
+      }
+    }
+    if (data.errors && data.errors.length) {
+      for (var j = 0; j < data.errors.length; j += 1) {
+        errors.push(String(data.errors[j]));
+      }
+    }
+    return errors.filter(Boolean);
+  }
+
+  function setSmsState(root, isOpen, text) {
+    var smsBox = qs(root, '[data-role="sms-box"]');
+    if (!smsBox) {
+      return;
+    }
+    if (isOpen) {
+      smsBox.removeAttribute('hidden');
+    } else {
+      smsBox.setAttribute('hidden', 'hidden');
+    }
+    var caption = qs(root, '[data-role="sms-caption"]');
+    if (caption && text) {
+      caption.textContent = text;
+    }
+  }
+
   function bindSubmit(root, vueVm) {
     var btn = qs(root, '[data-role="submit"]');
     if (!btn || !btn.addEventListener) {
@@ -428,59 +496,196 @@
     }
     btn.setAttribute('data-dnk-submit-bound', '1');
 
+    var pendingAuth = {
+      active: false,
+      payload: '',
+      signedData: '',
+      scenario: '',
+      phone: '',
+      collectVm: null,
+    };
+    var smsCodeInput = qs(root, 'input[name="dnk_cert_sms_code"]');
+    var smsConfirmBtn = qs(root, '[data-role="sms-confirm"]');
+    var smsResendBtn = qs(root, '[data-role="sms-resend"]');
+
+    function finalizeSuccess(data) {
+      var msgTpl = root.getAttribute('data-msg-success') || '';
+      submitFeedback(root, 'success', msgTpl.replace('#REQUEST_ID#', String(data.requestId)));
+      var vmOk = root.__dnkCertBuyVue;
+      if (
+        vmOk &&
+        vmOk.resetCertificateQuantities &&
+        typeof vmOk.resetCertificateQuantities === 'function'
+      ) {
+        vmOk.resetCertificateQuantities();
+      }
+      pendingAuth.active = false;
+      pendingAuth.payload = '';
+      pendingAuth.signedData = '';
+      pendingAuth.scenario = '';
+      pendingAuth.phone = '';
+      setSmsState(root, false);
+      if (smsCodeInput) {
+        smsCodeInput.value = '';
+      }
+    }
+
+    function runSubmit(payload, collect) {
+      return persistCartAjax(collect)
+        .catch(function () {
+          return null;
+        })
+        .then(function () {
+          return BX.ajax.runComponentAction('dnk:certificate.buy', 'submit', {
+            mode: 'class',
+            data: { payload: payload },
+          });
+        });
+    }
+
+    function confirmBySms() {
+      if (!pendingAuth.active || !pendingAuth.payload) {
+        submitFeedback(root, 'error', 'Сначала запросите SMS-код.');
+        return;
+      }
+      var smsCode = smsCodeInput ? smsCodeInput.value.trim() : '';
+      if (!smsCode) {
+        submitFeedback(root, 'error', 'Введите код из SMS.');
+        if (smsCodeInput) {
+          smsCodeInput.focus();
+        }
+        return;
+      }
+      if (typeof BX === 'undefined' || !BX.ajax || !BX.ajax.runComponentAction) {
+        submitFeedback(root, 'error', 'Не загружены скрипты Битрикс.');
+        return;
+      }
+
+      btn.disabled = true;
+      if (smsConfirmBtn) {
+        smsConfirmBtn.disabled = true;
+      }
+
+      BX.ajax
+        .runComponentAction('dnk:certificate.buy', 'phoneAuthConfirm', {
+          mode: 'class',
+          data: {
+            payload: pendingAuth.payload,
+            smsCode: smsCode,
+            signedData: pendingAuth.signedData,
+            scenario: pendingAuth.scenario,
+            contactPhone: pendingAuth.phone,
+            orderConsent: qs(root, 'input[name="orderConsent"]') &&
+              qs(root, 'input[name="orderConsent"]').checked
+              ? 'Y'
+              : 'N',
+            registrationConsent:
+              !!qs(root, '#dnk-cert-buy-register-consent') &&
+              qs(root, '#dnk-cert-buy-register-consent').checked
+                ? 'Y'
+                : 'N',
+            licenses_register:
+              !!qs(root, '#dnk-cert-buy-register-consent') &&
+              qs(root, '#dnk-cert-buy-register-consent').checked
+                ? 'Y'
+                : 'N',
+          },
+        })
+        .then(
+          function (response) {
+            btn.disabled = false;
+            if (smsConfirmBtn) {
+              smsConfirmBtn.disabled = false;
+            }
+            var data = response && response.data ? response.data : {};
+            if (data.success && data.requestId) {
+              finalizeSuccess(data);
+              return;
+            }
+            var errors = collectResponseErrors(response);
+            submitFeedback(root, 'error', errors.join(' ') || (root.getAttribute('data-msg-error') || ''));
+          },
+          function () {
+            btn.disabled = false;
+            if (smsConfirmBtn) {
+              smsConfirmBtn.disabled = false;
+            }
+            submitFeedback(root, 'error', root.getAttribute('data-msg-error') || 'Ошибка запроса.');
+          }
+        );
+    }
+
+    if (smsConfirmBtn && smsConfirmBtn.addEventListener) {
+      smsConfirmBtn.addEventListener('click', confirmBySms);
+    }
+
+    if (smsResendBtn && smsResendBtn.addEventListener) {
+      smsResendBtn.addEventListener('click', function () {
+        if (
+          !pendingAuth.active ||
+          !pendingAuth.signedData ||
+          typeof BX === 'undefined' ||
+          !BX.ajax ||
+          !BX.ajax.runAction
+        ) {
+          return;
+        }
+        smsResendBtn.disabled = true;
+        BX.ajax
+          .runAction('main:phoneAuth.resendCode', { data: { signedData: pendingAuth.signedData } })
+          .then(
+            function (res) {
+              var data = res && res.data ? res.data : {};
+              if (data.DATA_SIGN) {
+                pendingAuth.signedData = data.DATA_SIGN;
+              }
+              setTimeout(function () {
+                smsResendBtn.disabled = false;
+              }, 1500);
+            },
+            function () {
+              setTimeout(function () {
+                smsResendBtn.disabled = false;
+              }, 1500);
+            }
+          );
+      });
+    }
+
     btn.addEventListener('click', function () {
       submitFeedback(root, 'error', '');
       clearCertCartPersistSchedule();
-
-      var nameInput = qs(root, 'input[name="dnk_cert_contact_name"]');
-      var phoneInput = qs(root, 'input[name="dnk_cert_contact_phone"]');
-      var commentTa = qs(root, 'textarea[name="dnk_cert_comment"]');
-
-      var contactName = nameInput ? nameInput.value.trim() : '';
-      var contactPhone = phoneInput ? phoneInput.value.trim() : '';
-      var comment = commentTa ? commentTa.value.trim() : '';
+      var context = collectSubmitContext(root, vueVm);
+      var contactName = context.contactName;
+      var contactPhone = context.contactPhone;
+      var comment = context.comment;
 
       if (!contactName.length) {
         submitFeedback(root, 'error', 'Укажите имя.');
-        if (nameInput) {
-          nameInput.focus();
+        if (context.nameInput) {
+          context.nameInput.focus();
         }
         return;
       }
 
       if (!contactPhone.length || digits(contactPhone).length < 9) {
         submitFeedback(root, 'error', 'Укажите корректный телефон.');
-        if (phoneInput) {
-          phoneInput.focus();
+        if (context.phoneInput) {
+          context.phoneInput.focus();
         }
         return;
       }
 
-      var vmSubmit = root.__dnkCertBuyVue;
-      var collect =
-        vmSubmit &&
-        vmSubmit.collectSubmitItems &&
-        typeof vmSubmit.collectSubmitItems === 'function'
-          ? vmSubmit
-          : vueVm &&
-              vueVm.collectSubmitItems &&
-              typeof vueVm.collectSubmitItems === 'function'
-            ? vueVm
-            : null;
-      var items =
-        collect && typeof collect.collectSubmitItems === 'function'
-          ? collect.collectSubmitItems()
-          : [];
+      var collect = context.collect;
+      var items = context.items;
 
       if (!items.length) {
         submitFeedback(root, 'error', 'Выберите количество хотя бы у одного сертификата.');
         return;
       }
 
-      var deliveryXmlId =
-        collect && collect.deliveryXmlId ? collect.deliveryXmlId : DELIVERY_COURIER;
-      var pickupStoreId =
-        collect && collect.selectedPickupId ? collect.selectedPickupId : null;
+      var deliveryXmlId = context.deliveryXmlId;
+      var pickupStoreId = context.pickupStoreId;
 
       if (deliveryXmlId === DELIVERY_PICKUP && !pickupStoreId) {
         submitFeedback(
@@ -510,62 +715,23 @@
       }
 
       var payload = JSON.stringify(payloadObj);
+      var isAuthorized = root.getAttribute('data-is-authorized') === '1';
 
       btn.disabled = true;
       clearCertCartPersistSchedule();
 
-      persistCartAjax(collect)
-        .catch(function () {
-          return null;
-        })
-        .then(function () {
-          return BX.ajax.runComponentAction('dnk:certificate.buy', 'submit', {
-            mode: 'class',
-            data: {
-              payload: payload,
-            },
-          });
-        })
+      if (isAuthorized) {
+        runSubmit(payload, collect)
         .then(
           function (response) {
             btn.disabled = false;
             var data = response && response.data ? response.data : {};
-            var ok = !!(data.success && data.requestId);
-            var msgTpl = ok
-              ? root.getAttribute('data-msg-success') || ''
-              : root.getAttribute('data-msg-error') || '';
-            var extra = [];
-
-            if (response && response.errors && response.errors.length) {
-              for (var e = 0; e < response.errors.length; e += 1) {
-                if (response.errors[e] && response.errors[e].message) {
-                  extra.push(String(response.errors[e].message));
-                }
-              }
+            if (data.success && data.requestId) {
+              finalizeSuccess(data);
+              return;
             }
-            if (data.errors && data.errors.length) {
-              for (var j = 0; j < data.errors.length; j += 1) {
-                extra.push(String(data.errors[j]));
-              }
-            }
-
-            if (ok) {
-              submitFeedback(
-                root,
-                'success',
-                msgTpl.replace('#REQUEST_ID#', String(data.requestId))
-              );
-              var vmOk = root.__dnkCertBuyVue;
-              if (
-                vmOk &&
-                vmOk.resetCertificateQuantities &&
-                typeof vmOk.resetCertificateQuantities === 'function'
-              ) {
-                vmOk.resetCertificateQuantities();
-              }
-            } else {
-              submitFeedback(root, 'error', extra.filter(Boolean).join(' ') || msgTpl);
-            }
+            var extra = collectResponseErrors(response);
+            submitFeedback(root, 'error', extra.join(' ') || (root.getAttribute('data-msg-error') || ''));
           },
           function () {
             btn.disabled = false;
@@ -574,6 +740,76 @@
               'error',
               root.getAttribute('data-msg-error') || 'Ошибка запроса.'
             );
+          }
+        );
+        return;
+      }
+
+      if (qs(root, 'input[name="orderConsent"]') && !qs(root, 'input[name="orderConsent"]').checked) {
+        btn.disabled = false;
+        submitFeedback(root, 'error', 'Необходимо согласие на обработку персональных данных.');
+        return;
+      }
+      if (qs(root, '#dnk-cert-buy-register-consent') && !qs(root, '#dnk-cert-buy-register-consent').checked) {
+        btn.disabled = false;
+        submitFeedback(root, 'error', 'Необходимо согласие с условиями регистрации.');
+        return;
+      }
+
+      persistCartAjax(collect)
+        .catch(function () {
+          return null;
+        })
+        .then(function () {
+          return BX.ajax.runComponentAction('dnk:certificate.buy', 'phoneAuthStart', {
+            mode: 'class',
+            data: {
+              contactName: contactName,
+              contactPhone: contactPhone,
+              payload: payload,
+              orderConsent: qs(root, 'input[name="orderConsent"]') &&
+                qs(root, 'input[name="orderConsent"]').checked
+                ? 'Y'
+                : 'N',
+              registrationConsent:
+                !!qs(root, '#dnk-cert-buy-register-consent') &&
+                qs(root, '#dnk-cert-buy-register-consent').checked
+                  ? 'Y'
+                  : 'N',
+              licenses_register:
+                !!qs(root, '#dnk-cert-buy-register-consent') &&
+                qs(root, '#dnk-cert-buy-register-consent').checked
+                  ? 'Y'
+                  : 'N',
+            },
+          });
+        })
+        .then(
+          function (response) {
+            btn.disabled = false;
+            var data = response && response.data ? response.data : {};
+            if (data.success && data.signedData) {
+              pendingAuth.active = true;
+              pendingAuth.payload = payload;
+              pendingAuth.signedData = String(data.signedData || '');
+              pendingAuth.scenario = String(data.scenario || '');
+              pendingAuth.phone = contactPhone;
+              pendingAuth.collectVm = collect;
+              setSmsState(root, true, data.phoneMasked ? 'Код отправлен на ' + data.phoneMasked : '');
+              if (smsResendBtn) {
+                smsResendBtn.disabled = false;
+              }
+              if (smsCodeInput) {
+                smsCodeInput.focus();
+              }
+              return;
+            }
+            var extra = collectResponseErrors(response);
+            submitFeedback(root, 'error', extra.join(' ') || (root.getAttribute('data-msg-error') || ''));
+          },
+          function () {
+            btn.disabled = false;
+            submitFeedback(root, 'error', root.getAttribute('data-msg-error') || 'Ошибка запроса.');
           }
         );
     });

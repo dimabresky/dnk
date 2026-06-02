@@ -333,6 +333,46 @@
   margin-bottom: 16px;
 }
 
+.dnk-cert-buy__auth-consents {
+  margin-bottom: 14px;
+}
+
+.dnk-cert-buy__registration-consent {
+  margin-top: 12px;
+}
+
+.dnk-cert-buy__sms {
+  border: 1px solid var(--stroke_black, #e5e5e5);
+  border-radius: 8px;
+  padding: 14px;
+  margin: 0 0 12px;
+  background: var(--card_bg_black, #fff);
+}
+
+.dnk-cert-buy__sms[hidden] {
+  display: none !important;
+}
+
+.dnk-cert-buy__sms-title {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.dnk-cert-buy__sms-caption {
+  margin: 0 0 10px;
+  color: var(--basic_text_black, #444);
+}
+
+.dnk-cert-buy__sms-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.dnk-cert-buy__sms-row .dnk-cert-buy__input {
+  max-width: 180px;
+}
+
 .dnk-cert-buy__submit-feedback {
   box-sizing: border-box;
   margin-top: 4px;
