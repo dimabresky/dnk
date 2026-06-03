@@ -448,9 +448,27 @@ final class Utils
     }
 
     /**
-     * GET {DNK_BONUS_ENDPOINT}/{номер} — ответ по одному телефону, разбор как у агента (программа, НачисленоОстаток).
+     * GET {DNK_BONUS_ENDPOINT}/{номер} — баланс по одному телефону (обёртка над fetchBonusImportDataByPhoneDigits).
      */
     public static function fetchBonusBalanceByPhoneDigits(string $phoneDigits): ?float
+    {
+        $data = self::fetchBonusImportDataByPhoneDigits($phoneDigits);
+
+        return $data !== null ? $data['balance'] : null;
+    }
+
+    /**
+     * GET {DNK_BONUS_ENDPOINT}/{номер} — разбор как у агента импорта (баланс, уровень, сумма перехода).
+     *
+     * @return array{
+     *     balance: float,
+     *     client_level: int|null,
+     *     next_level_cost: float|null,
+     *     has_client_level: bool,
+     *     has_next_level_cost: bool
+     * }|null
+     */
+    public static function fetchBonusImportDataByPhoneDigits(string $phoneDigits): ?array
     {
         $phoneDigits = self::normalizeBonusPhoneDigits($phoneDigits);
         if ($phoneDigits === '') {
@@ -470,7 +488,7 @@ final class Utils
 
         $decoded = json_decode($body, true);
 
-        return self::resolveBalanceFromBonusJsonDecoded($decoded);
+        return self::resolveBonusImportFromBonusJsonDecoded($decoded);
     }
 
     /**
@@ -517,14 +535,21 @@ final class Utils
             return false;
         }
 
-        $resolved = self::fetchBonusBalanceByPhoneDigits($phoneDigits);
+        $resolved = self::fetchBonusImportDataByPhoneDigits($phoneDigits);
         if ($resolved === null) {
             $errorDetail = 'bonus_api_or_parse_failed';
 
             return false;
         }
 
-        self::replaceDnkImportBonusesForUser($userId, $resolved);
+        self::replaceDnkImportBonusesForUser($userId, $resolved['balance']);
+        self::syncDnkBonusImportUserLevelFromFile(
+            $userId,
+            $resolved['client_level'],
+            $resolved['next_level_cost'],
+            $resolved['has_client_level'],
+            $resolved['has_next_level_cost']
+        );
 
         return true;
     }
@@ -895,56 +920,124 @@ final class Utils
 
     /**
      * @param mixed $decoded Результат json_decode для ответа по телефону.
+     *
+     * @return array{
+     *     balance: float,
+     *     client_level: int|null,
+     *     next_level_cost: float|null,
+     *     has_client_level: bool,
+     *     has_next_level_cost: bool
+     * }|null
      */
-    private static function resolveBalanceFromBonusJsonDecoded(mixed $decoded): ?float
+    private static function resolveBonusImportFromBonusJsonDecoded(mixed $decoded): ?array
     {
-        if (!is_array($decoded)) {
-            return null;
-        }
-        if ($decoded === []) {
+        if (!is_array($decoded) || $decoded === []) {
             return null;
         }
 
+        $entry = self::createEmptyBonusImportJsonEntry();
+
         if (array_is_list($decoded)) {
-            $resolved = null;
+            $matched = false;
             foreach ($decoded as $item) {
                 if (!is_array($item)) {
                     continue;
                 }
-                $v = self::resolveBalanceFromBonusJsonRow($item);
-                if ($v !== null) {
-                    $resolved = $v;
+                $merged = self::mergeBonusImportJsonRowIntoEntry($entry, $item);
+                if ($merged !== null) {
+                    $entry = $merged;
+                    $matched = true;
                 }
             }
 
-            return $resolved;
+            return $matched ? $entry : null;
         }
 
-        return self::resolveBalanceFromBonusJsonRow($decoded);
+        return self::mergeBonusImportJsonRowIntoEntry($entry, $decoded);
     }
 
     /**
-     * Одна строка ответа: фильтр программы и поле НачисленоОстаток (как в агенте).
+     * @return array{
+     *     balance: float,
+     *     client_level: int|null,
+     *     next_level_cost: float|null,
+     *     has_client_level: bool,
+     *     has_next_level_cost: bool
+     * }
+     */
+    private static function createEmptyBonusImportJsonEntry(): array
+    {
+        return [
+            'balance' => 0.0,
+            'client_level' => null,
+            'next_level_cost' => null,
+            'has_client_level' => false,
+            'has_next_level_cost' => false,
+        ];
+    }
+
+    /**
+     * Одна строка ответа: фильтр программы, баланс и поля уровня (как в BonusFetchAgent).
      *
      * @param array<string, mixed> $row
+     * @param array{
+     *     balance: float,
+     *     client_level: int|null,
+     *     next_level_cost: float|null,
+     *     has_client_level: bool,
+     *     has_next_level_cost: bool
+     * } $entry
+     * @return array{
+     *     balance: float,
+     *     client_level: int|null,
+     *     next_level_cost: float|null,
+     *     has_client_level: bool,
+     *     has_next_level_cost: bool
+     * }|null
      */
-    private static function resolveBalanceFromBonusJsonRow(array $row): ?float
+    private static function mergeBonusImportJsonRowIntoEntry(array $entry, array $row): ?array
     {
+        if (!self::bonusImportJsonRowPassesProgramFilter($row)) {
+            return null;
+        }
+
         $keyBalance = DNK_BONUS_JSON_KEY_BALANCE;
         if (!array_key_exists($keyBalance, $row)) {
             return null;
         }
 
-        $codeDnk = strtolower((string)DNK_BONUS_IMPORT_PROGRAM_CODE);
-        $keyProgram = DNK_BONUS_JSON_KEY_PROGRAM;
-        if (isset($row[$keyProgram])) {
-            $prog = strtolower(trim((string)$row[$keyProgram]));
-            if ($prog !== '' && $prog !== $codeDnk) {
-                return null;
+        $entry['balance'] = self::parseBonusImportAmount($row[$keyBalance]);
+
+        if (array_key_exists(DNK_BONUS_JSON_KEY_CLIENT_LEVEL, $row)) {
+            $parsedLevel = self::parseBonusImportClientLevel($row[DNK_BONUS_JSON_KEY_CLIENT_LEVEL]);
+            if ($parsedLevel !== null) {
+                $entry['client_level'] = $parsedLevel;
+                $entry['has_client_level'] = true;
             }
         }
 
-        return self::parseBonusImportAmount($row[$keyBalance]);
+        if (array_key_exists(DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST, $row)) {
+            $entry['next_level_cost'] = self::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST] ?? null);
+            $entry['has_next_level_cost'] = true;
+        }
+
+        return $entry;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private static function bonusImportJsonRowPassesProgramFilter(array $row): bool
+    {
+        $codeDnk = strtolower((string)DNK_BONUS_IMPORT_PROGRAM_CODE);
+        $keyProgram = DNK_BONUS_JSON_KEY_PROGRAM;
+        if (!isset($row[$keyProgram])) {
+            return true;
+        }
+
+        $prog = strtolower(trim((string)$row[$keyProgram]));
+
+        return $prog === '' || $prog === $codeDnk;
     }
 
     private static function resolveUserPhoneDigitsForBonus(int $userId): ?string
@@ -1119,7 +1212,7 @@ final class Utils
     }
 
     /**
-     * Синхронизация уровня клиента и суммы перехода из файлового импорта бонусов.
+     * Синхронизация уровня клиента и суммы перехода (файловый импорт или ответ API по телефону).
      * При смене UF_LEVEL — очередь переавторизации и смена уровневой группы пользователя.
      *
      * @param int|null $clientLevel Нормализованный уровень (1, 2, 3, 5) или null при невалидном значении.

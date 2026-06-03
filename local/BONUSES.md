@@ -237,7 +237,7 @@ $rows = HistoryOperationsTable::getList([
 | 3 | 11 | Beauty Premium |
 | 5 | 12 | Сотрудник |
 
-> **Примечание:** точечная синхронизация по одному пользователю через HTTP (`DNK_BONUS_ENDPOINT`, очередь `BonusBalanceQueueAgent`) по-прежнему использует API и обновляет только баланс; массовый импорт агентом `BonusFetchAgent` работает только с файлами.
+> **Примечание:** точечная синхронизация по одному пользователю через HTTP (`DNK_BONUS_ENDPOINT`, очередь `BonusBalanceQueueAgent`, `Utils::trySyncDnkImportBonusesForUserByPhone`) обновляет баланс и при наличии в ответе ключей уровня — `UF_LEVEL` / `UF_NEXT_LEVEL_COST` (та же логика, что при файловом импорте). Массовый импорт агентом `BonusFetchAgent` работает только с файлами.
 
 ---
 
