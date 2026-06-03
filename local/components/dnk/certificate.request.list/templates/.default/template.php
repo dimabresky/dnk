@@ -8,11 +8,13 @@ use Bitrix\Main\Localization\Loc;
 
 Loc::loadMessages(__FILE__);
 
+global $APPLICATION;
+
 $this->setFrameMode(false);
 $this->addExternalCss($templateFolder . '/style.css');
 
 $items = is_array($arResult['ITEMS'] ?? null) ? $arResult['ITEMS'] : [];
-$navString = (string)($arResult['NAV_STRING'] ?? '');
+$navObject = $arResult['NAV_OBJECT'] ?? null;
 ?>
 <div class="personal__block personal__block--certificate-requests">
     <?php if ($items === []) { ?>
@@ -44,8 +46,18 @@ $navString = (string)($arResult['NAV_STRING'] ?? '');
                 </tbody>
             </table>
         </div>
-        <?php if ($navString !== '') { ?>
-            <div class="dnk-cert-req-list-nav"><?= $navString; ?></div>
+        <?php if ($navObject instanceof \Bitrix\Main\UI\PageNavigation && $navObject->getPageCount() > 1) { ?>
+            <div class="dnk-cert-req-list-nav">
+                <?php $APPLICATION->IncludeComponent(
+                    'bitrix:main.pagenavigation',
+                    '',
+                    [
+                        'NAV_OBJECT' => $navObject,
+                        'SEF_MODE' => 'N',
+                    ],
+                    false
+                ); ?>
+            </div>
         <?php } ?>
     <?php } ?>
 </div>

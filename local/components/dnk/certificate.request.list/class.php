@@ -2,8 +2,15 @@
 
 declare(strict_types=1);
 
+use Bitrix\Iblock\ElementPropertyTable;
+use Bitrix\Iblock\ElementTable;
+use Bitrix\Iblock\PropertyTable;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Query\Join;
+use Bitrix\Main\Type\DateTime;
+use Bitrix\Main\UI\PageNavigation;
 use Dnk\PhpInterface\CertificateRequestStatus;
 
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
@@ -49,58 +56,118 @@ class DnkCertificateRequestListComponent extends CBitrixComponent
 
         $userId = (int)$USER->GetID();
         $pageSize = (int)$this->arParams['REQUESTS_PER_PAGE'];
-        $navId = 'dnk_cert_req_list';
-        $page = max(1, (int)($_REQUEST[$navId] ?? 1));
+        $propertyIds = $this->loadPropertyIds($iblockId, [
+            'USER',
+            'TOTAL_SUM',
+            CertificateRequestStatus::PROP_CODE,
+        ]);
+        if (
+            empty($propertyIds['USER'])
+            || empty($propertyIds['TOTAL_SUM'])
+            || empty($propertyIds[CertificateRequestStatus::PROP_CODE])
+        ) {
+            ShowError(Loc::getMessage('DNK_CERT_REQ_LIST_ERR_CONFIG'));
+
+            return;
+        }
+
+        $nav = new PageNavigation('dnk_cert_req_list');
+        $nav->allowAllRecords(false);
+        $nav->setPageSize($pageSize);
+        $nav->initFromUri();
 
         $this->arResult['ITEMS'] = [];
-        $this->arResult['NAV_STRING'] = '';
+        $this->arResult['NAV_OBJECT'] = $nav;
 
-        $rs = CIBlockElement::GetList(
-            ['DATE_CREATE' => 'DESC', 'ID' => 'DESC'],
-            [
-                'IBLOCK_ID' => $iblockId,
-                'PROPERTY_USER' => $userId,
-            ],
-            false,
-            [
-                'nPageSize' => $pageSize,
-                'bShowAll' => false,
-                'iNumPage' => $page,
-            ],
-            [
+        $result = ElementTable::getList([
+            'select' => [
                 'ID',
                 'NAME',
                 'DATE_CREATE',
-                'PROPERTY_TOTAL_SUM',
-                'PROPERTY_STATUS',
-            ]
-        );
+                'TOTAL_SUM_VALUE' => 'TOTAL_PROP.VALUE',
+                'STATUS_ENUM_ID' => 'STATUS_PROP.VALUE_ENUM',
+            ],
+            'filter' => [
+                '=IBLOCK_ID' => $iblockId,
+                '=USER_PROP.VALUE' => (string)$userId,
+            ],
+            'order' => [
+                'DATE_CREATE' => 'DESC',
+                'ID' => 'DESC',
+            ],
+            'runtime' => [
+                new Reference(
+                    'USER_PROP',
+                    ElementPropertyTable::class,
+                    Join::on('this.ID', 'ref.IBLOCK_ELEMENT_ID')
+                        ->where('ref.IBLOCK_PROPERTY_ID', (int)$propertyIds['USER'])
+                ),
+                new Reference(
+                    'TOTAL_PROP',
+                    ElementPropertyTable::class,
+                    Join::on('this.ID', 'ref.IBLOCK_ELEMENT_ID')
+                        ->where('ref.IBLOCK_PROPERTY_ID', (int)$propertyIds['TOTAL_SUM'])
+                ),
+                new Reference(
+                    'STATUS_PROP',
+                    ElementPropertyTable::class,
+                    Join::on('this.ID', 'ref.IBLOCK_ELEMENT_ID')
+                        ->where('ref.IBLOCK_PROPERTY_ID', (int)$propertyIds[CertificateRequestStatus::PROP_CODE])
+                ),
+            ],
+            'limit' => $nav->getLimit(),
+            'offset' => $nav->getOffset(),
+            'count_total' => true,
+        ]);
 
-        while ($row = $rs->GetNext()) {
-            $statusEnumId = (int)($row['PROPERTY_STATUS_ENUM_ID'] ?? $row['PROPERTY_STATUS_VALUE'] ?? 0);
+        $nav->setRecordCount((int)$result->getCount());
+
+        while ($row = $result->fetch()) {
+            $statusEnumId = (int)($row['STATUS_ENUM_ID'] ?? 0);
             $status = CertificateRequestStatus::formatFromEnumId($statusEnumId);
-            $totalSum = round((float)($row['PROPERTY_TOTAL_SUM_VALUE'] ?? 0), 2);
+            $totalSum = round((float)($row['TOTAL_SUM_VALUE'] ?? 0), 2);
 
             $this->arResult['ITEMS'][] = [
                 'id' => (int)($row['ID'] ?? 0),
                 'name' => trim((string)($row['NAME'] ?? '')),
-                'dateCreateFormatted' => $this->formatDate((string)($row['DATE_CREATE'] ?? '')),
+                'dateCreateFormatted' => $this->formatDate($row['DATE_CREATE'] ?? null),
                 'totalSumFormatted' => $this->formatMoney($totalSum),
                 'statusLabel' => $status['label'],
                 'statusCss' => $status['css'],
             ];
         }
 
-        $this->arResult['NAV_STRING'] = $rs->GetPageNavStringEx(
-            $navId,
-            Loc::getMessage('DNK_CERT_REQ_LIST_NAV_TITLE'),
-            '',
-            false,
-            $this,
-            ['NAV_RESULT' => $rs]
-        );
-
         $this->includeComponentTemplate();
+    }
+
+    /**
+     * @param list<string> $codes
+     * @return array<string, int>
+     */
+    private function loadPropertyIds(int $iblockId, array $codes): array
+    {
+        if ($iblockId <= 0 || $codes === []) {
+            return [];
+        }
+
+        $ids = [];
+        $result = PropertyTable::getList([
+            'select' => ['ID', 'CODE'],
+            'filter' => [
+                '=IBLOCK_ID' => $iblockId,
+                '@CODE' => $codes,
+            ],
+        ]);
+
+        while ($row = $result->fetch()) {
+            $code = (string)($row['CODE'] ?? '');
+            $id = (int)($row['ID'] ?? 0);
+            if ($code !== '' && $id > 0) {
+                $ids[$code] = $id;
+            }
+        }
+
+        return $ids;
     }
 
     private function formatMoney(float $amount): string
@@ -112,15 +179,23 @@ class DnkCertificateRequestListComponent extends CBitrixComponent
         return number_format($amount, 2, ',', '') . ' BYN';
     }
 
-    private function formatDate(string $dateTime): string
+    /**
+     * @param DateTime|string|null $dateTime
+     */
+    private function formatDate($dateTime): string
     {
-        if ($dateTime === '') {
+        if ($dateTime instanceof DateTime) {
+            return FormatDate('d.m.Y H:i', $dateTime->getTimestamp());
+        }
+
+        $dateTimeString = (string)$dateTime;
+        if ($dateTimeString === '') {
             return '';
         }
 
-        $ts = MakeTimeStamp($dateTime);
+        $ts = MakeTimeStamp($dateTimeString);
         if ($ts <= 0) {
-            return $dateTime;
+            return $dateTimeString;
         }
 
         return FormatDate('d.m.Y H:i', $ts);
