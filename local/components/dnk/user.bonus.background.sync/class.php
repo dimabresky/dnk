@@ -69,13 +69,6 @@ class DnkUserBonusBackgroundSyncComponent extends CBitrixComponent implements Co
             ];
         }
 
-        if (!$this->isAllowedPage()) {
-            return [
-                'success' => false,
-                'errorCode' => 'page_not_allowed',
-            ];
-        }
-
         $errorDetail = '';
         $synced = Utils::trySyncDnkImportBonusesForUserByPhone($userId, $errorDetail);
 
