@@ -28,6 +28,53 @@ final class Utils
     }
 
     /**
+     * Если авторизованный пользователь есть в очереди переавторизации — удалить запись,
+     * переавторизовать и перенаправить на текущую страницу.
+     */
+    public static function processUserReauthorizeIfNeeded(): void
+    {
+        global $USER;
+
+        if (!is_object($USER) || !($USER instanceof \CUser) || !$USER->IsAuthorized()) {
+            return;
+        }
+
+        $userId = (int)$USER->GetID();
+        if ($userId <= 0) {
+            return;
+        }
+
+        $row = UserReauthorizeQueueTable::getList([
+            'filter' => ['=USER_ID' => $userId],
+            'select' => ['ID'],
+            'limit' => 1,
+        ])->fetch();
+
+        if ($row === false) {
+            return;
+        }
+
+        UserReauthorizeQueueTable::delete((int)$row['ID']);
+        $USER->Authorize($userId, true);
+
+        $redirectUrl = self::resolveCurrentRequestUri();
+        LocalRedirect($redirectUrl);
+    }
+
+    /**
+     * Текущий URI запроса (путь и query string) для LocalRedirect.
+     */
+    private static function resolveCurrentRequestUri(): string
+    {
+        $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+        if ($uri !== '' && $uri[0] === '/') {
+            return $uri;
+        }
+
+        return '/';
+    }
+
+    /**
      * Безопасное значение для CSS font-size (px, rem, em, % или число — трактуется как px).
      */
     public static function sanitizeCssFontSize(string $value): string
