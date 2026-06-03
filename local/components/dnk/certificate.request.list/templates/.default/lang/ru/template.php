@@ -1,0 +1,20 @@
+<?php
+
+$MESS['DNK_CERT_REQ_LIST_EMPTY'] = 'У вас пока нет сертификатов.';
+$MESS['DNK_CERT_REQ_LIST_COL_ID'] = '№ заказа';
+$MESS['DNK_CERT_REQ_LIST_COL_DATE'] = 'Дата';
+$MESS['DNK_CERT_REQ_LIST_COL_SUM'] = 'Сумма';
+$MESS['DNK_CERT_REQ_LIST_COL_STATUS'] = 'Статус';
+$MESS['DNK_CERT_REQ_LIST_MOBILE_ORDER'] = 'Заказ';
+$MESS['DNK_CERT_REQ_LIST_TOGGLE_SHOW'] = 'Подробнее';
+$MESS['DNK_CERT_REQ_LIST_TOGGLE_HIDE'] = 'Свернуть';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_TITLE'] = 'Подробная информация по заказу';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_CONTACT'] = 'Контакт';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_NAME'] = 'Имя';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_PHONE'] = 'Телефон';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_EMAIL'] = 'E-mail';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_DELIVERY'] = 'Доставка';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_PAYMENT'] = 'Оплата';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_LINES'] = 'Состав заказа';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_COMMENT'] = 'Комментарий';
+$MESS['DNK_CERT_REQ_LIST_DETAILS_EMPTY'] = 'Детали заказа недоступны.';
