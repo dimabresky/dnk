@@ -1,14 +1,11 @@
 # dnk:user.bonus.background.sync
 
-Фоновая синхронизация бонусного баланса авторизованного пользователя по телефону через `DNK_BONUS_ENDPOINT` (логика в `Dnk\PhpInterface\Utils::trySyncDnkImportBonusesForUserByPhone`).
+Фоновая синхронизация бонусного баланса авторизованного пользователя по телефону через `DNK_BONUS_ENDPOINT` (логика в `Dnk\PhpInterface\Utils::trySyncDnkImportBonusesForUserByPhone`). Баланс обновляется **на сервере** (Aspro Bonus); DOM на странице не меняется.
 
 ## Условия работы
 
 - Пользователь **авторизован** (иначе `executeComponent()` завершается без вывода).
-- Текущая страница в одной из зон:
-  - главная (`/`, `/index.php`, `CSite::InDir('/index.php')`);
-  - `/personal/`;
-  - `/basket/`.
+- Текущая страница в одной из зон: главная (`CSite::InDir('/index.php')` и др.), `/personal/`, `/basket/`.
 
 ## Пример подключения (не подключать автоматически — только вручную на нужных шаблонах)
 
@@ -18,7 +15,6 @@ $APPLICATION->IncludeComponent(
     'dnk:user.bonus.background.sync',
     '',
     [
-        'BALANCE_SELECTOR' => '.js-dnk-bonus-balance',
         'AUTO_REFRESH' => 'Y',
     ],
     false,
@@ -27,13 +23,7 @@ $APPLICATION->IncludeComponent(
 ?>
 ```
 
-### Селектор для блока бонусов в ЛК (Aspro personal)
-
-```php
-'BALANCE_SELECTOR' => '.personal__main-private__wrapper--bonuses .personal__main-private__value',
-```
-
-На страницах, где выводится баланс, добавьте класс `js-dnk-bonus-balance` к элементу с суммой или передайте свой селектор в параметре `BALANCE_SELECTOR`.
+`script.js` в шаблоне компонента **не подключать вручную** — Bitrix загружает его автоматически (см. `AGENTS.md`).
 
 ## AJAX
 
@@ -44,9 +34,6 @@ $APPLICATION->IncludeComponent(
 ```json
 {
   "success": true,
-  "balance": 123.45,
-  "balanceFormatted": "123,45",
-  "balanceUnit": "б.",
   "errorCode": "optional"
 }
 ```

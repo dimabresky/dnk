@@ -11,12 +11,6 @@ $arComponentParameters = [
         ],
     ],
     'PARAMETERS' => [
-        'BALANCE_SELECTOR' => [
-            'PARENT' => 'SETTINGS',
-            'NAME' => GetMessage('DNK_BONUS_BG_SYNC_PARAM_BALANCE_SELECTOR'),
-            'TYPE' => 'STRING',
-            'DEFAULT' => '.js-dnk-bonus-balance',
-        ],
         'AUTO_REFRESH' => [
             'PARENT' => 'SETTINGS',
             'NAME' => GetMessage('DNK_BONUS_BG_SYNC_PARAM_AUTO_REFRESH'),
