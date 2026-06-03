@@ -103,23 +103,6 @@ class DnkUserBonusBackgroundSyncComponent extends CBitrixComponent implements Co
             return true;
         }
 
-        global $APPLICATION;
-
-        if (!is_object($APPLICATION)) {
-            return false;
-        }
-
-        $curPage = (string)$APPLICATION->GetCurPage(true);
-        $curPage = '/' . ltrim($curPage, '/');
-
-        if ($curPage === '/' || $curPage === '/index.php') {
-            return true;
-        }
-
-        $siteDir = defined('SITE_DIR') ? (string)SITE_DIR : '/';
-        $siteDir = rtrim($siteDir, '/') . '/';
-        $indexPath = $siteDir . 'index.php';
-
-        return $curPage === $indexPath || $curPage === rtrim($siteDir, '/');
+        return false;
     }
 }
