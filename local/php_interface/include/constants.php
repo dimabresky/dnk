@@ -138,6 +138,12 @@ define('DNK_BONUS_JSON_KEY_BALANCE', $dnkEnv('DNK_BONUS_JSON_KEY_BALANCE'));
 /** Ключ JSON: номер телефона партнёра (сопоставление при синхронизации по телефону). */
 define('DNK_BONUS_JSON_KEY_PARTNER_PHONE', $dnkEnv('DNK_BONUS_JSON_KEY_PARTNER_PHONE'));
 
+/** Ключ JSON: уровень клиента (UF_LEVEL). */
+define('DNK_BONUS_JSON_KEY_CLIENT_LEVEL', $dnkEnv('DNK_BONUS_JSON_KEY_CLIENT_LEVEL'));
+
+/** Ключ JSON: сумма для перехода на следующий уровень (UF_NEXT_LEVEL_COST). */
+define('DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST', $dnkEnv('DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST'));
+
 /** Каталог JSON-выгрузок остатков бонусов (относительно DOCUMENT_ROOT). */
 define('DNK_BONUS_CLIENT_IMPORT_DIR', $dnkEnv('DNK_BONUS_CLIENT_IMPORT_DIR'));
 

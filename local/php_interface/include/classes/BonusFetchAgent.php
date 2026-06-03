@@ -49,6 +49,7 @@ final class BonusFetchAgent
             return;
         }
 
+        $content = str_replace(["\r\n", "\r", "\n"], '', $content);
         $decoded = json_decode($content, true);
         if (!is_array($decoded)) {
             Utils::logClientBonusImportLine($logDir, $basename, '[error] invalid_json file=' . $basename);
@@ -56,34 +57,44 @@ final class BonusFetchAgent
             return;
         }
 
-        $balanceByDigits = self::buildBalanceByPhoneDigitsMap($decoded, $logDir, $basename);
-        if ($balanceByDigits === []) {
+        $importByDigits = self::buildImportDataByPhoneDigitsMap($decoded, $logDir, $basename);
+        if ($importByDigits === []) {
             Utils::logClientBonusImportLine($logDir, $basename, '[info] empty_or_no_valid_rows file=' . $basename);
             @unlink($filePath);
 
             return;
         }
 
-        $resolved = Utils::resolveUserIdsByBonusImportPhones(array_keys($balanceByDigits));
+        $resolved = Utils::resolveUserIdsByBonusImportPhones(array_keys($importByDigits));
 
         foreach ($resolved['not_found'] as $digits) {
+            $row = $importByDigits[$digits];
             Utils::logClientBonusImportLine(
                 $logDir,
                 $basename,
-                '[not_found] phone=' . $digits . ' balance=' . $balanceByDigits[$digits]
+                '[not_found] phone=' . $digits . ' balance=' . $row['balance']
             );
         }
 
         foreach ($resolved['ambiguous'] as $digits) {
+            $row = $importByDigits[$digits];
             Utils::logClientBonusImportLine(
                 $logDir,
                 $basename,
-                '[ambiguous_phone] phone=' . $digits . ' balance=' . $balanceByDigits[$digits]
+                '[ambiguous_phone] phone=' . $digits . ' balance=' . $row['balance']
             );
         }
 
         foreach ($resolved['found'] as $digits => $userId) {
-            Utils::replaceDnkImportBonusesForUser($userId, $balanceByDigits[$digits]);
+            $row = $importByDigits[$digits];
+            Utils::replaceDnkImportBonusesForUser($userId, $row['balance']);
+            Utils::syncDnkBonusImportUserLevelFromFile(
+                $userId,
+                $row['client_level'],
+                $row['next_level_cost'],
+                $row['has_client_level'],
+                $row['has_next_level_cost']
+            );
         }
 
         Utils::logClientBonusImportLine(
@@ -102,14 +113,20 @@ final class BonusFetchAgent
     }
 
     /**
-     * По каждому телефону — значение НачисленоОстаток из последней подходящей строки (без суммирования).
+     * По каждому телефону — данные из последней подходящей строки (без суммирования).
      *
      * @param array<int, mixed> $rows
-     * @return array<string, float> normalized phone digits => остаток
+     * @return array<string, array{
+     *     balance: float,
+     *     client_level: int|null,
+     *     next_level_cost: float|null,
+     *     has_client_level: bool,
+     *     has_next_level_cost: bool
+     * }>
      */
-    private static function buildBalanceByPhoneDigitsMap(array $rows, string $logDir, string $basename): array
+    private static function buildImportDataByPhoneDigitsMap(array $rows, string $logDir, string $basename): array
     {
-        $balanceByDigits = [];
+        $importByDigits = [];
         $codeDnk = strtolower((string)DNK_BONUS_IMPORT_PROGRAM_CODE);
 
         foreach ($rows as $row) {
@@ -137,9 +154,37 @@ final class BonusFetchAgent
                 continue;
             }
 
-            $balanceByDigits[$digits] = Utils::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_BALANCE] ?? null);
+            // Последняя подходящая строка по телефону — полная замена, без переноса полей с предыдущих строк.
+            $entry = [
+                'balance' => Utils::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_BALANCE] ?? null),
+                'client_level' => null,
+                'next_level_cost' => null,
+                'has_client_level' => false,
+                'has_next_level_cost' => false,
+            ];
+
+            if (array_key_exists(DNK_BONUS_JSON_KEY_CLIENT_LEVEL, $row)) {
+                $parsedLevel = Utils::parseBonusImportClientLevel($row[DNK_BONUS_JSON_KEY_CLIENT_LEVEL]);
+                if ($parsedLevel === null) {
+                    Utils::logClientBonusImportLine(
+                        $logDir,
+                        $basename,
+                        '[invalid_client_level] phone=' . $digits . ' raw=' . (string)$row[DNK_BONUS_JSON_KEY_CLIENT_LEVEL]
+                    );
+                } else {
+                    $entry['client_level'] = $parsedLevel;
+                    $entry['has_client_level'] = true;
+                }
+            }
+
+            if (array_key_exists(DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST, $row)) {
+                $entry['next_level_cost'] = Utils::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST] ?? null);
+                $entry['has_next_level_cost'] = true;
+            }
+
+            $importByDigits[$digits] = $entry;
         }
 
-        return $balanceByDigits;
+        return $importByDigits;
     }
 }
