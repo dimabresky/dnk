@@ -131,8 +131,8 @@ class DnkCertificateRequestListComponent extends CBitrixComponent
 
         $namesByElementId = $this->loadCertificateElementNames(array_keys($allElementIds));
 
-        foreach ($this->arResult['ITEMS'] as &$item) {
-            $requestId = (int)($item['id'] ?? 0);
+        foreach (array_keys($this->arResult['ITEMS']) as $index) {
+            $requestId = (int)($this->arResult['ITEMS'][$index]['id'] ?? 0);
             if ($requestId <= 0 || !isset($parsedByRequestId[$requestId])) {
                 continue;
             }
@@ -154,12 +154,13 @@ class DnkCertificateRequestListComponent extends CBitrixComponent
                 ];
             }
 
-            if (isset($item['details']) && is_array($item['details'])) {
-                $item['details']['lines'] = $displayLines;
+            if (
+                isset($this->arResult['ITEMS'][$index]['details'])
+                && is_array($this->arResult['ITEMS'][$index]['details'])
+            ) {
+                $this->arResult['ITEMS'][$index]['details']['lines'] = $displayLines;
             }
-            unset($item);
         }
-        unset($item);
     }
 
     /**
