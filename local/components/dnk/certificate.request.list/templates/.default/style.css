@@ -1,0 +1,30 @@
+.table-certificate-requests thead th {
+    white-space: nowrap;
+}
+
+.dnk-cert-req-status {
+    display: inline-block;
+    padding: 0.2em 0.65em;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.dnk-cert-req-status--accepted {
+    background: #e8f4fd;
+    color: #0b5cab;
+}
+
+.dnk-cert-req-status--in_progress {
+    background: #fff4e5;
+    color: #9a6700;
+}
+
+.dnk-cert-req-status--ready {
+    background: #e6f4ea;
+    color: #137333;
+}
+
+.dnk-cert-req-list-nav {
+    margin-top: 1rem;
+}

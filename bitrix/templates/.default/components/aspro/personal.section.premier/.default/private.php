@@ -6,6 +6,7 @@ use Bitrix\Main\Localization\Loc;
 Loc::loadMessages(__FILE__);
 
 $consentsUrl = $arResult['PATH_TO_CONSENTS'] ?? rtrim($arParams['SEF_FOLDER'] ?? '', '/') . '/consents/';
+$certRequestsUrl = $arResult['PATH_TO_CERTIFICATE_REQUESTS'] ?? rtrim($arParams['SEF_FOLDER'] ?? '', '/') . '/certificate_requests/';
 
 if ($arParams['SET_TITLE'] === 'Y') {
 	$APPLICATION->SetTitle(Loc::getMessage('SPS_TITLE_PRIVATE'));
@@ -32,4 +33,5 @@ $this->__component->correctUserPhones();
 
 <div class="bottom-links-block mt mt--24">
 	<a class="btn btn-default btn-transparent-bg" href="<?=htmlspecialcharsbx($consentsUrl)?>"><?=Loc::getMessage('SPS_CONSENTS_LINK')?></a>
+	<a class="btn btn-default btn-transparent-bg" href="<?=htmlspecialcharsbx($certRequestsUrl)?>"><?=Loc::getMessage('SPS_CERTIFICATE_REQUESTS_LINK')?></a>
 </div>

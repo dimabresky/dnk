@@ -174,6 +174,111 @@ if ($exists) {
         }
     }
 
+    $statusEnums = [
+        'accepted' => 'Принят',
+        'in_progress' => 'В обработке',
+        'ready' => 'Готов',
+    ];
+
+    $statusProp = CIBlockProperty::GetList([], ['IBLOCK_ID' => $iblockId, 'CODE' => 'STATUS'])->Fetch();
+    $statusPropId = is_array($statusProp) ? (int)($statusProp['ID'] ?? 0) : 0;
+
+    if ($statusPropId <= 0) {
+        $statusPropId = (int)(new CIBlockProperty())->Add([
+            'IBLOCK_ID' => $iblockId,
+            'NAME' => 'Статус заявки',
+            'ACTIVE' => 'Y',
+            'SORT' => 220,
+            'CODE' => 'STATUS',
+            'PROPERTY_TYPE' => 'L',
+            'LIST_TYPE' => 'L',
+            'MULTIPLE' => 'N',
+            'FILTRABLE' => 'Y',
+        ]);
+        if ($statusPropId <= 0) {
+            $dnkCiErr("Failed to add STATUS property.\n");
+        } else {
+            $dnkCiOut("Added STATUS property (ID={$statusPropId}).\n");
+        }
+    } else {
+        $dnkCiOut("STATUS property already exists (ID={$statusPropId}).\n");
+    }
+
+    if ($statusPropId > 0) {
+        $enumInstaller = new CIBlockPropertyEnum();
+        $sort = 100;
+        $isFirstEnum = true;
+        foreach ($statusEnums as $xmlId => $caption) {
+            $existingEnum = CIBlockPropertyEnum::GetList(
+                [],
+                ['PROPERTY_ID' => $statusPropId, 'XML_ID' => $xmlId]
+            )->Fetch();
+            if (!is_array($existingEnum)) {
+                $enumId = $enumInstaller->Add([
+                    'PROPERTY_ID' => $statusPropId,
+                    'VALUE' => $caption,
+                    'XML_ID' => $xmlId,
+                    'DEF' => $isFirstEnum ? 'Y' : 'N',
+                    'SORT' => $sort,
+                ]);
+                if ($enumId) {
+                    $dnkCiOut("Added STATUS enum {$xmlId} (ID={$enumId}).\n");
+                } else {
+                    $dnkCiErr("Failed to add STATUS enum {$xmlId}.\n");
+                }
+            }
+            $isFirstEnum = false;
+            $sort += 100;
+        }
+
+        $acceptedEnum = CIBlockPropertyEnum::GetList(
+            [],
+            ['PROPERTY_ID' => $statusPropId, 'XML_ID' => 'accepted']
+        )->Fetch();
+        $acceptedEnumId = is_array($acceptedEnum) ? (int)($acceptedEnum['ID'] ?? 0) : 0;
+
+        if ($acceptedEnumId > 0) {
+            $backfillCount = 0;
+            $rsElements = CIBlockElement::GetList(
+                ['ID' => 'ASC'],
+                ['IBLOCK_ID' => $iblockId],
+                false,
+                false,
+                ['ID']
+            );
+            while ($row = $rsElements->Fetch()) {
+                $elementId = (int)($row['ID'] ?? 0);
+                if ($elementId <= 0) {
+                    continue;
+                }
+
+                $hasStatus = false;
+                $propRs = CIBlockElement::GetProperty($iblockId, $elementId, [], ['CODE' => 'STATUS']);
+                while ($propRow = $propRs->Fetch()) {
+                    if ((int)($propRow['VALUE_ENUM_ID'] ?? 0) > 0 || trim((string)($propRow['VALUE'] ?? '')) !== '') {
+                        $hasStatus = true;
+                        break;
+                    }
+                }
+
+                if (!$hasStatus) {
+                    CIBlockElement::SetPropertyValuesEx(
+                        $elementId,
+                        $iblockId,
+                        ['STATUS' => $acceptedEnumId]
+                    );
+                    $backfillCount++;
+                }
+            }
+
+            if ($backfillCount > 0) {
+                $dnkCiOut("Backfilled STATUS=accepted for {$backfillCount} element(s).\n");
+            } else {
+                $dnkCiOut("All elements already have STATUS.\n");
+            }
+        }
+    }
+
     $dnkCiFinish();
 
     exit(0);
@@ -321,6 +426,11 @@ $addList($installer, $iblockId, 'DELIVERY', 'Способ доставки', 200
     'pickup' => 'Самовывоз',
 ], $fatal);
 $addList($installer, $iblockId, 'PAYMENT', 'Способ оплаты', 210, ['cash_on_delivery' => 'Оплата при получении'], $fatal);
+$addList($installer, $iblockId, 'STATUS', 'Статус заявки', 220, [
+    'accepted' => 'Принят',
+    'in_progress' => 'В обработке',
+    'ready' => 'Готов',
+], $fatal);
 
 $pUserNum = [
     'IBLOCK_ID' => $iblockId,
@@ -374,6 +484,7 @@ $dnkCiOut("Set .env variable: DNK_CERTIFICATE_REQUEST_IBLOCK_ID={$iblockId}\n");
 $dnkCiOut("Ensure .env has DNK_CERTIFICATE_CATALOG_IBLOCK_ID={$catalogIblockArg}.\n");
 $dnkCiOut('Grant ADD rights on this iblock to guests/anonymous users if anonymous certificate requests are required.' . "\n");
 $dnkCiOut('On existing installs: ensure DELIVERY list has enum XML_ID=pickup (caption: Samovyvoz).' . "\n");
+$dnkCiOut('On existing installs: re-run this script to add STATUS property and backfill accepted.' . "\n");
 
 $dnkCiFinish();
 

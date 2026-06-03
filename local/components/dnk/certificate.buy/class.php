@@ -14,6 +14,7 @@ use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UserTable;
 use Dnk\PhpInterface\CertificateBuyPhoneAuth;
+use Dnk\PhpInterface\CertificateRequestStatus;
 use Dnk\PhpInterface\UserConsentService;
 use Dnk\PhpInterface\Utils;
 
@@ -540,6 +541,14 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_PAYMENT_LOOKUP')]];
         }
 
+        $statusEnumId = CertificateRequestStatus::resolveEnumId(
+            $requestIblockId,
+            CertificateRequestStatus::defaultXml()
+        );
+        if ($statusEnumId === null) {
+            return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_STATUS_LOOKUP')]];
+        }
+
         $elementIdMap = [];
         foreach ($lines as $lineRow) {
             $elementIdMap[(int)$lineRow['element_id']] = true;
@@ -606,6 +615,7 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             'ITEMS_JSON' => $jsonPayload,
             'DELIVERY' => $deliveryEnumId,
             'PAYMENT' => $paymentEnumId,
+            'STATUS' => $statusEnumId,
             'CONTACT_NAME' => $contactName,
             'CONTACT_PHONE' => $contactPhone,
             'COMMENT' => $comment !== '' ? $comment : '',
