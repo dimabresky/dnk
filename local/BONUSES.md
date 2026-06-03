@@ -172,7 +172,7 @@ $rows = HistoryOperationsTable::getList([
 
 ## Импорт остатка из внешней системы (агент DNK)
 
-Агент `\Dnk\PhpInterface\BonusFetchAgent::runBonusAgent()` обрабатывает JSON-файлы из каталога `DNK_BONUS_CLIENT_IMPORT_DIR` (по умолчанию `upload/clientbonus`), сопоставляет пользователей по телефону (`DNK_BONUS_JSON_KEY_PARTNER_PHONE`, поле `ПартнерНомерТелефона`) и вызывает `\Dnk\PhpInterface\Utils::replaceDnkImportBonusesForUser()`.
+Агент `\Dnk\PhpInterface\BonusFetchAgent::runBonusAgent()` обрабатывает JSON-файлы из каталога `DNK_BONUS_CLIENT_IMPORT_DIR` (по умолчанию `upload/clientbonus`), сопоставляет пользователей по телефону (`DNK_BONUS_JSON_KEY_PARTNER_PHONE`, поле `ПартнерНомерТелефона`), синхронизирует баланс через `\Dnk\PhpInterface\Utils::replaceDnkImportBonusesForUser()` и уровень клиента через `\Dnk\PhpInterface\Utils::syncDnkBonusImportUserLevelFromFile()`.
 
 ### Порядок обработки файлов
 
@@ -186,12 +186,21 @@ $rows = HistoryOperationsTable::getList([
 
 ```json
 {
-  "НачисленоОстаток": 2.81,
-  "ПартнерНомерТелефона": "375296688921"
+  "НачисленоОстаток": 0,
+  "ПартнерНомерТелефона": "375296609781",
+  "УровеньКлиента": 1,
+  "СуммаДляПерехода": 300
 }
 ```
 
-Ключи полей задаются в `.env` через `DNK_BONUS_JSON_KEY_BALANCE` и `DNK_BONUS_JSON_KEY_PARTNER_PHONE`.
+Ключи полей задаются в `.env`:
+
+- `DNK_BONUS_JSON_KEY_BALANCE` — остаток бонусов;
+- `DNK_BONUS_JSON_KEY_PARTNER_PHONE` — телефон;
+- `DNK_BONUS_JSON_KEY_CLIENT_LEVEL` — уровень клиента (`UF_LEVEL`);
+- `DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST` — сумма для перехода (`UF_NEXT_LEVEL_COST`).
+
+Допустимые значения `УровеньКлиента`: `1`, `2`, `3`, `5`. Невалидное значение пишется в лог `[invalid_client_level]`, поле `UF_LEVEL` для строки не обновляется.
 
 ### Сопоставление пользователя
 
@@ -212,7 +221,23 @@ $rows = HistoryOperationsTable::getList([
 
 Строки с `БонуснаяПрограммаЛояльности`, отличной от настроенного кода программы (`DNK_BONUS_IMPORT_PROGRAM_CODE`), пропускаются при разборе JSON (если поле присутствует в строке).
 
-> **Примечание:** точечная синхронизация по одному пользователю через HTTP (`DNK_BONUS_ENDPOINT`, очередь `BonusBalanceQueueAgent`) по-прежнему использует API; массовый импорт агентом `BonusFetchAgent` работает только с файлами.
+### Уровень клиента и группы
+
+`Utils::syncDnkBonusImportUserLevelFromFile()`:
+
+- записывает `УровеньКлиента` в `UF_LEVEL`, `СуммаДляПерехода` в `UF_NEXT_LEVEL_COST` (если ключи присутствуют в строке);
+- при **изменении** `UF_LEVEL` относительно текущего значения:
+  - добавляет `USER_ID` в `b_dnk_user_reauthorize_queue` (без дубля; при следующем запросе пользователь переавторизуется через `Utils::processUserReauthorizeIfNeeded()`);
+  - снимает прежнюю уровневую группу и назначает новую (прочие группы пользователя сохраняются).
+
+| УровеньКлиента | Группа Bitrix | Название |
+|----------------|---------------|----------|
+| 1 | 9 | Beauty Basic |
+| 2 | 10 | Beauty Medium |
+| 3 | 11 | Beauty Premium |
+| 5 | 12 | Сотрудник |
+
+> **Примечание:** точечная синхронизация по одному пользователю через HTTP (`DNK_BONUS_ENDPOINT`, очередь `BonusBalanceQueueAgent`) по-прежнему использует API и обновляет только баланс; массовый импорт агентом `BonusFetchAgent` работает только с файлами.
 
 ---
 

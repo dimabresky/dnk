@@ -22,6 +22,14 @@ final class Utils
 {
     private const DNK_BONUS_IMPORT_DETAIL_MARKER = '[DNK_BONUS_IMPORT]';
 
+    /** Группы Bitrix, соответствующие уровню клиента из импорта бонусов. */
+    private const BONUS_CLIENT_LEVEL_GROUP_MAP = [
+        1 => 9,
+        2 => 10,
+        3 => 11,
+        5 => 12,
+    ];
+
     public static function isTechnicalBuyerEmail(string $email): bool
     {
         return preg_match('/^buyer[0-9]+/i', trim($email)) === 1;
@@ -134,6 +142,24 @@ final class Utils
         $raw = str_replace(',', '.', (string)$value);
 
         return is_numeric($raw) ? max(0.0, (float)$raw) : 0.0;
+    }
+
+    /**
+     * Парсинг «УровеньКлиента» из JSON-импорта бонусов (допустимые значения: 1, 2, 3, 5).
+     */
+    public static function parseBonusImportClientLevel(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        $level = (int)$value;
+
+        return array_key_exists($level, self::BONUS_CLIENT_LEVEL_GROUP_MAP) ? $level : null;
     }
 
     /**
@@ -1090,6 +1116,112 @@ final class Utils
         }
 
         self::addDnkImportAccrualOperation($userId, $amount);
+    }
+
+    /**
+     * Синхронизация уровня клиента и суммы перехода из файлового импорта бонусов.
+     * При смене UF_LEVEL — очередь переавторизации и смена уровневой группы пользователя.
+     *
+     * @param int|null $clientLevel Нормализованный уровень (1, 2, 3, 5) или null при невалидном значении.
+     * @param float|null $nextLevelCost Сумма для перехода (неотрицательная).
+     */
+    public static function syncDnkBonusImportUserLevelFromFile(
+        int $userId,
+        ?int $clientLevel,
+        ?float $nextLevelCost,
+        bool $hasClientLevel,
+        bool $hasNextLevelCost
+    ): void {
+        if ($userId <= 0 || (!$hasClientLevel && !$hasNextLevelCost)) {
+            return;
+        }
+
+        $currentLevel = self::getUserBonusClientLevel($userId);
+        $ufFields = [];
+
+        if ($hasNextLevelCost && $nextLevelCost !== null) {
+            $ufFields['UF_NEXT_LEVEL_COST'] = max(0.0, $nextLevelCost);
+        }
+
+        $levelChanged = false;
+        if ($hasClientLevel && $clientLevel !== null) {
+            $ufFields['UF_LEVEL'] = $clientLevel;
+            $levelChanged = $currentLevel !== $clientLevel;
+        }
+
+        if ($ufFields !== []) {
+            $GLOBALS['USER_FIELD_MANAGER']->Update('USER', $userId, $ufFields);
+        }
+
+        if (!$levelChanged || $clientLevel === null) {
+            return;
+        }
+
+        self::enqueueUserReauthorize($userId);
+        self::syncUserBonusClientLevelGroup($userId, $clientLevel);
+    }
+
+    /**
+     * Текущий UF_LEVEL пользователя (нормализованный int или null).
+     */
+    private static function getUserBonusClientLevel(int $userId): ?int
+    {
+        if ($userId <= 0) {
+            return null;
+        }
+
+        $res = \CUser::GetByID($userId);
+        $row = $res->Fetch();
+        if (!is_array($row)) {
+            return null;
+        }
+
+        return self::parseBonusImportClientLevel($row['UF_LEVEL'] ?? null);
+    }
+
+    /**
+     * Добавить пользователя в очередь переавторизации (без дубля по USER_ID).
+     */
+    private static function enqueueUserReauthorize(int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        $existing = UserReauthorizeQueueTable::getList([
+            'filter' => ['=USER_ID' => $userId],
+            'select' => ['ID'],
+            'limit' => 1,
+        ])->fetch();
+
+        if ($existing !== false) {
+            return;
+        }
+
+        $addResult = UserReauthorizeQueueTable::add(['USER_ID' => $userId]);
+        if (!$addResult->isSuccess()) {
+            return;
+        }
+    }
+
+    /**
+     * Снять прежнюю уровневую группу и назначить группу нового уровня; прочие группы не трогаются.
+     */
+    private static function syncUserBonusClientLevelGroup(int $userId, int $clientLevel): void
+    {
+        $newGroupId = self::BONUS_CLIENT_LEVEL_GROUP_MAP[$clientLevel] ?? null;
+        if ($newGroupId === null) {
+            return;
+        }
+
+        $levelGroupIds = array_values(self::BONUS_CLIENT_LEVEL_GROUP_MAP);
+        $currentGroups = array_map('intval', \CUser::GetUserGroup($userId));
+        $filtered = array_values(array_unique(array_diff($currentGroups, $levelGroupIds)));
+        $filtered[] = $newGroupId;
+        sort($filtered);
+
+        $user = new \CUser();
+        $user->SetUserGroup($userId, $filtered);
     }
 
     /**
