@@ -1,0 +1,3 @@
+<?php
+
+$MESS['DNK_BONUS_BG_SYNC_BALANCE_UNIT'] = 'б.';
