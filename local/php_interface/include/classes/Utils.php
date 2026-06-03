@@ -943,7 +943,7 @@ final class Utils
                 if (!is_array($item)) {
                     continue;
                 }
-                $merged = self::mergeBonusImportJsonRowIntoEntry($entry, $item);
+                $merged = self::mergeBonusImportJsonRowIntoEntry(self::createEmptyBonusImportJsonEntry(), $item);
                 if ($merged !== null) {
                     $entry = $merged;
                     $matched = true;
@@ -953,7 +953,7 @@ final class Utils
             return $matched ? $entry : null;
         }
 
-        return self::mergeBonusImportJsonRowIntoEntry($entry, $decoded);
+        return self::mergeBonusImportJsonRowIntoEntry(self::createEmptyBonusImportJsonEntry(), $decoded);
     }
 
     /**

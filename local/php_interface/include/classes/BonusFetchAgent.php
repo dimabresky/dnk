@@ -154,15 +154,14 @@ final class BonusFetchAgent
                 continue;
             }
 
-            $entry = $importByDigits[$digits] ?? [
-                'balance' => 0.0,
+            // Последняя подходящая строка по телефону — полная замена, без переноса полей с предыдущих строк.
+            $entry = [
+                'balance' => Utils::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_BALANCE] ?? null),
                 'client_level' => null,
                 'next_level_cost' => null,
                 'has_client_level' => false,
                 'has_next_level_cost' => false,
             ];
-
-            $entry['balance'] = Utils::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_BALANCE] ?? null);
 
             if (array_key_exists(DNK_BONUS_JSON_KEY_CLIENT_LEVEL, $row)) {
                 $parsedLevel = Utils::parseBonusImportClientLevel($row[DNK_BONUS_JSON_KEY_CLIENT_LEVEL]);
