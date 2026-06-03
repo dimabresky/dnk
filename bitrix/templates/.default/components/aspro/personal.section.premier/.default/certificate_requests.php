@@ -16,7 +16,6 @@ $APPLICATION->AddChainItem(Loc::getMessage('SPS_CHAIN_CERTIFICATE_REQUESTS'));
 		'.default',
 		[
 			'SET_TITLE' => 'N',
-			'REQUESTS_PER_PAGE' => 10,
 		],
 		$component,
 		['HIDE_ICONS' => 'Y']
