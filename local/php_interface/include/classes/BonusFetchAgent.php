@@ -49,7 +49,6 @@ final class BonusFetchAgent
             return;
         }
 
-        $content = str_replace(["\r\n", "\r", "\n"], '', $content);
         $decoded = json_decode($content, true);
         if (!is_array($decoded)) {
             Utils::logClientBonusImportLine($logDir, $basename, '[error] invalid_json file=' . $basename);
