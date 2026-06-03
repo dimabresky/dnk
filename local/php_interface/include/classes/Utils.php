@@ -30,6 +30,17 @@ final class Utils
         5 => 12,
     ];
 
+    /** Уровень «Сотрудник» (без блока «до следующего уровня»). */
+    private const BONUS_CLIENT_LEVEL_EMPLOYEE = 5;
+
+    /** Наименования уровней клиента (для отображения в ЛК). */
+    private const BONUS_CLIENT_LEVEL_NAMES = [
+        1 => 'Beauty Basic',
+        2 => 'Beauty Medium',
+        3 => 'Beauty Premium',
+        self::BONUS_CLIENT_LEVEL_EMPLOYEE => 'Сотрудник',
+    ];
+
     public static function isTechnicalBuyerEmail(string $email): bool
     {
         return preg_match('/^buyer[0-9]+/i', trim($email)) === 1;
@@ -423,6 +434,91 @@ final class Utils
         }
 
         return (float) BonusUser::getBalance($userId);
+    }
+
+    /**
+     * Данные для блока уровня клиента в ЛК: уровень по уровневой группе (или 1 по умолчанию только для UI),
+     * наименование уровня и сумма до следующего уровня из UF_NEXT_LEVEL_COST.
+     *
+     * @return array{
+     *     level: int,
+     *     name: string,
+     *     next_level_cost: float|null,
+     *     show_next_level: bool
+     * }
+     */
+    public static function getUserBonusClientLevelDisplayData(int $userId): array
+    {
+        $defaultLevel = 1;
+        $empty = [
+            'level' => $defaultLevel,
+            'name' => self::BONUS_CLIENT_LEVEL_NAMES[$defaultLevel] ?? '',
+            'next_level_cost' => null,
+            'show_next_level' => false,
+        ];
+
+        if ($userId <= 0) {
+            return $empty;
+        }
+
+        $level = self::resolveUserBonusClientLevelFromGroups($userId);
+        if ($level === null) {
+            $level = $defaultLevel;
+        }
+
+        $name = self::BONUS_CLIENT_LEVEL_NAMES[$level] ?? self::BONUS_CLIENT_LEVEL_NAMES[$defaultLevel] ?? '';
+
+        $nextLevelCost = self::getUserNextLevelCost($userId);
+        $showNextLevel = $level !== self::BONUS_CLIENT_LEVEL_EMPLOYEE
+            && $nextLevelCost !== null
+            && $nextLevelCost > 0.0;
+
+        return [
+            'level' => $level,
+            'name' => $name,
+            'next_level_cost' => $showNextLevel ? $nextLevelCost : null,
+            'show_next_level' => $showNextLevel,
+        ];
+    }
+
+    /**
+     * Уровень клиента по уровневой группе Bitrix (9, 10, 11, 12) или null, если группы нет.
+     */
+    private static function resolveUserBonusClientLevelFromGroups(int $userId): ?int
+    {
+        $groupToLevel = array_flip(self::BONUS_CLIENT_LEVEL_GROUP_MAP);
+        $userGroups = array_map('intval', \CUser::GetUserGroup($userId));
+
+        foreach ($userGroups as $groupId) {
+            if (isset($groupToLevel[$groupId])) {
+                return (int)$groupToLevel[$groupId];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * UF_NEXT_LEVEL_COST пользователя или null, если поле пустое/некорректное.
+     */
+    private static function getUserNextLevelCost(int $userId): ?float
+    {
+        $res = \CUser::GetByID($userId);
+        $row = $res->Fetch();
+        if (!is_array($row)) {
+            return null;
+        }
+
+        $raw = $row['UF_NEXT_LEVEL_COST'] ?? null;
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        if (!is_numeric($raw)) {
+            return null;
+        }
+
+        return max(0.0, (float)$raw);
     }
 
     /**
