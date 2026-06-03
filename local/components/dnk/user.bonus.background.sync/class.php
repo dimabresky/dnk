@@ -35,14 +35,6 @@ class DnkUserBonusBackgroundSyncComponent extends CBitrixComponent implements Co
         ];
     }
 
-    public function onPrepareComponentParams($params): array
-    {
-        $params = parent::onPrepareComponentParams($params);
-        $params['AUTO_REFRESH'] = ($params['AUTO_REFRESH'] ?? 'Y') !== 'N' ? 'Y' : 'N';
-
-        return $params;
-    }
-
     public function executeComponent(): void
     {
         global $USER;
@@ -58,8 +50,6 @@ class DnkUserBonusBackgroundSyncComponent extends CBitrixComponent implements Co
         if ((int)$USER->GetID() <= 0) {
             return;
         }
-
-        $this->arResult['AUTO_REFRESH'] = (string)$this->arParams['AUTO_REFRESH'];
 
         $this->includeComponentTemplate();
     }

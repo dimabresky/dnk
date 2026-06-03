@@ -14,9 +14,7 @@
 $APPLICATION->IncludeComponent(
     'dnk:user.bonus.background.sync',
     '',
-    [
-        'AUTO_REFRESH' => 'Y',
-    ],
+    [],
     false,
     ['HIDE_ICONS' => 'Y']
 );
@@ -27,7 +25,8 @@ $APPLICATION->IncludeComponent(
 
 ## AJAX
 
-При загрузке страницы (если `AUTO_REFRESH=Y`) вызывается action `refresh` через `BX.ajax.runComponentAction` (POST + CSRF + авторизация).
+При загрузке страницы вызывается action `refresh` через `BX.ajax.runComponentAction` (POST + CSRF + авторизация).
+Запрос отправляется один раз за загрузку страницы.
 
 Ответ:
 
