@@ -13,6 +13,7 @@ $APPLICATION->AddHeadScript(SITE_TEMPLATE_PATH.'/js/jquery.history.js');
 // cart
 $bOrderViewBasket = (trim($arTheme['ORDER_VIEW']['VALUE']) === 'Y');
 
+$arInherite = [];
 if($arSection){
 	$arInherite = TSolution::getSectionInheritedUF(array(
 		'sectionId' => $arSection['ID'],

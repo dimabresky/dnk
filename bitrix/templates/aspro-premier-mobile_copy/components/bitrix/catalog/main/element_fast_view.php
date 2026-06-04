@@ -9,6 +9,7 @@ $APPLICATION->ShowAjaxHead();
 // cart
 $bOrderViewBasket = (trim($arTheme['ORDER_VIEW']['VALUE']) === 'Y');
 
+$arInherite = [];
 if($arSection){
 	$arInherite = TSolution::getSectionInheritedUF(array(
 		'sectionId' => $arSection['ID'],
