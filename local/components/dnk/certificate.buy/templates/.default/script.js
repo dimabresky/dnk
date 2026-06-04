@@ -2,13 +2,14 @@
   'use strict';
 
   var TELEPORT_TO = '#dnk-cert-buy-summary-slot';
-  var CONTACT_ANCHOR = 'dnk-cert-buy-contact-anchor';
+  var DELIVERY_ANCHOR = 'dnk-cert-buy-delivery';
   var DELIVERY_COURIER = 'courier';
   var DELIVERY_COURIER_RB = 'courier_rb';
   var DELIVERY_PICKUP = 'pickup';
   var DELIVERY_FREE_THRESHOLD = 55;
   var DELIVERY_PRICE_COURIER_MINSK = 5;
   var DELIVERY_PRICE_COURIER_RB = 8;
+  var SUCCESS_STORAGE_KEY = 'dnk_cert_buy_success_request_id';
 
   var pickupMapRuntime = {
     map: null,
@@ -55,6 +56,74 @@
       .replace(/#LINK#/g, linkHtml);
   }
 
+  function setOrderSubmitVisible(root, visible) {
+    var submitBtn = qs(root, '[data-role="submit"]');
+    if (!submitBtn) {
+      return;
+    }
+    if (visible) {
+      submitBtn.removeAttribute('hidden');
+      submitBtn.removeAttribute('aria-hidden');
+    } else {
+      submitBtn.setAttribute('hidden', 'hidden');
+      submitBtn.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function focusSuccessFeedback(root) {
+    var el =
+      document.getElementById('dnk-cert-buy-success-feedback') ||
+      qs(root, '[data-role="submit-feedback"]');
+    if (!el || typeof el.scrollIntoView !== 'function') {
+      return;
+    }
+    window.setTimeout(function () {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }
+
+  function resetCertificateQuantitiesOnRoot(root, vueVm) {
+    var vmOk = vueVm || root.__dnkCertBuyVue;
+    if (
+      vmOk &&
+      vmOk.resetCertificateQuantities &&
+      typeof vmOk.resetCertificateQuantities === 'function'
+    ) {
+      vmOk.resetCertificateQuantities();
+    }
+  }
+
+  function stashSuccessAndReload(root, requestId, vueVm) {
+    try {
+      sessionStorage.setItem(SUCCESS_STORAGE_KEY, String(requestId));
+    } catch (e) {
+      /* ignore */
+    }
+    resetCertificateQuantitiesOnRoot(root, vueVm);
+    window.location.reload();
+  }
+
+  function restoreSuccessAfterReload(root, vueVm) {
+    var requestId = '';
+    try {
+      requestId = sessionStorage.getItem(SUCCESS_STORAGE_KEY) || '';
+      if (requestId) {
+        sessionStorage.removeItem(SUCCESS_STORAGE_KEY);
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    if (!requestId) {
+      return;
+    }
+    submitFeedback(root, 'success', buildSuccessMessageHtml(root, requestId), {
+      html: true,
+      skipScroll: true,
+    });
+    focusSuccessFeedback(root);
+    resetCertificateQuantitiesOnRoot(root, vueVm);
+  }
+
   function submitFeedback(root, kind, message, options) {
     var el = qs(root, '[data-role="submit-feedback"]');
     if (!el) {
@@ -83,7 +152,7 @@
     } else {
       el.classList.add('dnk-cert-buy__submit-feedback--error');
     }
-    if (typeof el.scrollIntoView === 'function') {
+    if (!options.skipScroll && typeof el.scrollIntoView === 'function') {
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }
@@ -111,19 +180,35 @@
   function syncAddressFieldVisibility(root, deliveryXmlId) {
     var addressField = qs(root, '[data-role="address-field"]');
     var addressInput = qs(root, 'textarea[name="dnk_cert_address"]');
+    var requiredMark = addressField ? qs(addressField, '[data-role="address-required-mark"]') : null;
     if (!addressField) {
       return;
     }
-    if (isCourierDelivery(deliveryXmlId)) {
+    var showAddress = isCourierDelivery(deliveryXmlId);
+    if (showAddress) {
       addressField.removeAttribute('hidden');
+      addressField.classList.remove('is-hidden');
+      addressField.removeAttribute('aria-hidden');
       if (addressInput) {
         addressInput.required = true;
+        addressInput.setAttribute('aria-required', 'true');
+      }
+      if (requiredMark) {
+        requiredMark.removeAttribute('hidden');
+        requiredMark.removeAttribute('aria-hidden');
       }
     } else {
       addressField.setAttribute('hidden', 'hidden');
+      addressField.classList.add('is-hidden');
+      addressField.setAttribute('aria-hidden', 'true');
       if (addressInput) {
         addressInput.required = false;
+        addressInput.removeAttribute('aria-required');
         addressInput.value = '';
+      }
+      if (requiredMark) {
+        requiredMark.setAttribute('hidden', 'hidden');
+        requiredMark.setAttribute('aria-hidden', 'true');
       }
     }
     var vm = root.__dnkCertBuyVue;
@@ -557,10 +642,37 @@
     return errors.filter(Boolean);
   }
 
+  function getRegistrationConsentInput(root) {
+    var byId = qs(root, '#dnk-cert-buy-register-consent');
+    if (byId) {
+      return byId;
+    }
+    var block = qs(root, '[data-role="registration-consent"]');
+    if (!block) {
+      return null;
+    }
+    var licenseName = root.getAttribute('data-license-input-name') || 'licenses_register';
+    var byName = qs(block, 'input[name="' + licenseName + '"]');
+    if (byName) {
+      return byName;
+    }
+    return qs(block, 'input[type="checkbox"]');
+  }
+
+  function isRegistrationConsentChecked(root) {
+    var input = getRegistrationConsentInput(root);
+    return !!(input && input.checked);
+  }
+
+  function getRegistrationConsentErrorMessage(root) {
+    return (
+      root.getAttribute('data-msg-reg-consent') ||
+      'Необходимо согласие с условиями регистрации.'
+    );
+  }
+
   function buildRegistrationConsentPost(root) {
-    var checked =
-      !!qs(root, '#dnk-cert-buy-register-consent') &&
-      qs(root, '#dnk-cert-buy-register-consent').checked;
+    var checked = isRegistrationConsentChecked(root);
     var licenseName = root.getAttribute('data-license-input-name') || 'licenses_register';
     var post = { registrationConsent: checked ? 'Y' : 'N' };
     post[licenseName] = checked ? 'Y' : 'N';
@@ -586,8 +698,10 @@
     }
     if (isOpen) {
       smsBox.removeAttribute('hidden');
+      setOrderSubmitVisible(root, false);
     } else {
       smsBox.setAttribute('hidden', 'hidden');
+      setOrderSubmitVisible(root, true);
     }
     var caption = qs(root, '[data-role="sms-caption"]');
     if (caption && text) {
@@ -679,14 +793,7 @@
     function finalizeSuccess(data) {
       syncAuthorizedSession();
       submitFeedback(root, 'success', buildSuccessMessageHtml(root, data.requestId), { html: true });
-      var vmOk = root.__dnkCertBuyVue;
-      if (
-        vmOk &&
-        vmOk.resetCertificateQuantities &&
-        typeof vmOk.resetCertificateQuantities === 'function'
-      ) {
-        vmOk.resetCertificateQuantities();
-      }
+      resetCertificateQuantitiesOnRoot(root, vueVm);
     }
 
     function runSubmit(payload, collect) {
@@ -720,9 +827,9 @@
         return;
       }
       if (pendingAuth.scenario === 'register') {
-        var regConsentInput = qs(root, '#dnk-cert-buy-register-consent');
+        var regConsentInput = getRegistrationConsentInput(root);
         if (regConsentInput && !regConsentInput.checked) {
-          submitFeedback(root, 'error', 'Необходимо согласие с условиями регистрации.');
+          submitFeedback(root, 'error', getRegistrationConsentErrorMessage(root));
           return;
         }
       }
@@ -763,11 +870,47 @@
             }
             var data = response && response.data ? response.data : {};
             if (data.success && data.requestId) {
-              finalizeSuccess(data);
+              stashSuccessAndReload(root, data.requestId, pendingAuth.collectVm);
               return;
             }
             if (data.authenticated) {
-              syncAuthorizedSession();
+              runSubmit(pendingAuth.payload, pendingAuth.collectVm)
+                .then(function (submitResponse) {
+                  btn.disabled = false;
+                  if (smsConfirmBtn) {
+                    smsConfirmBtn.disabled = false;
+                  }
+                  var submitData =
+                    submitResponse && submitResponse.data ? submitResponse.data : {};
+                  if (submitData.success && submitData.requestId) {
+                    stashSuccessAndReload(root, submitData.requestId, pendingAuth.collectVm);
+                    return;
+                  }
+                  syncAuthorizedSession();
+                  var submitErrors = collectResponseErrors(submitResponse);
+                  submitFeedback(
+                    root,
+                    'error',
+                    submitErrors.join(' ') || (root.getAttribute('data-msg-error') || '')
+                  );
+                })
+                .catch(function () {
+                  btn.disabled = false;
+                  if (smsConfirmBtn) {
+                    smsConfirmBtn.disabled = false;
+                  }
+                  syncAuthorizedSession();
+                  submitFeedback(
+                    root,
+                    'error',
+                    root.getAttribute('data-msg-error') || 'Ошибка запроса.'
+                  );
+                });
+              return;
+            }
+            btn.disabled = false;
+            if (smsConfirmBtn) {
+              smsConfirmBtn.disabled = false;
             }
             var errors = collectResponseErrors(response);
             submitFeedback(root, 'error', errors.join(' ') || (root.getAttribute('data-msg-error') || ''));
@@ -867,6 +1010,12 @@
       }
 
       var address = context.address;
+      if (!isCourierDelivery(deliveryXmlId)) {
+        address = '';
+        if (context.addressInput) {
+          context.addressInput.value = '';
+        }
+      }
       if (isCourierDelivery(deliveryXmlId) && !address.length) {
         submitFeedback(
           root,
@@ -1028,7 +1177,9 @@
       '      <button type="button" class="btn btn-secondary dnk-cert-buy__card-buy" @click.prevent="scrollToCheckout" :disabled="qtyOf(item.id) < 1">{{ msgs.buy }}</button>' +
       '    </article>' +
       '  </div>' +
-      '  <div class="dnk-cert-buy__section">' +
+      '  <div id="' +
+      DELIVERY_ANCHOR +
+      '" class="dnk-cert-buy__section dnk-cert-buy__section--delivery">' +
       '    <h3 class="dnk-cert-buy__section-title font_20">{{ msgs.deliveryTitle }}</h3>' +
       '    <label class="dnk-cert-buy__inline">' +
       '      <input type="radio" name="dnk_cert_delivery" value="courier" v-model="deliveryXmlId">' +
@@ -1374,7 +1525,7 @@
         },
         scrollToCheckout: function () {
           Vue.nextTick(function () {
-            var el = document.getElementById(CONTACT_ANCHOR);
+            var el = document.getElementById(DELIVERY_ANCHOR);
             if (el && typeof el.scrollIntoView === 'function') {
               el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
@@ -1539,6 +1690,7 @@
       var vmOk = mountCatalog(root);
       if (vmOk) {
         bindSubmit(root, vmOk);
+        restoreSuccessAfterReload(root, vmOk);
       }
       return;
     }

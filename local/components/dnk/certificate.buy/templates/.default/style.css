@@ -227,6 +227,16 @@
   margin-top: 8px;
 }
 
+#dnk-cert-buy-delivery,
+.dnk-cert-buy__section--delivery {
+  scroll-margin-top: 100px;
+}
+
+.dnk-cert-buy__field[data-role='address-field'].is-hidden,
+.dnk-cert-buy__field[data-role='address-field'][hidden] {
+  display: none !important;
+}
+
 .dnk-cert-buy__delivery-notice {
   margin-top: 14px;
   padding: 12px 14px;
@@ -406,6 +416,14 @@
   max-width: 180px;
 }
 
+.dnk-cert-buy__sms [data-role='sms-resend'] {
+  margin-top: 12px;
+}
+
+#dnk-cert-buy-success-feedback {
+  scroll-margin-top: 100px;
+}
+
 .dnk-cert-buy__submit-feedback {
   box-sizing: border-box;
   margin-top: 4px;
@@ -448,6 +466,10 @@
 
 .dnk-cert-buy__submit {
   margin-top: 8px;
+}
+
+.dnk-cert-buy__submit[hidden] {
+  display: none !important;
 }
 
 /* Фон кнопки — цвет темы; hover чуть темнее через color-mix */

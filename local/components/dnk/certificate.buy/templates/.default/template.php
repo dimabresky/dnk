@@ -94,6 +94,7 @@ $certRequestsUrl = SITE_DIR . 'personal/certificate_requests/';
      data-is-authorized="<?= $isAuthorized ? '1' : '0'; ?>"
      data-phone-auth-enabled="<?= $phoneAuthEnabled ? '1' : '0'; ?>"
      data-msg-phone-auth-off="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_PHONE_AUTH_OFF')); ?>"
+     data-msg-reg-consent="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_REG_CONSENT')); ?>"
      data-license-input-name="<?= htmlspecialcharsbx($licenseInputName); ?>"
      data-phone-resend-interval="<?= $phoneResendInterval; ?>">
     <?php if (empty($arResult['ITEMS'])) { ?>
@@ -126,9 +127,12 @@ $certRequestsUrl = SITE_DIR . 'personal/certificate_requests/';
                             </label>
                         </div>
 
-                        <label class="dnk-cert-buy__field dnk-cert-buy__field--full" data-role="address-field" hidden>
-                            <span class="dnk-cert-buy__field-label font_13"><?= GetMessage('DNK_CERT_BUY_ADDRESS'); ?> *</span>
-                            <textarea class="dnk-cert-buy__textarea form-control" name="dnk_cert_address" rows="2" maxlength="500" placeholder="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_ADDRESS_HINT')); ?>"></textarea>
+                        <label class="dnk-cert-buy__field dnk-cert-buy__field--full is-hidden" data-role="address-field" hidden aria-hidden="true">
+                            <span class="dnk-cert-buy__field-label font_13">
+                                <?= GetMessage('DNK_CERT_BUY_ADDRESS'); ?>
+                                <span class="dnk-cert-buy__field-required" data-role="address-required-mark" hidden aria-hidden="true"> *</span>
+                            </span>
+                            <textarea class="dnk-cert-buy__textarea form-control" name="dnk_cert_address" rows="2" maxlength="500" autocomplete="street-address" placeholder="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_ADDRESS_HINT')); ?>"></textarea>
                         </label>
 
                         <label class="dnk-cert-buy__field dnk-cert-buy__field--full">
@@ -179,7 +183,8 @@ $certRequestsUrl = SITE_DIR . 'personal/certificate_requests/';
                             </div>
                         <?php } ?>
 
-                        <div class="dnk-cert-buy__submit-feedback"
+                        <div id="dnk-cert-buy-success-feedback"
+                             class="dnk-cert-buy__submit-feedback"
                              data-role="submit-feedback"
                              role="status"
                              aria-live="polite"

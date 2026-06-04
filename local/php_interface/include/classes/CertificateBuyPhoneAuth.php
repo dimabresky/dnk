@@ -255,47 +255,45 @@ final class CertificateBuyPhoneAuth
 
         $siteId = defined('SITE_ID') && is_string(SITE_ID) && SITE_ID !== '' ? SITE_ID : 's1';
 
-        $user = new CUser();
-        $registerResult = $user->Register(
+        $createResult = self::createPhoneUserForCertificateBuy(
             $digits,
+            $normalized,
             $firstName,
             $lastName,
             $password,
-            $password,
-            '',
-            $siteId,
-            '',
-            0,
-            true,
-            $normalized
+            $siteId
         );
+        if (!($createResult['ok'] ?? false)) {
+            return $createResult;
+        }
 
-        if (!is_array($registerResult)) {
+        $userId = (int)($createResult['userId'] ?? 0);
+        if ($userId <= 0) {
             return ['ok' => false, 'error' => 'register_failed'];
         }
 
-        if (($registerResult['TYPE'] ?? '') !== 'OK') {
-            $message = trim(strip_tags((string)($registerResult['MESSAGE'] ?? '')));
+        $registerFields = ['USER_ID' => $userId, 'ID' => $userId];
+        UserAddEvents::onAfterUserRegister($registerFields);
 
-            return [
-                'ok' => false,
-                'error' => 'register_failed',
-                'registerMessage' => $message,
-            ];
-        }
-
-        $userId = (int)($registerResult['ID'] ?? 0);
-        $signedData = (string)($registerResult['SIGNED_DATA'] ?? '');
-        if ($signedData === '' && $userId > 0) {
-            $signedData = PhoneAuthController::signData(['phoneNumber' => $normalized]);
+        $smsResult = self::sendRegistrationCode($userId);
+        if (!($smsResult['ok'] ?? false)) {
+            return array_merge(
+                [
+                    'ok' => false,
+                    'error' => (string)($smsResult['error'] ?? 'sms_send_failed'),
+                    'userId' => $userId,
+                ],
+                $smsResult
+            );
         }
 
         return [
             'ok' => true,
-            'signedData' => $signedData,
+            'signedData' => (string)($smsResult['signedData'] ?? ''),
             'userId' => $userId,
-            'resendInterval' => (int)\CUser::PHONE_CODE_RESEND_INTERVAL,
-            'phoneMasked' => self::maskPhone($normalized),
+            'resendInterval' => (int)($smsResult['resendInterval'] ?? \CUser::PHONE_CODE_RESEND_INTERVAL),
+            'phoneMasked' => (string)($smsResult['phoneMasked'] ?? self::maskPhone($normalized)),
+            'alreadySent' => !empty($smsResult['alreadySent']),
         ];
     }
 
@@ -404,6 +402,84 @@ final class CertificateBuyPhoneAuth
         }
 
         return array_keys($matched);
+    }
+
+    /**
+     * Создание неактивного пользователя с телефоном без CUser::Register (обход капчи регистрации).
+     *
+     * @return array{ok: bool, userId?: int, error?: string, registerMessage?: string}
+     */
+    private static function createPhoneUserForCertificateBuy(
+        string $digits,
+        string $normalized,
+        string $firstName,
+        string $lastName,
+        string $password,
+        string $siteId
+    ): array {
+        $login = self::buildUniqueLogin($digits);
+
+        $cUser = new CUser();
+        $userId = (int)$cUser->Add([
+            'LOGIN' => $login,
+            'NAME' => $firstName,
+            'LAST_NAME' => $lastName,
+            'PASSWORD' => $password,
+            'CONFIRM_PASSWORD' => $password,
+            'ACTIVE' => 'N',
+            'LID' => $siteId,
+            'PHONE_NUMBER' => $normalized,
+            'PERSONAL_PHONE' => $normalized,
+        ]);
+
+        if ($userId <= 0) {
+            $message = trim(strip_tags((string)$cUser->LAST_ERROR));
+
+            $result = [
+                'ok' => false,
+                'error' => 'register_failed',
+            ];
+            if ($message !== '') {
+                $result['registerMessage'] = $message;
+            }
+
+            return $result;
+        }
+
+        self::ensurePhoneAuthRow($userId, $normalized);
+
+        return ['ok' => true, 'userId' => $userId];
+    }
+
+    private static function buildUniqueLogin(string $digits): string
+    {
+        $login = $digits;
+        if (!self::loginExists($login)) {
+            return $login;
+        }
+
+        for ($suffix = 1; $suffix <= 99; $suffix++) {
+            $candidate = $digits . '_' . $suffix;
+            if (!self::loginExists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return $digits . '_' . bin2hex(random_bytes(4));
+    }
+
+    private static function loginExists(string $login): bool
+    {
+        if ($login === '') {
+            return false;
+        }
+
+        $row = UserTable::getRow([
+            'select' => ['ID'],
+            'filter' => ['=LOGIN' => $login],
+        ]);
+
+        return is_array($row);
     }
 
     /**
