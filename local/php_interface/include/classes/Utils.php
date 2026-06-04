@@ -1609,7 +1609,10 @@ final class Utils
      *     deliveryLabel: string,
      *     paymentLabel: string,
      *     lines: list<array{name: string, nominal: float, qty: int, lineSum: float}>,
+     *     subtotal?: float,
+     *     deliveryPrice?: float,
      *     total: float,
+     *     address?: string,
      *     comment?: string,
      *     pickupPoint?: array{name: string, address?: string, phone?: string, schedule?: string}
      * } $data
@@ -1623,7 +1626,22 @@ final class Utils
         $delivery = trim((string)($data['deliveryLabel'] ?? ''));
         $payment = trim((string)($data['paymentLabel'] ?? ''));
         $lines = isset($data['lines']) && is_array($data['lines']) ? $data['lines'] : [];
+        $subtotal = round((float)($data['subtotal'] ?? 0), 2);
+        $deliveryPrice = round((float)($data['deliveryPrice'] ?? 0), 2);
         $total = round((float)($data['total'] ?? 0), 2);
+        if ($subtotal <= 0 && $lines !== []) {
+            foreach ($lines as $line) {
+                if (!is_array($line)) {
+                    continue;
+                }
+                $subtotal += round((float)($line['lineSum'] ?? 0), 2);
+            }
+            $subtotal = round($subtotal, 2);
+        }
+        if ($total <= 0 && $subtotal > 0) {
+            $total = round($subtotal + $deliveryPrice, 2);
+        }
+        $address = trim((string)($data['address'] ?? ''));
         $comment = trim((string)($data['comment'] ?? ''));
 
         $plainLines = [];
@@ -1657,6 +1675,9 @@ final class Utils
             $plain .= 'E-mail: ' . $email . "\n";
         }
         $plain .= "\nДоставка: " . $delivery . "\n";
+        if ($address !== '') {
+            $plain .= 'Адрес доставки: ' . $address . "\n";
+        }
         $plain .= 'Оплата: ' . $payment . "\n";
 
         $pickupPoint = isset($data['pickupPoint']) && is_array($data['pickupPoint']) ? $data['pickupPoint'] : null;
@@ -1679,7 +1700,9 @@ final class Utils
 
         $plain .= "\nСостав заказа\n";
         $plain .= implode("\n", $plainLines);
-        $plain .= "\n\nИтого: " . self::formatCertificateMoneyAmount($total);
+        $plain .= "\n\nСумма сертификатов: " . self::formatCertificateMoneyAmount($subtotal);
+        $plain .= "\nДоставка: " . self::formatCertificateMoneyAmount($deliveryPrice);
+        $plain .= "\nИтого к оплате: " . self::formatCertificateMoneyAmount($total);
         if ($comment !== '') {
             $plain .= "\n\nКомментарий\n" . $comment;
         }
@@ -1691,7 +1714,11 @@ final class Utils
             $html .= '<br>' . self::escapeHtmlForCertificateEmail('E-mail: ' . $email);
         }
         $html .= '</p>'
-            . '<p><strong>Доставка</strong><br>' . self::escapeHtmlForCertificateEmail($delivery) . '</p>'
+            . '<p><strong>Доставка</strong><br>' . self::escapeHtmlForCertificateEmail($delivery);
+        if ($address !== '') {
+            $html .= '<br>' . self::escapeHtmlForCertificateEmail('Адрес: ' . $address);
+        }
+        $html .= '</p>'
             . '<p><strong>Оплата</strong><br>' . self::escapeHtmlForCertificateEmail($payment) . '</p>';
 
         if ($pickupPoint !== null && trim((string)($pickupPoint['name'] ?? '')) !== '') {
@@ -1714,7 +1741,12 @@ final class Utils
 
         $html .= '<p><strong>Состав заказа</strong></p>'
             . '<ul>' . implode('', $htmlLi) . '</ul>'
-            . '<p><strong>Итого</strong>: ' . self::escapeHtmlForCertificateEmail(self::formatCertificateMoneyAmount($total)) . '</p>';
+            . '<p><strong>Сумма сертификатов</strong>: '
+            . self::escapeHtmlForCertificateEmail(self::formatCertificateMoneyAmount($subtotal)) . '</p>'
+            . '<p><strong>Стоимость доставки</strong>: '
+            . self::escapeHtmlForCertificateEmail(self::formatCertificateMoneyAmount($deliveryPrice)) . '</p>'
+            . '<p><strong>Итого к оплате</strong>: '
+            . self::escapeHtmlForCertificateEmail(self::formatCertificateMoneyAmount($total)) . '</p>';
         if ($comment !== '') {
             $html .= '<p><strong>Комментарий</strong><br>'
                 . nl2br(self::escapeHtmlForCertificateEmail($comment), false) . '</p>';

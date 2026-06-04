@@ -172,8 +172,24 @@
   margin-bottom: 0;
 }
 
+.dnk-cert-buy__summary-totals {
+  margin: 0 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .dnk-cert-buy__summary-total {
   margin: 0;
+}
+
+.dnk-cert-buy__summary-meta + .dnk-cert-buy__summary-totals {
+  margin-top: 8px;
+}
+
+.dnk-cert-buy__summary-delivery-hint {
+  font-size: 0.8125rem;
+  line-height: 1.35;
 }
 
 .dnk-cert-buy__section {
@@ -209,6 +225,23 @@
 
 .dnk-cert-buy__inline--spaced {
   margin-top: 8px;
+}
+
+.dnk-cert-buy__delivery-notice {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f6f6f6;
+  border: 1px solid var(--stroke_black, #e5e5e5);
+}
+
+.dnk-cert-buy__delivery-notice-tariff {
+  margin: 0 0 6px;
+}
+
+.dnk-cert-buy__delivery-notice-current {
+  margin: 0;
+  font-weight: 600;
 }
 
 .dnk-cert-buy__pickup-layout {
@@ -393,6 +426,18 @@
   background-color: color-mix(in srgb, #198754 12%, transparent);
   border-color: color-mix(in srgb, #198754 35%, var(--stroke_black, #e5e5e5));
   color: color-mix(in srgb, #0f5132 85%, var(--lite_basic_text_black));
+}
+
+.dnk-cert-buy__submit-feedback--success .dnk-cert-buy__submit-feedback-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dnk-cert-buy__submit-feedback--success .dnk-cert-buy__submit-feedback-link:hover,
+.dnk-cert-buy__submit-feedback--success .dnk-cert-buy__submit-feedback-link:focus {
+  text-decoration-thickness: 2px;
 }
 
 .dnk-cert-buy__submit-feedback--error {
