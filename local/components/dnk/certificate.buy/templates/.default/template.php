@@ -50,18 +50,7 @@ if (!empty($arResult['ITEMS'])) {
         'qtyAria' => GetMessage('DNK_CERT_BUY_QTY'),
         'deliveryTitle' => GetMessage('DNK_CERT_BUY_DELIVERY_TITLE'),
         'deliveryCourier' => GetMessage('DNK_CERT_BUY_DELIVERY_COURIER'),
-        'deliveryCourierRb' => GetMessage('DNK_CERT_BUY_DELIVERY_COURIER_RB'),
         'deliveryPickup' => GetMessage('DNK_CERT_BUY_DELIVERY_PICKUP'),
-        'summarySubtotal' => GetMessage('DNK_CERT_BUY_SUMMARY_SUBTOTAL'),
-        'summaryDeliveryPrice' => GetMessage('DNK_CERT_BUY_SUMMARY_DELIVERY_PRICE'),
-        'summaryAddress' => GetMessage('DNK_CERT_BUY_SUMMARY_ADDRESS'),
-        'deliveryFree' => GetMessage('DNK_CERT_BUY_DELIVERY_FREE'),
-        'deliveryNoticeCourier' => GetMessage('DNK_CERT_BUY_DELIVERY_NOTICE_COURIER'),
-        'deliveryNoticeCourierRb' => GetMessage('DNK_CERT_BUY_DELIVERY_NOTICE_COURIER_RB'),
-        'deliveryNoticePickup' => GetMessage('DNK_CERT_BUY_DELIVERY_NOTICE_PICKUP'),
-        'deliveryNoticeCurrentFree' => GetMessage('DNK_CERT_BUY_DELIVERY_NOTICE_CURRENT_FREE'),
-        'deliveryNoticeCurrentPaid' => GetMessage('DNK_CERT_BUY_DELIVERY_NOTICE_CURRENT_PAID'),
-        'addressRequired' => GetMessage('DNK_CERT_BUY_ERR_ADDRESS_REQUIRED'),
         'pickupTitle' => GetMessage('DNK_CERT_BUY_PICKUP_TITLE'),
         'pickupEmpty' => GetMessage('DNK_CERT_BUY_PICKUP_EMPTY'),
         'pickupMapUnavailable' => GetMessage('DNK_CERT_BUY_PICKUP_MAP_UNAVAILABLE'),
@@ -81,15 +70,11 @@ if (!empty($arResult['ITEMS'])) {
     $pickupStoresJson = htmlspecialcharsbx(\Bitrix\Main\Web\Json::encode($pickupStores, JSON_UNESCAPED_UNICODE));
     $yandexApiKey = htmlspecialcharsbx((string)($arResult['YANDEX_MAP_API_KEY'] ?? ''));
 }
-
-$certRequestsUrl = SITE_DIR . 'personal/certificate_requests/';
 ?>
 
 <div id="dnk-cert-buy-root"
      class="dnk-cert-buy"
      data-msg-success="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_SUCCESS')); ?>"
-     data-msg-success-link-href="<?= htmlspecialcharsbx($certRequestsUrl); ?>"
-     data-msg-success-link-text="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_SUCCESS_LINK')); ?>"
      data-msg-error="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_JS_ERROR')); ?>"
      data-is-authorized="<?= $isAuthorized ? '1' : '0'; ?>"
      data-phone-auth-enabled="<?= $phoneAuthEnabled ? '1' : '0'; ?>"
@@ -125,11 +110,6 @@ $certRequestsUrl = SITE_DIR . 'personal/certificate_requests/';
                                 <input class="dnk-cert-buy__input js-dnk-cert-phone form-control" type="text" name="dnk_cert_contact_phone" value="<?= $phoneVal; ?>" maxlength="40" autocomplete="tel" inputmode="tel" required placeholder="+375 (__) ___-__-__">
                             </label>
                         </div>
-
-                        <label class="dnk-cert-buy__field dnk-cert-buy__field--full" data-role="address-field" hidden>
-                            <span class="dnk-cert-buy__field-label font_13"><?= GetMessage('DNK_CERT_BUY_ADDRESS'); ?> *</span>
-                            <textarea class="dnk-cert-buy__textarea form-control" name="dnk_cert_address" rows="2" maxlength="500" placeholder="<?= htmlspecialcharsbx(GetMessage('DNK_CERT_BUY_ADDRESS_HINT')); ?>"></textarea>
-                        </label>
 
                         <label class="dnk-cert-buy__field dnk-cert-buy__field--full">
                             <span class="dnk-cert-buy__field-label font_13"><?= GetMessage('DNK_CERT_BUY_COMMENT'); ?></span>

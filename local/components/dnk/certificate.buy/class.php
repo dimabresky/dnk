@@ -29,12 +29,7 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
     private const PROP_NOMINAL = 'NOMINAL';
     private const PAYMENT_XML = 'cash_on_delivery';
     private const DELIVERY_XML_COURIER = 'courier';
-    private const DELIVERY_XML_COURIER_RB = 'courier_rb';
     private const DELIVERY_XML_PICKUP = 'pickup';
-    private const DELIVERY_FREE_THRESHOLD = 55.0;
-    private const DELIVERY_PRICE_COURIER_MINSK = 5.0;
-    private const DELIVERY_PRICE_COURIER_RB = 8.0;
-    private const ADDRESS_MAX_LENGTH = 500;
     private const MAX_QTY = 99;
 
     /** Ключ в Bitrix-сессии: qty по element_id активных сертификатов (разрежающий массив). */
@@ -457,65 +452,6 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
     }
 
     /**
-     * @return list<string>
-     */
-    private static function allowedDeliveryXmlIds(): array
-    {
-        return [
-            self::DELIVERY_XML_COURIER,
-            self::DELIVERY_XML_COURIER_RB,
-            self::DELIVERY_XML_PICKUP,
-        ];
-    }
-
-    private static function isCourierDelivery(string $deliveryXml): bool
-    {
-        return in_array($deliveryXml, [self::DELIVERY_XML_COURIER, self::DELIVERY_XML_COURIER_RB], true);
-    }
-
-    /**
-     * Стоимость доставки по сумме сертификатов (после скидок — здесь только номиналы каталога).
-     */
-    private static function calculateDeliveryPrice(string $deliveryXml, float $subtotal): float
-    {
-        if ($deliveryXml === self::DELIVERY_XML_PICKUP) {
-            return 0.0;
-        }
-
-        if ($subtotal >= self::DELIVERY_FREE_THRESHOLD) {
-            return 0.0;
-        }
-
-        if ($deliveryXml === self::DELIVERY_XML_COURIER_RB) {
-            return self::DELIVERY_PRICE_COURIER_RB;
-        }
-
-        if ($deliveryXml === self::DELIVERY_XML_COURIER) {
-            return self::DELIVERY_PRICE_COURIER_MINSK;
-        }
-
-        return 0.0;
-    }
-
-    private function validateDeliveryAddress(string $deliveryXml, string $address): ?string
-    {
-        if (!self::isCourierDelivery($deliveryXml)) {
-            return null;
-        }
-
-        $address = trim(strip_tags($address));
-        if ($address === '') {
-            return GetMessage('DNK_CERT_BUY_ERR_ADDRESS_REQUIRED');
-        }
-
-        if (mb_strlen($address) > self::ADDRESS_MAX_LENGTH) {
-            return GetMessage('DNK_CERT_BUY_ERR_ADDRESS_LONG');
-        }
-
-        return null;
-    }
-
-    /**
      * @param array<string, mixed> $decoded
      */
     private function createCertificateRequest(array $decoded): array
@@ -538,21 +474,11 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         $contactName = (string)($decoded['contactName'] ?? '');
         $contactPhone = (string)($decoded['contactPhone'] ?? '');
         $comment = (string)($decoded['comment'] ?? '');
-        $address = trim(strip_tags((string)($decoded['address'] ?? '')));
 
         $deliveryXml = trim((string)($decoded['deliveryXmlId'] ?? self::DELIVERY_XML_COURIER));
         $paymentXml = trim((string)($decoded['paymentXmlId'] ?? self::PAYMENT_XML));
-        if (!in_array($deliveryXml, self::allowedDeliveryXmlIds(), true)) {
+        if (!in_array($deliveryXml, [self::DELIVERY_XML_COURIER, self::DELIVERY_XML_PICKUP], true)) {
             $deliveryXml = self::DELIVERY_XML_COURIER;
-        }
-
-        $addressError = $this->validateDeliveryAddress($deliveryXml, $address);
-        if ($addressError !== null) {
-            return ['success' => false, 'errors' => [$addressError]];
-        }
-
-        if (!self::isCourierDelivery($deliveryXml)) {
-            $address = '';
         }
         if ($paymentXml !== self::PAYMENT_XML) {
             $paymentXml = self::PAYMENT_XML;
@@ -600,14 +526,11 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             return ['success' => false, 'errors' => [GetMessage('DNK_CERT_BUY_ERR_ITEMS_EMPTY')]];
         }
 
-        $subtotal = 0.0;
+        $total = 0;
         foreach ($lines as $l) {
-            $subtotal += (float)$l['line_sum'];
+            $total += (float)$l['line_sum'];
         }
-        $subtotal = round($subtotal, 2);
-
-        $deliveryPrice = round(self::calculateDeliveryPrice($deliveryXml, $subtotal), 2);
-        $total = round($subtotal + $deliveryPrice, 2);
+        $total = round($total, 2);
 
         $deliveryEnumId = $this->resolveListEnumByXml($requestIblockId, 'DELIVERY', $deliveryXml);
         $paymentEnumId = $this->resolveListEnumByXml($requestIblockId, 'PAYMENT', $paymentXml);
@@ -671,14 +594,9 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
             'deliveryLabel' => $deliveryCaption,
             'paymentLabel' => $paymentCaption,
             'lines' => $detailLines,
-            'subtotal' => $subtotal,
-            'deliveryPrice' => $deliveryPrice,
             'total' => $total,
             'comment' => $comment,
         ];
-        if ($address !== '') {
-            $orderDetailsPayload['address'] = $address;
-        }
         if ($pickupPoint !== null) {
             $orderDetailsPayload['pickupPoint'] = $pickupPoint;
         }
@@ -706,10 +624,6 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
 
         if ($emailSnapshot !== '') {
             $propVals['CONTACT_EMAIL'] = $emailSnapshot;
-        }
-
-        if ($address !== '') {
-            $propVals['ADDRESS'] = $address;
         }
 
         $el = new CIBlockElement();

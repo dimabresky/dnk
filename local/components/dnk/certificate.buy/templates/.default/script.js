@@ -4,11 +4,7 @@
   var TELEPORT_TO = '#dnk-cert-buy-summary-slot';
   var CONTACT_ANCHOR = 'dnk-cert-buy-contact-anchor';
   var DELIVERY_COURIER = 'courier';
-  var DELIVERY_COURIER_RB = 'courier_rb';
   var DELIVERY_PICKUP = 'pickup';
-  var DELIVERY_FREE_THRESHOLD = 55;
-  var DELIVERY_PRICE_COURIER_MINSK = 5;
-  var DELIVERY_PRICE_COURIER_RB = 8;
 
   var pickupMapRuntime = {
     map: null,
@@ -26,41 +22,11 @@
     return root.querySelector(selector);
   }
 
-  function escapeHtmlText(value) {
-    return String(value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
-  function escapeHtmlAttr(value) {
-    return escapeHtmlText(value).replace(/'/g, '&#39;');
-  }
-
-  function buildSuccessMessageHtml(root, requestId) {
-    var msgTpl = root.getAttribute('data-msg-success') || '';
-    var linkHref =
-      root.getAttribute('data-msg-success-link-href') || '/personal/certificate_requests/';
-    var linkText = root.getAttribute('data-msg-success-link-text') || 'персональную страницу';
-    var linkHtml =
-      '<a class="dnk-cert-buy__submit-feedback-link" href="' +
-      escapeHtmlAttr(linkHref) +
-      '">' +
-      escapeHtmlText(linkText) +
-      '</a>';
-
-    return msgTpl
-      .replace(/#REQUEST_ID#/g, escapeHtmlText(String(requestId)))
-      .replace(/#LINK#/g, linkHtml);
-  }
-
-  function submitFeedback(root, kind, message, options) {
+  function submitFeedback(root, kind, message) {
     var el = qs(root, '[data-role="submit-feedback"]');
     if (!el) {
       return;
     }
-    options = options || {};
     el.classList.remove(
       'dnk-cert-buy__submit-feedback--success',
       'dnk-cert-buy__submit-feedback--error'
@@ -68,16 +34,11 @@
     var text = typeof message === 'string' ? message.trim() : '';
     if (!text) {
       el.textContent = '';
-      el.innerHTML = '';
       el.setAttribute('hidden', 'hidden');
       return;
     }
     el.removeAttribute('hidden');
-    if (options.html) {
-      el.innerHTML = message;
-    } else {
-      el.textContent = text;
-    }
+    el.textContent = text;
     if (kind === 'success') {
       el.classList.add('dnk-cert-buy__submit-feedback--success');
     } else {
@@ -457,59 +418,13 @@
     }, CART_PERSIST_DEBOUNCE_MS);
   }
 
-  function isCourierDelivery(xmlId) {
-    return xmlId === DELIVERY_COURIER || xmlId === DELIVERY_COURIER_RB;
-  }
-
-  function calculateDeliveryPrice(deliveryXmlId, subtotal) {
-    if (deliveryXmlId === DELIVERY_PICKUP) {
-      return 0;
-    }
-    if (subtotal >= DELIVERY_FREE_THRESHOLD) {
-      return 0;
-    }
-    if (deliveryXmlId === DELIVERY_COURIER_RB) {
-      return DELIVERY_PRICE_COURIER_RB;
-    }
-    if (deliveryXmlId === DELIVERY_COURIER) {
-      return DELIVERY_PRICE_COURIER_MINSK;
-    }
-    return 0;
-  }
-
-  function syncAddressFieldVisibility(root, deliveryXmlId) {
-    var addressField = qs(root, '[data-role="address-field"]');
-    var addressInput = qs(root, 'textarea[name="dnk_cert_address"]');
-    if (!addressField) {
-      return;
-    }
-    if (isCourierDelivery(deliveryXmlId)) {
-      addressField.removeAttribute('hidden');
-      if (addressInput) {
-        addressInput.required = true;
-      }
-    } else {
-      addressField.setAttribute('hidden', 'hidden');
-      if (addressInput) {
-        addressInput.required = false;
-        addressInput.value = '';
-      }
-    }
-    var vm = root.__dnkCertBuyVue;
-    if (vm) {
-      vm.deliveryAddress = '';
-    }
-  }
-
   function collectSubmitContext(root, vueVm) {
     var nameInput = qs(root, 'input[name="dnk_cert_contact_name"]');
     var phoneInput = qs(root, 'input[name="dnk_cert_contact_phone"]');
     var commentTa = qs(root, 'textarea[name="dnk_cert_comment"]');
-    var addressTa = qs(root, 'textarea[name="dnk_cert_address"]');
     var contactName = nameInput ? nameInput.value.trim() : '';
     var contactPhone = phoneInput ? phoneInput.value.trim() : '';
     var comment = commentTa ? commentTa.value.trim() : '';
-    var address = addressTa ? addressTa.value.trim() : '';
     var vmSubmit = root.__dnkCertBuyVue;
     var collect =
       vmSubmit &&
@@ -527,11 +442,9 @@
     return {
       nameInput: nameInput,
       phoneInput: phoneInput,
-      addressInput: addressTa,
       contactName: contactName,
       contactPhone: contactPhone,
       comment: comment,
-      address: address,
       collect: collect,
       items: items,
       deliveryXmlId: deliveryXmlId,
@@ -678,7 +591,8 @@
 
     function finalizeSuccess(data) {
       syncAuthorizedSession();
-      submitFeedback(root, 'success', buildSuccessMessageHtml(root, data.requestId), { html: true });
+      var msgTpl = root.getAttribute('data-msg-success') || '';
+      submitFeedback(root, 'success', msgTpl.replace('#REQUEST_ID#', String(data.requestId)));
       var vmOk = root.__dnkCertBuyVue;
       if (
         vmOk &&
@@ -866,20 +780,6 @@
         return;
       }
 
-      var address = context.address;
-      if (isCourierDelivery(deliveryXmlId) && !address.length) {
-        submitFeedback(
-          root,
-          'error',
-          (collect && collect.msgs && collect.msgs.addressRequired) ||
-            'Укажите адрес доставки.'
-        );
-        if (context.addressInput) {
-          context.addressInput.focus();
-        }
-        return;
-      }
-
       if (typeof BX === 'undefined' || !BX.ajax || !BX.ajax.runComponentAction) {
         submitFeedback(root, 'error', 'Не загружены скрипты Битрикс.');
         return;
@@ -893,9 +793,6 @@
         deliveryXmlId: deliveryXmlId,
         paymentXmlId: 'cash_on_delivery',
       };
-      if (isCourierDelivery(deliveryXmlId) && address) {
-        payloadObj.address = address;
-      }
       if (deliveryXmlId === DELIVERY_PICKUP && pickupStoreId) {
         payloadObj.pickupStoreId = pickupStoreId;
       }
@@ -1034,18 +931,10 @@
       '      <input type="radio" name="dnk_cert_delivery" value="courier" v-model="deliveryXmlId">' +
       '      <span>{{ msgs.deliveryCourier }}</span>' +
       '    </label>' +
-      '    <label class="dnk-cert-buy__inline dnk-cert-buy__inline--spaced">' +
-      '      <input type="radio" name="dnk_cert_delivery" value="courier_rb" v-model="deliveryXmlId">' +
-      '      <span>{{ msgs.deliveryCourierRb }}</span>' +
-      '    </label>' +
       '    <label v-if="pickupStores.length" class="dnk-cert-buy__inline dnk-cert-buy__inline--spaced">' +
       '      <input type="radio" name="dnk_cert_delivery" value="pickup" v-model="deliveryXmlId">' +
       '      <span>{{ msgs.deliveryPickup }}</span>' +
       '    </label>' +
-      '    <div class="dnk-cert-buy__delivery-notice" role="status" aria-live="polite">' +
-      '      <p class="dnk-cert-buy__delivery-notice-tariff font_13 muted">{{ deliveryTariffNotice }}</p>' +
-      '      <p v-if="deliveryCurrentNotice" class="dnk-cert-buy__delivery-notice-current font_13">{{ deliveryCurrentNotice }}</p>' +
-      '    </div>' +
       '  </div>' +
       '  <div v-show="deliveryXmlId === \'pickup\'" id="dnk-cert-buy-pickup" class="dnk-cert-buy__section dnk-cert-buy__pickup">' +
       '    <h3 class="dnk-cert-buy__section-title font_20">{{ msgs.pickupTitle }}</h3>' +
@@ -1089,14 +978,8 @@
       '      </div>' +
       '      <div class="dnk-cert-buy__summary-meta font_13">' +
       '        <div>{{ msgs.summaryDelivery }}: <strong>{{ currentDeliveryLabel }}</strong></div>' +
-      '        <div v-if="summaryAddress">{{ msgs.summaryAddress }}: <strong>{{ summaryAddress }}</strong></div>' +
       '        <div>{{ msgs.summaryPayment }}: <strong>{{ msgs.payCod }}</strong></div>' +
       '        <div v-if="deliveryXmlId === \'pickup\' && selectedPickupSummary">{{ msgs.summaryPickup }}: <strong>{{ selectedPickupSummary }}</strong></div>' +
-      '      </div>' +
-      '      <div class="dnk-cert-buy__summary-totals font_13">' +
-      '        <div>{{ msgs.summarySubtotal }}: <strong>{{ formatMoney(subtotal) }}</strong></div>' +
-      '        <div>{{ msgs.summaryDeliveryPrice }}: <strong>{{ formattedDeliveryPrice }}</strong></div>' +
-      '        <div v-if="deliveryCurrentNotice" class="dnk-cert-buy__summary-delivery-hint muted">{{ deliveryCurrentNotice }}</div>' +
       '      </div>' +
       '      <div class="dnk-cert-buy__summary-total font_15">{{ msgs.summaryTotal }}: <strong>{{ formatMoney(grandTotal) }}</strong></div>' +
       '    </div>' +
@@ -1201,7 +1084,6 @@
           pickupStores: pickupStores,
           selectedPickupId: null,
           yandexApiKey: yandexApiKey,
-          deliveryAddress: '',
         };
       },
       computed: {
@@ -1222,61 +1104,16 @@
           });
           return lines;
         },
-        subtotal: function () {
-          return Math.round(
-            this.selectedLines.reduce(function (acc, row) {
-              return acc + row.NOMINAL * row.qty;
-            }, 0) * 100
-          ) / 100;
-        },
-        deliveryPrice: function () {
-          return calculateDeliveryPrice(this.deliveryXmlId, this.subtotal);
-        },
         grandTotal: function () {
-          return Math.round((this.subtotal + this.deliveryPrice) * 100) / 100;
-        },
-        formattedDeliveryPrice: function () {
-          if (this.deliveryPrice <= 0) {
-            return this.msgs.deliveryFree || 'бесплатно';
-          }
-          return this.formatMoney(this.deliveryPrice);
-        },
-        deliveryTariffNotice: function () {
-          if (this.deliveryXmlId === DELIVERY_PICKUP) {
-            return this.msgs.deliveryNoticePickup || '';
-          }
-          if (this.deliveryXmlId === DELIVERY_COURIER_RB) {
-            return this.msgs.deliveryNoticeCourierRb || '';
-          }
-          return this.msgs.deliveryNoticeCourier || '';
-        },
-        deliveryCurrentNotice: function () {
-          if (this.subtotal <= 0) {
-            return '';
-          }
-          if (this.deliveryPrice <= 0) {
-            return this.msgs.deliveryNoticeCurrentFree || '';
-          }
-          var tpl = this.msgs.deliveryNoticeCurrentPaid || '';
-          if (!tpl) {
-            return '';
-          }
-          return tpl.replace('#PRICE#', this.formatMoney(this.deliveryPrice));
+          return this.selectedLines.reduce(function (acc, row) {
+            return acc + row.NOMINAL * row.qty;
+          }, 0);
         },
         currentDeliveryLabel: function () {
           if (this.deliveryXmlId === DELIVERY_PICKUP) {
             return this.msgs.deliveryPickup || '';
           }
-          if (this.deliveryXmlId === DELIVERY_COURIER_RB) {
-            return this.msgs.deliveryCourierRb || '';
-          }
           return this.msgs.deliveryCourier || '';
-        },
-        summaryAddress: function () {
-          if (!isCourierDelivery(this.deliveryXmlId)) {
-            return '';
-          }
-          return String(this.deliveryAddress || '').trim();
         },
         selectedPickupStore: function () {
           var self = this;
@@ -1402,16 +1239,7 @@
           this.quantities = empty;
           this.deliveryXmlId = DELIVERY_COURIER;
           this.selectedPickupId = null;
-          this.deliveryAddress = '';
           destroyPickupMap();
-          var rootReset = document.getElementById('dnk-cert-buy-root');
-          if (rootReset) {
-            syncAddressFieldVisibility(rootReset, DELIVERY_COURIER);
-            var addressTaReset = rootReset.querySelector('textarea[name="dnk_cert_address"]');
-            if (addressTaReset) {
-              addressTaReset.value = '';
-            }
-          }
         },
         selectPickupStore: function (id) {
           var storeId = coerceItemId(id);
@@ -1476,14 +1304,6 @@
         }
         Vue.nextTick(function () {
           bootPhoneMask(qs(root, '.js-dnk-cert-phone'));
-          syncAddressFieldVisibility(root, self.deliveryXmlId);
-          var addressTa = qs(root, 'textarea[name="dnk_cert_address"]');
-          if (addressTa && !addressTa.dataset.dnkCertAddressBound) {
-            addressTa.dataset.dnkCertAddressBound = '1';
-            addressTa.addEventListener('input', function () {
-              self.deliveryAddress = String(addressTa.value || '').trim();
-            });
-          }
           setTimeout(function () {
             bootPhoneMask(qs(root, '.js-dnk-cert-phone'));
           }, 100);
@@ -1500,10 +1320,6 @@
           },
         },
         deliveryXmlId: function (nextVal) {
-          var root = document.getElementById('dnk-cert-buy-root');
-          if (root) {
-            syncAddressFieldVisibility(root, nextVal);
-          }
           if (nextVal === DELIVERY_PICKUP) {
             if (!this.pickupStores.length) {
               this.deliveryXmlId = DELIVERY_COURIER;
