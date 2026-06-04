@@ -96,8 +96,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 		}
 	}
 
-	$bForceDisplay = false;
-	
+	$bForceDisplay = false;	
 	
 	if ($arSection["DISPLAY"] && $obDisplayType->isValid($arSection["DISPLAY"])) {
 		if ($arParams['SHOW_LIST_TYPE_SECTION'] != 'N') {
@@ -132,7 +131,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 		$order = $sortKey === 'SHOWS' ? 'desc' : 'asc';
 	}
 	
-	$arDelUrlParams = array('sort', 'order', 'control_ajax', 'ajax_get_filter', 'ajax_get', 'linerow', 'display');
+	$arDelUrlParams = array('sort', 'order', 'control_ajax', 'ajax_get_filter', 'ajax_get', 'linerow', 'display', 'is_aspro_mobile');
 	?>
 	<!-- noindex -->
 	<div class="filter-panel sort_header view_<?=$display?> flexbox flexbox--direction-row flexbox--justify-between ">
@@ -143,7 +142,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 						'SEF_URL' => $arParams["SEF_URL_TEMPLATES"]['smart_filter'],
 						'GLOBAL_FILTER' => $arParams['FILTER_NAME']
 					]);?>
-					<div class="filter-panel__filter  <?=($arParams['FILTER_VIEW'] == "COMPACT" ? 'visible-767' : 'visible-991');?>">
+					<div class="filter-panel__filter">
 						<div class="dark_link dropdown-select">
 							<button type="button" class="btn--no-btn-appearance dropdown-select__title font_14 fill-dark-light bordered rounded-x bx-filter-title filter_title <?=($bActiveFilter && $bActiveFilter[1] != 'clear' ? 'active-filter' : '')?>">
 								<?=TSolution::showSpriteIconSvg(SITE_TEMPLATE_PATH.'/images/svg/catalog/item_icons.svg#filter', 'mr mr--12', ['WIDTH' => 13, 'HEIGHT' => 12]);?>
