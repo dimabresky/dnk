@@ -1,4 +1,6 @@
-<?if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();?>
+<?if( !defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true ) die();?>
+
+
 <?if($arSeoItem):?>
 	<?ob_start();?>
 		<?if($arSeoItem["DETAIL_PICTURE"] || $arSeoItem["PROPERTY_TIZERS_VALUE"]):?>
@@ -11,83 +13,83 @@
 					?>
 					<div class="detail-block mt mt--32">
 						<?$APPLICATION->IncludeComponent(
-							"bitrix:news.list",
-							"tizers-list",
-							array(
-								"IBLOCK_TYPE" => "aspro_premier_content",
-								"IBLOCK_ID" => $arParams["IBLOCK_TIZERS_ID"],
-								"NEWS_COUNT" => "4",
-								"SORT_BY1" => "SORT",
-								"SORT_ORDER1" => "ASC",
-								"SORT_BY2" => "ID",
-								"SORT_ORDER2" => "DESC",
-								// "SMALL_BLOCK" => "Y",
-								"FILTER_NAME" => "arLandingTizers",
-								"FIELD_CODE" => array(
-									0 => "PREVIEW_PICTURE",
-									1 => "PREVIEW_TEXT",
-									2 => "DETAIL_PICTURE",
-									3 => "DETAIL_TEXT",
-								),
-								"PROPERTY_CODE" => array(
-									0 => "TIZER_ICON",
-									1 => "URL",
-								),
-								"CHECK_DATES" => "Y",
-								"DETAIL_URL" => "",
-								"AJAX_MODE" => "N",
-								"AJAX_OPTION_JUMP" => "N",
-								"AJAX_OPTION_STYLE" => "Y",
-								"AJAX_OPTION_HISTORY" => "N",
-								"CACHE_TYPE" => $arParams['CACHE_TYPE'],
-								"CACHE_TIME" => "36000000",
-								"CACHE_FILTER" => "Y",
-								"CACHE_GROUPS" => "N",
-								"PREVIEW_TRUNCATE_LEN" => "250",
-								"ACTIVE_DATE_FORMAT" => "d F Y",
-								"SET_TITLE" => "N",
-								"SHOW_DETAIL_LINK" => "N",
-								"SET_STATUS_404" => "N",
-								"INCLUDE_IBLOCK_INTO_CHAIN" => "N",
-								"ADD_SECTIONS_CHAIN" => "N",
-								"HIDE_LINK_WHEN_NO_DETAIL" => "N",
-								"PARENT_SECTION" => "",
-								"PARENT_SECTION_CODE" => "",
-								"DISPLAY_TOP_PAGER" => "N",
-								"DISPLAY_BOTTOM_PAGER" => "Y",
-								"PAGER_TITLE" => "",
-								"PAGER_SHOW_ALWAYS" => "N",
-								"PAGER_TEMPLATE" => "ajax",
-								"PAGER_DESC_NUMBERING" => "N",
-								"PAGER_DESC_NUMBERING_CACHE_TIME" => "3600",
-								"PAGER_SHOW_ALL" => "N",
-								"DISPLAY_DATE" => "Y",
-								"DISPLAY_NAME" => "Y",
-								"DISPLAY_PICTURE" => "N",
-								"DISPLAY_PREVIEW_TEXT" => "N",
-								"AJAX_OPTION_ADDITIONAL" => "",
-								"COMPONENT_TEMPLATE" => "tizers-list",
-								"SET_BROWSER_TITLE" => "N",
-								"SET_META_KEYWORDS" => "N",
-								"SET_META_DESCRIPTION" => "N",
-								"SET_LAST_MODIFIED" => "N",
-								"INCLUDE_SUBSECTIONS" => "Y",
-								"STRICT_SECTION_CHECK" => "N",
-								"TYPE_IMG" => "left",
-								"CENTERED" => "Y",
-								"SIZE_IN_ROW" => "4",
-								"PAGER_BASE_LINK_ENABLE" => "N",
-								"SHOW_404" => "N",
-								'ITEMS_OFFSET' => true,
-								'IMAGES' => 'ICONS',
-								'IMAGE_POSITION' => 'TOP',
-								"MOBILE_SCROLLED" => true,
-								"MAXWIDTH_WRAP" => "N",
-								'ELEMENTS_COUNT' => 4,
-								"MESSAGE_404" => ""
+						"bitrix:news.list",
+						"tizers-list",
+						array(
+							"IBLOCK_TYPE" => "aspro_premier_content",
+							"IBLOCK_ID" => $arParams["IBLOCK_TIZERS_ID"],
+							"NEWS_COUNT" => "4",
+							"SORT_BY1" => "SORT",
+							"SORT_ORDER1" => "ASC",
+							"SORT_BY2" => "ID",
+							"SORT_ORDER2" => "DESC",
+							// "SMALL_BLOCK" => "Y",
+							"FILTER_NAME" => "arLandingTizers",
+							"FIELD_CODE" => array(
+								0 => "PREVIEW_PICTURE",
+								1 => "PREVIEW_TEXT",
+								2 => "DETAIL_PICTURE",
+								3 => "DETAIL_TEXT",
 							),
-							false, array("HIDE_ICONS" => "Y")
-						);?>
+							"PROPERTY_CODE" => array(
+								0 => "TIZER_ICON",
+								1 => "URL",
+							),
+							"CHECK_DATES" => "Y",
+							"DETAIL_URL" => "",
+							"AJAX_MODE" => "N",
+							"AJAX_OPTION_JUMP" => "N",
+							"AJAX_OPTION_STYLE" => "Y",
+							"AJAX_OPTION_HISTORY" => "N",
+							"CACHE_TYPE" => $arParams['CACHE_TYPE'],
+							"CACHE_TIME" => "36000000",
+							"CACHE_FILTER" => "Y",
+							"CACHE_GROUPS" => "N",
+							"PREVIEW_TRUNCATE_LEN" => "250",
+							"ACTIVE_DATE_FORMAT" => "d F Y",
+							"SET_TITLE" => "N",
+							"SHOW_DETAIL_LINK" => "N",
+							"SET_STATUS_404" => "N",
+							"INCLUDE_IBLOCK_INTO_CHAIN" => "N",
+							"ADD_SECTIONS_CHAIN" => "N",
+							"HIDE_LINK_WHEN_NO_DETAIL" => "N",
+							"PARENT_SECTION" => "",
+							"PARENT_SECTION_CODE" => "",
+							"DISPLAY_TOP_PAGER" => "N",
+							"DISPLAY_BOTTOM_PAGER" => "Y",
+							"PAGER_TITLE" => "",
+							"PAGER_SHOW_ALWAYS" => "N",
+							"PAGER_TEMPLATE" => "ajax",
+							"PAGER_DESC_NUMBERING" => "N",
+							"PAGER_DESC_NUMBERING_CACHE_TIME" => "3600",
+							"PAGER_SHOW_ALL" => "N",
+							"DISPLAY_DATE" => "Y",
+							"DISPLAY_NAME" => "Y",
+							"DISPLAY_PICTURE" => "N",
+							"DISPLAY_PREVIEW_TEXT" => "N",
+							"AJAX_OPTION_ADDITIONAL" => "",
+							"COMPONENT_TEMPLATE" => "tizers-list",
+							"SET_BROWSER_TITLE" => "N",
+							"SET_META_KEYWORDS" => "N",
+							"SET_META_DESCRIPTION" => "N",
+							"SET_LAST_MODIFIED" => "N",
+							"INCLUDE_SUBSECTIONS" => "Y",
+							"STRICT_SECTION_CHECK" => "N",
+							"TYPE_IMG" => "left",
+							"CENTERED" => "Y",
+							"SIZE_IN_ROW" => "4",
+							"PAGER_BASE_LINK_ENABLE" => "N",
+							"SHOW_404" => "N",
+							'ITEMS_OFFSET' => true,
+							'IMAGES' => 'ICONS',
+							'IMAGE_POSITION' => 'TOP',
+							"MOBILE_SCROLLED" => true,
+							"MAXWIDTH_WRAP" => "N",
+							'ELEMENTS_COUNT' => 4,
+							"MESSAGE_404" => ""
+						),
+						false, array("HIDE_ICONS" => "Y")
+					);?>
 					</div>
 				<?endif;?>
 			</div>
@@ -135,10 +137,10 @@
 							<div class="line-block__item order-info-btns">
 								<div class="line-block line-block--align-normal line-block--12">
 									<div class="line-block__item">
-										<span 
-										 class="btn btn-default btn-lg animate-load" 
-										 data-event="jqm" 
-										 data-param-id="<?=TSolution::getFormID('aspro_premier_question');?>" 
+										<span
+										 class="btn btn-default btn-lg animate-load"
+										 data-event="jqm"
+										 data-param-id="<?=TSolution::getFormID('aspro_premier_question');?>"
 										 data-name="question"
 										>
 											<span><?=htmlspecialcharsbx(TSolution::GetFrontParametrValue('EXPRESSION_FOR_ASK_QUESTION'))?></span>
@@ -162,7 +164,7 @@
 	?>
 
 	<?ob_start();?>
-		
+
 	<?
 	$html = ob_get_clean();
 	$APPLICATION->AddViewContent('top_content', $html);
@@ -177,7 +179,7 @@
 		$arParams["SHOW_SECTION_DESC"] != 'N' &&
 		strpos($_SERVER['REQUEST_URI'], 'PAGEN') === false
 	):?>
-	
+
 		<?ob_start();?>
 		<?if($posSectionDescr !== "BOTTOM"):?>
 			<?if ($section_pos_top && $arSection[$section_pos_top]):?>
@@ -202,7 +204,7 @@
 			if (!$arParams["SECTION_TYPE_VIEW"]) {
 				$arParams["SECTION_TYPE_VIEW"] = "FROM_MODULE";
 			}
-			$sViewElementTemplate = ($arParams["SECTION_TYPE_VIEW"] == "FROM_MODULE" ? $arTheme["SECTION_TYPE_VIEW_CATALOG"]["VALUE"] : $arParams["SECTION_TYPE_VIEW"]);
+			$sViewElementTemplate = ($arParams["SECTION_TYPE_VIEW"] == "FROM_MODULE" ? $arTheme["SECTION_TYPE_VIEW_CATALOG_MOBILE"]["VALUE"] : $arParams["SECTION_TYPE_VIEW"]);
 			?>
 			<?@include_once($sViewElementTemplate.'.php');?>
 		</div>
@@ -220,7 +222,7 @@
 		if (!$arParams["SECTION_TYPE_VIEW"]) {
 			$arParams["SECTION_TYPE_VIEW"] = "FROM_MODULE";
 		}
-		$sViewElementTemplate = ($arParams["SECTION_TYPE_VIEW"] == "FROM_MODULE" ? $arTheme["SECTION_TYPE_VIEW_CATALOG"]["VALUE"] : $arParams["SECTION_TYPE_VIEW"]);
+		$sViewElementTemplate = ($arParams["SECTION_TYPE_VIEW"] == "FROM_MODULE" ? $arTheme["SECTION_TYPE_VIEW_CATALOG_MOBILE"]["VALUE"] : $arParams["SECTION_TYPE_VIEW"]);
 		?>
 		<?@include_once($sViewElementTemplate.'.php');?>
 	</div>
@@ -228,16 +230,16 @@
 
 <?$isAjax="N";?>
 <?if (
-	isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && 
-	strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == "xmlhttprequest" && 
-	isset($_GET["ajax_get"]) && $_GET["ajax_get"] == "Y" || 
+	isset($_SERVER["HTTP_X_REQUESTED_WITH"]) &&
+	strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == "xmlhttprequest" &&
+	isset($_GET["ajax_get"]) && $_GET["ajax_get"] == "Y" ||
 	(isset($_GET["ajax_basket"]) && $_GET["ajax_basket"]=="Y")
 	) {
 	$isAjax="Y";
 }?>
 <?if (
-	isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && 
-	strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == "xmlhttprequest" && 
+	isset($_SERVER["HTTP_X_REQUESTED_WITH"]) &&
+	strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == "xmlhttprequest" &&
 	isset($_GET["ajax_get_filter"]) && $_GET["ajax_get_filter"] == "Y"
 	) {
 	$isAjaxFilter="Y";
@@ -403,11 +405,11 @@ $SMART_FILTER_SORT = array(
 			$ipropValues = new \Bitrix\Iblock\InheritedProperty\ElementValues($arSeoItem["IBLOCK_ID"], $arSeoItem["ID"]);
 			$arSeoItem["IPROPERTY_VALUES"] = $ipropValues->getValues();
 		}
-		$langing_seo_h1 = ($arSeoItem["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"] != "" 
-			? $arSeoItem["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"] 
+		$langing_seo_h1 = ($arSeoItem["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"] != ""
+			? $arSeoItem["IPROPERTY_VALUES"]["ELEMENT_PAGE_TITLE"]
 			: $arSeoItem["NAME"]);
-		$langing_seo_title = ($arSeoItem["IPROPERTY_VALUES"]["ELEMENT_META_TITLE"] != "" 
-			? $arSeoItem["IPROPERTY_VALUES"]["ELEMENT_META_TITLE"] 
+		$langing_seo_title = ($arSeoItem["IPROPERTY_VALUES"]["ELEMENT_META_TITLE"] != ""
+			? $arSeoItem["IPROPERTY_VALUES"]["ELEMENT_META_TITLE"]
 			: $langing_seo_h1);
 
 		$APPLICATION->SetTitle($langing_seo_h1);
@@ -416,11 +418,11 @@ $SMART_FILTER_SORT = array(
 		if ($langing_seo_title) {
 			$APPLICATION->SetPageProperty("title", $langing_seo_title);
 		}
-		
+
 		if ($arSeoItem["IPROPERTY_VALUES"]["ELEMENT_META_DESCRIPTION"]) {
 			$APPLICATION->SetPageProperty("description", $arSeoItem["IPROPERTY_VALUES"]["ELEMENT_META_DESCRIPTION"]);
 		}
-		
+
 		if ($arSeoItem["IPROPERTY_VALUES"]['ELEMENT_META_KEYWORDS']) {
 			$APPLICATION->SetPageProperty("keywords", $arSeoItem["IPROPERTY_VALUES"]['ELEMENT_META_KEYWORDS']);
 		}
@@ -459,7 +461,7 @@ $SMART_FILTER_SORT = array(
 				if ($('.element-count-wrapper .element-count').length) {
 					$('.element-count-wrapper .element-count').text($('.js_append').closest('.catalog-items').find('.bottom_nav').attr('data-all_count'));
 				}
-				<?if( $arParams["AJAX_MODE"] !== "Y" ):?>	
+				<?if( $arParams["AJAX_MODE"] !== "Y" ):?>
 					if (arAjaxPageData.TITLE)
 						BX.ajax.UpdatePageTitle(arAjaxPageData.TITLE);
 					if (arAjaxPageData.WINDOW_TITLE || arAjaxPageData.TITLE)
