@@ -174,6 +174,29 @@ if ($exists) {
         }
     }
 
+    $paymentProp = CIBlockProperty::GetList([], ['IBLOCK_ID' => $iblockId, 'CODE' => 'PAYMENT'])->Fetch();
+    if (is_array($paymentProp) && (int)$paymentProp['ID'] > 0) {
+        $paymentPropId = (int)$paymentProp['ID'];
+        $cardOnDeliveryEnum = CIBlockPropertyEnum::GetList([], ['PROPERTY_ID' => $paymentPropId, 'XML_ID' => 'card_on_delivery'])->Fetch();
+        if (!is_array($cardOnDeliveryEnum)) {
+            $enum = new CIBlockPropertyEnum();
+            $enumId = $enum->Add([
+                'PROPERTY_ID' => $paymentPropId,
+                'VALUE' => 'Картой при получении',
+                'XML_ID' => 'card_on_delivery',
+                'DEF' => 'N',
+                'SORT' => 200,
+            ]);
+            if ($enumId) {
+                $dnkCiOut("Added PAYMENT enum card_on_delivery (ID={$enumId}).\n");
+            } else {
+                $dnkCiErr("Failed to add PAYMENT enum card_on_delivery. Add manually in admin.\n");
+            }
+        } else {
+            $dnkCiOut("PAYMENT enum card_on_delivery already exists.\n");
+        }
+    }
+
     $statusEnums = [
         'accepted' => 'Принят',
         'in_progress' => 'В обработке',
@@ -425,7 +448,10 @@ $addList($installer, $iblockId, 'DELIVERY', 'Способ доставки', 200
     'courier' => 'Доставка курьером',
     'pickup' => 'Самовывоз',
 ], $fatal);
-$addList($installer, $iblockId, 'PAYMENT', 'Способ оплаты', 210, ['cash_on_delivery' => 'Оплата при получении'], $fatal);
+$addList($installer, $iblockId, 'PAYMENT', 'Способ оплаты', 210, [
+    'card_on_delivery' => 'Картой при получении',
+    'cash_on_delivery' => 'Наличные при получении',
+], $fatal);
 $addList($installer, $iblockId, 'STATUS', 'Статус заявки', 220, [
     'accepted' => 'Принят',
     'in_progress' => 'В обработке',
