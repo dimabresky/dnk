@@ -450,7 +450,7 @@ $addList($installer, $iblockId, 'DELIVERY', 'Способ доставки', 200
 ], $fatal);
 $addList($installer, $iblockId, 'PAYMENT', 'Способ оплаты', 210, [
     'card_on_delivery' => 'Картой при получении',
-    'cash_on_delivery' => 'Оплата при получении',
+    'cash_on_delivery' => 'Наличные при получении',
 ], $fatal);
 $addList($installer, $iblockId, 'STATUS', 'Статус заявки', 220, [
     'accepted' => 'Принят',
