@@ -629,6 +629,32 @@
     };
   }
 
+  function buildSubmitPayloadObject(context) {
+    var deliveryXmlId = context.deliveryXmlId;
+    var pickupStoreId = context.pickupStoreId;
+    var address = context.address;
+    if (!isCourierDelivery(deliveryXmlId)) {
+      address = '';
+    }
+
+    var payloadObj = {
+      items: context.items,
+      contactName: context.contactName,
+      contactPhone: context.contactPhone,
+      comment: context.comment,
+      deliveryXmlId: deliveryXmlId,
+      paymentXmlId: context.paymentXmlId || PAYMENT_DEFAULT,
+    };
+    if (isCourierDelivery(deliveryXmlId) && address) {
+      payloadObj.address = address;
+    }
+    if (deliveryXmlId === DELIVERY_PICKUP && pickupStoreId) {
+      payloadObj.pickupStoreId = pickupStoreId;
+    }
+
+    return payloadObj;
+  }
+
   function collectResponseErrors(response) {
     var data = response && response.data ? response.data : {};
     var errors = [];
@@ -844,8 +870,12 @@
         smsConfirmBtn.disabled = true;
       }
 
+      var freshContext = collectSubmitContext(root, vueVm);
+      var payload = JSON.stringify(buildSubmitPayloadObject(freshContext));
+      pendingAuth.collectVm = freshContext.collect || pendingAuth.collectVm;
+
       var confirmData = {
-        payload: pendingAuth.payload,
+        payload: payload,
         smsCode: smsCode,
         signedData: pendingAuth.signedData,
         scenario: pendingAuth.scenario,
@@ -879,7 +909,7 @@
               return;
             }
             if (data.authenticated) {
-              runSubmit(pendingAuth.payload, pendingAuth.collectVm)
+              runSubmit(payload, pendingAuth.collectVm)
                 .then(function (submitResponse) {
                   btn.disabled = false;
                   if (smsConfirmBtn) {
@@ -1039,20 +1069,17 @@
         return;
       }
 
-      var payloadObj = {
+      var payloadObj = buildSubmitPayloadObject({
+        collect: collect,
         items: items,
         contactName: contactName,
         contactPhone: contactPhone,
         comment: comment,
         deliveryXmlId: deliveryXmlId,
-        paymentXmlId: context.paymentXmlId || PAYMENT_DEFAULT,
-      };
-      if (isCourierDelivery(deliveryXmlId) && address) {
-        payloadObj.address = address;
-      }
-      if (deliveryXmlId === DELIVERY_PICKUP && pickupStoreId) {
-        payloadObj.pickupStoreId = pickupStoreId;
-      }
+        paymentXmlId: context.paymentXmlId,
+        pickupStoreId: pickupStoreId,
+        address: address,
+      });
 
       var payload = JSON.stringify(payloadObj);
       var isAuthorized = root.getAttribute('data-is-authorized') === '1';
