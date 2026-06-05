@@ -6,6 +6,9 @@
   var DELIVERY_COURIER = 'courier';
   var DELIVERY_COURIER_RB = 'courier_rb';
   var DELIVERY_PICKUP = 'pickup';
+  var PAYMENT_CASH = 'cash_on_delivery';
+  var PAYMENT_CARD = 'card_on_delivery';
+  var PAYMENT_DEFAULT = PAYMENT_CARD;
   var DELIVERY_FREE_THRESHOLD = 55;
   var DELIVERY_PRICE_COURIER_MINSK = 5;
   var DELIVERY_PRICE_COURIER_RB = 8;
@@ -607,6 +610,7 @@
     var items =
       collect && typeof collect.collectSubmitItems === 'function' ? collect.collectSubmitItems() : [];
     var deliveryXmlId = collect && collect.deliveryXmlId ? collect.deliveryXmlId : DELIVERY_COURIER;
+    var paymentXmlId = collect && collect.paymentXmlId ? collect.paymentXmlId : PAYMENT_DEFAULT;
     var pickupStoreId = collect && collect.selectedPickupId ? collect.selectedPickupId : null;
 
     return {
@@ -620,6 +624,7 @@
       collect: collect,
       items: items,
       deliveryXmlId: deliveryXmlId,
+      paymentXmlId: paymentXmlId,
       pickupStoreId: pickupStoreId,
     };
   }
@@ -1040,7 +1045,7 @@
         contactPhone: contactPhone,
         comment: comment,
         deliveryXmlId: deliveryXmlId,
-        paymentXmlId: 'cash_on_delivery',
+        paymentXmlId: context.paymentXmlId || PAYMENT_DEFAULT,
       };
       if (isCourierDelivery(deliveryXmlId) && address) {
         payloadObj.address = address;
@@ -1224,7 +1229,11 @@
       '  <div class="dnk-cert-buy__section">' +
       '    <h3 class="dnk-cert-buy__section-title font_20">{{ msgs.payTitle }}</h3>' +
       '    <label class="dnk-cert-buy__inline">' +
-      '      <input type="radio" name="dnk_cert_payment" value="cash_on_delivery" checked disabled>' +
+      '      <input type="radio" name="dnk_cert_payment" :value="PAYMENT_CARD" v-model="paymentXmlId">' +
+      '      <span>{{ msgs.payCardOnDelivery }}</span>' +
+      '    </label>' +
+      '    <label class="dnk-cert-buy__inline dnk-cert-buy__inline--spaced">' +
+      '      <input type="radio" name="dnk_cert_payment" :value="PAYMENT_CASH" v-model="paymentXmlId">' +
       '      <span>{{ msgs.payCod }}</span>' +
       '    </label>' +
       '  </div>' +
@@ -1241,7 +1250,7 @@
       '      <div class="dnk-cert-buy__summary-meta font_13">' +
       '        <div>{{ msgs.summaryDelivery }}: <strong>{{ currentDeliveryLabel }}</strong></div>' +
       '        <div v-if="summaryAddress">{{ msgs.summaryAddress }}: <strong>{{ summaryAddress }}</strong></div>' +
-      '        <div>{{ msgs.summaryPayment }}: <strong>{{ msgs.payCod }}</strong></div>' +
+      '        <div>{{ msgs.summaryPayment }}: <strong>{{ currentPaymentLabel }}</strong></div>' +
       '        <div v-if="deliveryXmlId === \'pickup\' && selectedPickupSummary">{{ msgs.summaryPickup }}: <strong>{{ selectedPickupSummary }}</strong></div>' +
       '      </div>' +
       '      <div class="dnk-cert-buy__summary-totals font_13">' +
@@ -1349,6 +1358,9 @@
           msgs: msgs,
           maxQty: maxQty,
           deliveryXmlId: DELIVERY_COURIER,
+          paymentXmlId: PAYMENT_DEFAULT,
+          PAYMENT_CASH: PAYMENT_CASH,
+          PAYMENT_CARD: PAYMENT_CARD,
           pickupStores: pickupStores,
           selectedPickupId: null,
           yandexApiKey: yandexApiKey,
@@ -1422,6 +1434,12 @@
             return this.msgs.deliveryCourierRb || '';
           }
           return this.msgs.deliveryCourier || '';
+        },
+        currentPaymentLabel: function () {
+          if (this.paymentXmlId === PAYMENT_CASH) {
+            return this.msgs.payCod || '';
+          }
+          return this.msgs.payCardOnDelivery || '';
         },
         summaryAddress: function () {
           if (!isCourierDelivery(this.deliveryXmlId)) {

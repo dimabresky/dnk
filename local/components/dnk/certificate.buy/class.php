@@ -27,7 +27,9 @@ Loc::loadMessages(__FILE__);
 class DnkCertificateBuyComponent extends CBitrixComponent implements Controllerable
 {
     private const PROP_NOMINAL = 'NOMINAL';
-    private const PAYMENT_XML = 'cash_on_delivery';
+    private const PAYMENT_XML_CASH = 'cash_on_delivery';
+    private const PAYMENT_XML_CARD = 'card_on_delivery';
+    private const PAYMENT_XML_DEFAULT = self::PAYMENT_XML_CARD;
     private const DELIVERY_XML_COURIER = 'courier';
     private const DELIVERY_XML_COURIER_RB = 'courier_rb';
     private const DELIVERY_XML_PICKUP = 'pickup';
@@ -468,6 +470,17 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         ];
     }
 
+    /**
+     * @return list<string>
+     */
+    private static function allowedPaymentXmlIds(): array
+    {
+        return [
+            self::PAYMENT_XML_CASH,
+            self::PAYMENT_XML_CARD,
+        ];
+    }
+
     private static function isCourierDelivery(string $deliveryXml): bool
     {
         return in_array($deliveryXml, [self::DELIVERY_XML_COURIER, self::DELIVERY_XML_COURIER_RB], true);
@@ -538,9 +551,12 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
         $address = trim(strip_tags((string)($decoded['address'] ?? '')));
 
         $deliveryXml = trim((string)($decoded['deliveryXmlId'] ?? self::DELIVERY_XML_COURIER));
-        $paymentXml = trim((string)($decoded['paymentXmlId'] ?? self::PAYMENT_XML));
+        $paymentXml = trim((string)($decoded['paymentXmlId'] ?? self::PAYMENT_XML_DEFAULT));
         if (!in_array($deliveryXml, self::allowedDeliveryXmlIds(), true)) {
             $deliveryXml = self::DELIVERY_XML_COURIER;
+        }
+        if (!in_array($paymentXml, self::allowedPaymentXmlIds(), true)) {
+            $paymentXml = self::PAYMENT_XML_DEFAULT;
         }
 
         $addressError = $this->validateDeliveryAddress($deliveryXml, $address);
@@ -550,9 +566,6 @@ class DnkCertificateBuyComponent extends CBitrixComponent implements Controllera
 
         if (!self::isCourierDelivery($deliveryXml)) {
             $address = '';
-        }
-        if ($paymentXml !== self::PAYMENT_XML) {
-            $paymentXml = self::PAYMENT_XML;
         }
 
         $pickupStoreId = (int)($decoded['pickupStoreId'] ?? 0);

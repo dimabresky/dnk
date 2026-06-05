@@ -68,6 +68,7 @@ if (!empty($arResult['ITEMS'])) {
         'pickupRequired' => GetMessage('DNK_CERT_BUY_PICKUP_REQUIRED'),
         'payTitle' => GetMessage('DNK_CERT_BUY_PAY_TITLE'),
         'payCod' => GetMessage('DNK_CERT_BUY_PAY_COD'),
+        'payCardOnDelivery' => GetMessage('DNK_CERT_BUY_PAY_CARD_ON_DELIVERY'),
     ], JSON_UNESCAPED_UNICODE));
 
     $cartSnap = isset($arResult['CART_SESSION']) && is_array($arResult['CART_SESSION']) ? $arResult['CART_SESSION'] : [];
