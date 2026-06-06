@@ -50,6 +50,7 @@ $MESS["sort_sort_asc"] = "By ascending sort";
 $MESS["sort_sort_desc"] = "By descending quantity";
 $MESS["sort_shows_asc"] = "Unpopular first";
 $MESS["sort_shows_desc"] = "Popular first";
+$MESS["sort_is_new"] = "New";
 $MESS["sort_custom_asc"] = "By default (ascending)";
 $MESS["sort_custom_desc"] = "By default (descending)";
 
