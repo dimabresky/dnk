@@ -27,7 +27,8 @@
 /bitrix/templates/aspro-premier-mobile_copy/styles.css
 /bitrix/templates/aspro-premier-mobile_copy/styles.min.css
 /bitrix/templates/aspro-premier-mobile_copy/template_styles.css
-/bitrix/templates/aspro-premier-mobile_copy/template_styles.min.css
+/bitrix/templates/aspro-premier_copy/components/bitrix/catalog.section/
+/bitrix/templates/aspro-premier-mobile_copy/components/bitrix/catalog.section/
 
 /index.php
 
@@ -63,6 +64,9 @@
 # --- Personal ---
 /personal/
 
+# --- Certs ---
+/sertifikaty/
+
 # --- Ajax ---
 /ajax/check-phonecode.php
 /ajax/auth.php
@@ -70,6 +74,20 @@
 
 # --- Auth ---
 /auth/
+
+# --- urlrewrite ---
+/urlrewrite.php
+
+# --- include ---
+/include/*
+!/include/footer/
+!/include/footer/**
+!/include/blocks/
+/include/blocks/*
+!/include/blocks/consent/
+/include/blocks/consent/*
+!/include/blocks/consent/dnk/
+!/include/blocks/consent/dnk/**
 
 # --- IDE / OS ---
 .idea/

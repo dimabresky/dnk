@@ -1,1 +1,0 @@
-<p><? echo @$templateData['CUSTOM_BLOCKS_DATA']['PROPERTIES']['SPOSOB_PRIMENENIYA']['VALUE'] ?? ''?></p>

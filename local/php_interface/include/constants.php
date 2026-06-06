@@ -78,6 +78,18 @@ define('DNK_CATALOG_IBLOCK_ID', $dnkEnvInt('DNK_CATALOG_IBLOCK_ID'));
 /** Инфоблок узкого промо-баннера в шапке (CODE dnk_header_promo). */
 define('DNK_HEADER_PROMO_IBLOCK_ID', $dnkEnvInt('DNK_HEADER_PROMO_IBLOCK_ID'));
 
+/** Заявки на покупку подарочных сертификатов (CODE dnk_certificate_requests). */
+define('DNK_CERTIFICATE_REQUEST_IBLOCK_ID', $dnkEnvInt('DNK_CERTIFICATE_REQUEST_IBLOCK_ID'));
+
+/** Инфоблок номинальных сертификатов (DETAIL_PICTURE, свойство NOMINAL). */
+define('DNK_CERTIFICATE_CATALOG_IBLOCK_ID', $dnkEnvInt('DNK_CERTIFICATE_CATALOG_IBLOCK_ID'));
+
+/** Инфоблок точек самовывоза (магазины: ADDRESS, PHONE, SCHEDULE, MAP). */
+define('DNK_PICKUP_STORES_IBLOCK_ID', $dnkEnvInt('DNK_PICKUP_STORES_IBLOCK_ID'));
+
+/** ID почтового шаблона (событие CUSTOM_MAIL): уведомление менеджера о новой заявке на сертификаты. */
+define('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID', $dnkEnvInt('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID'));
+
 /** URL (GET): полный список данных по бонусам. */
 define('DNK_BONUS_ENDPOINT', $dnkEnv('DNK_BONUS_ENDPOINT'));
 
@@ -125,6 +137,18 @@ define('DNK_BONUS_JSON_KEY_BALANCE', $dnkEnv('DNK_BONUS_JSON_KEY_BALANCE'));
 
 /** Ключ JSON: номер телефона партнёра (сопоставление при синхронизации по телефону). */
 define('DNK_BONUS_JSON_KEY_PARTNER_PHONE', $dnkEnv('DNK_BONUS_JSON_KEY_PARTNER_PHONE'));
+
+/** Ключ JSON: уровень клиента (UF_LEVEL). */
+define('DNK_BONUS_JSON_KEY_CLIENT_LEVEL', $dnkEnv('DNK_BONUS_JSON_KEY_CLIENT_LEVEL'));
+
+/** Ключ JSON: сумма для перехода на следующий уровень (UF_NEXT_LEVEL_COST). */
+define('DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST', $dnkEnv('DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST'));
+
+/** Каталог JSON-выгрузок остатков бонусов (относительно DOCUMENT_ROOT). */
+define('DNK_BONUS_CLIENT_IMPORT_DIR', $dnkEnv('DNK_BONUS_CLIENT_IMPORT_DIR'));
+
+/** Каталог логов импорта бонусов из файлов (относительно DOCUMENT_ROOT). */
+define('DNK_BONUS_CLIENT_IMPORT_LOG_DIR', $dnkEnv('DNK_BONUS_CLIENT_IMPORT_LOG_DIR'));
 
 /** URL (POST JSON): регистрация клиента после OnAfterUserRegister; пустая строка — отправка отключена. */
 define('DNK_USER_REGISTER_EXPORT_ENDPOINT', $dnkEnv('DNK_USER_REGISTER_EXPORT_ENDPOINT'));

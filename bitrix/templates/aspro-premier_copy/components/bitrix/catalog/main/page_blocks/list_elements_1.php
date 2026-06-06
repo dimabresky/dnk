@@ -290,7 +290,7 @@ else if($arResult["VARIABLES"]['SECTION_CODE']) {
 }
 
 $SMART_FILTER_SORT = array(
-	$arAvailableSort[$sort]["SORT"] => strtoupper($order),
+	$arAvailableSort[$sortKey]['SORT'] => strtoupper($order),
 	$arParams['ELEMENT_SORT_FIELD2'] => $arParams['ELEMENT_SORT_ORDER2'],
 );
 ?>

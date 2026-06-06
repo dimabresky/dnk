@@ -12,30 +12,13 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 	}
 
 	unset($_SESSION[$arParams['IBLOCK_ID'].md5(serialize((array)$arParams['SORT_PROP']))]);
-	
-	$sort_default = $arParams['SORT_PROP_DEFAULT'] ? $arParams['SORT_PROP_DEFAULT'] : 'NAME';
-	$order_default = $arParams['SORT_DIRECTION'] ? $arParams['SORT_DIRECTION'] : 'asc';
-	$arPropertySortDefault = array('name', 'sort');
-	
+
+	$sort_default = 'SHOWS';
+	$order_default = 'desc';
+
 	$arAvailableSort = array(
-		'NAME' => array(
-			'KEY' => 'NAME', // for array_search
-			'SORT' => 'NAME',
-			'ORDER_VALUES' => array(
-				'asc' => GetMessage('sort_name_asc'),
-				'desc' => GetMessage('sort_name_desc'),
-			),
-		),
-		'SORT' => array(
-			'KEY' => 'SORT', // for array_search
-			'SORT' => 'SORT',
-			'ORDER_VALUES' => array(
-				'asc' => GetMessage('sort_sort_asc'),
-				'desc' => GetMessage('sort_sort_desc'),
-			)
-		),
 		'SHOWS' => array(
-			'KEY' => 'SHOWS', // for array_search
+			'KEY' => 'SHOWS',
 			'SORT' => 'SHOWS',
 			'ORDER_VALUES' => array(
 				'asc' => GetMessage('sort_shows_asc'),
@@ -53,92 +36,31 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 				'desc' => GetMessage('sort_price_desc'),
 			),
 		);
-		if (in_array("PRICES", $arParams['SORT_PROP'])) {
-			$arSortPrices = $arParams["SORT_PRICES"];
-			if ($arSortPrices == "MINIMUM_PRICE" || $arSortPrices == "MAXIMUM_PRICE") {
-				$arAvailableSort["PRICES"]["SORT"] = "PROPERTY_".$arSortPrices;
-			} else {
-				if ($arSortPrices == "REGION_PRICE") {
-					$arRegion = TSolution\Regionality::getCurrentRegion();
-					if ($arRegion) {
-						if (!$arRegion["PROPERTY_SORT_REGION_PRICE_VALUE"] || $arRegion["PROPERTY_SORT_REGION_PRICE_VALUE"] == "component") {
-							$price = CCatalogGroup::GetList(array(), array("NAME" => $arParams["SORT_REGION_PRICE"]), false, false, array("ID", "NAME"))->GetNext();
-							$arAvailableSort["PRICES"]["SORT"] = "CATALOG_PRICE_".$price["ID"];
-						} else {
-							$arAvailableSort["PRICES"]["SORT"] = "CATALOG_PRICE_".$arRegion["PROPERTY_SORT_REGION_PRICE_VALUE"];
-						}
-						
-					} else {
-						$price_name = ($arParams["SORT_REGION_PRICE"] ? $arParams["SORT_REGION_PRICE"] : "BASE");
-						$price = CCatalogGroup::GetList(array(), array("NAME" => $price_name), false, false, array("ID", "NAME"))->GetNext();
+		$arSortPrices = $arParams["SORT_PRICES"];
+		if ($arSortPrices == "MINIMUM_PRICE" || $arSortPrices == "MAXIMUM_PRICE") {
+			$arAvailableSort["PRICES"]["SORT"] = "PROPERTY_".$arSortPrices;
+		} else {
+			if ($arSortPrices == "REGION_PRICE") {
+				$arRegion = TSolution\Regionality::getCurrentRegion();
+				if ($arRegion) {
+					if (!$arRegion["PROPERTY_SORT_REGION_PRICE_VALUE"] || $arRegion["PROPERTY_SORT_REGION_PRICE_VALUE"] == "component") {
+						$price = CCatalogGroup::GetList(array(), array("NAME" => $arParams["SORT_REGION_PRICE"]), false, false, array("ID", "NAME"))->GetNext();
 						$arAvailableSort["PRICES"]["SORT"] = "CATALOG_PRICE_".$price["ID"];
+					} else {
+						$arAvailableSort["PRICES"]["SORT"] = "CATALOG_PRICE_".$arRegion["PROPERTY_SORT_REGION_PRICE_VALUE"];
 					}
+
 				} else {
-					$price = CCatalogGroup::GetList(array(), array("NAME" => $arParams["SORT_PRICES"]), false, false, array("ID", "NAME"))->GetNext();
+					$price_name = ($arParams["SORT_REGION_PRICE"] ? $arParams["SORT_REGION_PRICE"] : "BASE");
+					$price = CCatalogGroup::GetList(array(), array("NAME" => $price_name), false, false, array("ID", "NAME"))->GetNext();
 					$arAvailableSort["PRICES"]["SORT"] = "CATALOG_PRICE_".$price["ID"];
 				}
-			}
-		}
-
-		$arAvailableSort['QUANTITY'] = array(
-			'KEY' => 'QUANTITY',
-			'SORT' => 'CATALOG_AVAILABLE',
-			'ORDER_VALUES' => array(
-				'asc' => GetMessage('sort_quantity_asc'),
-				'desc' => GetMessage('sort_quantity_desc'),
-			),
-		);
-	}
-
-	foreach($arAvailableSort as $prop => $arProp){
-		if(!in_array($prop, $arParams['SORT_PROP']) && $sort_default !== $prop){
-			unset($arAvailableSort[$prop]);
-		}
-	}
-
-	if($arParams['SORT_PROP']){ 
-		if(!isset($_SESSION[$arParams['IBLOCK_ID'].md5(serialize((array)$arParams['SORT_PROP']))])){
-			$sortElementField = ToUpper($arParams["ELEMENT_SORT_FIELD"]);
-			if (in_array("CUSTOM", $arParams['SORT_PROP']) && !array_key_exists($sortElementField, $arAvailableSort)) {
-				$arAvailableSort[$sortElementField] = array(
-					'KEY' => $sortElementField,
-					'SORT' => $sortElementField,
-					'ORDER_VALUES' => array(
-						'asc' => GetMessage('sort_custom_asc'),
-						'desc' => GetMessage('sort_custom_desc'),
-					)
-				);
-				if ($sort_default === 'CUSTOM') {
-					$sort_default = $sortElementField;
-				}
 			} else {
-				foreach($arParams['SORT_PROP'] as $prop){
-					if(!isset($arAvailableSort[$prop])){
-						$propWithPrefix = 'PROPERTY_'.$prop;
-						$dbRes = CIBlockProperty::GetList(array(), array('ACTIVE' => 'Y', 'IBLOCK_ID' => $arParams['IBLOCK_ID'], 'CODE' => $prop));
-						while($arPropperty = $dbRes->Fetch()){
-							$arAvailableSort[$propWithPrefix] = array(
-								'KEY' => $propWithPrefix,
-								'SORT' => $propWithPrefix,
-								'ORDER_VALUES' => array(),
-							);
-
-							$arAvailableSort[$propWithPrefix]['ORDER_VALUES']['asc'] = GetMessage('sort_title_property', array('#CODE#' => $arPropperty['NAME'], '#ORDER#' => GetMessage('sort_prop_asc')));
-							$arAvailableSort[$propWithPrefix]['ORDER_VALUES']['desc'] = GetMessage('sort_title_property', array('#CODE#' => $arPropperty['NAME'], '#ORDER#' => GetMessage('sort_prop_desc')));
-						}
-
-						if ($sort_default === $prop) {
-							$sort_default = $propWithPrefix;
-						}
-					}
-				}
+				$priceName = $arParams["SORT_PRICES"] ? $arParams["SORT_PRICES"] : "BASE";
+				$price = CCatalogGroup::GetList(array(), array("NAME" => $priceName), false, false, array("ID", "NAME"))->GetNext();
+				$arAvailableSort["PRICES"]["SORT"] = "CATALOG_PRICE_".$price["ID"];
 			}
-			$_SESSION[$arParams['IBLOCK_ID'].md5(serialize((array)$arParams['SORT_PROP']))] = $arAvailableSort;
 		}
-		else{
-			$arAvailableSort = $_SESSION[$arParams['IBLOCK_ID'].md5(serialize((array)$arParams['SORT_PROP']))];
-		}
-
 	}
 
 	if(isset($bSearchPage) && isset($arAvailableRank)){
@@ -197,8 +119,18 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 		$order = "desc";
 	}
 
-	$sortKey = array_search($sort, array_column($arAvailableSort, 'SORT', 'KEY')); // find by SORT field
-	if (!$sortKey) $sortKey = array_search($sort_default, array_column($arAvailableSort, 'KEY', 'KEY'));
+	$sortKey = array_search($sort, array_column($arAvailableSort, 'SORT', 'KEY'));
+	if ($sortKey === false) {
+		$sortKey = array_search($sort, array_column($arAvailableSort, 'KEY', 'KEY'));
+	}
+	if ($sortKey === false) {
+		$sortKey = 'SHOWS';
+		$sort = $arAvailableSort[$sortKey]['SORT'];
+		$order = $order_default;
+	}
+	if (empty($arAvailableSort[$sortKey]['ORDER_VALUES'][$order])) {
+		$order = $sortKey === 'SHOWS' ? 'desc' : 'asc';
+	}
 	
 	$arDelUrlParams = array('sort', 'order', 'control_ajax', 'ajax_get_filter', 'ajax_get', 'linerow', 'display');
 	?>

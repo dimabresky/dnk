@@ -7,6 +7,8 @@ use Dnk\PhpInterface\IblockProductBrandEvents;
 use Dnk\PhpInterface\IblockProductMarkerHitEvents;
 use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\UserAddEvents;
+use Dnk\PhpInterface\UserConsentEvents;
+use Bitrix\Main\UserConsent\Internals\ConsentTable;
 
 EventManager::getInstance()->addEventHandler(
     'sale',
@@ -90,4 +92,17 @@ EventManager::getInstance()->addEventHandlerCompatible(
     'iblock',
     'OnAfterIBlockElementUpdate',
     [IblockProductMarkerHitEvents::class, 'onAfterIBlockElementUpdate']
+);
+
+EventManager::getInstance()->addEventHandler(
+    'main',
+    'OnUserConsentProviderList',
+    [UserConsentEvents::class, 'onUserConsentProviderList']
+);
+
+EventManager::getInstance()->addEventHandler(
+    '',
+    ConsentTable::class,
+    'OnAfterAdd',
+    [UserConsentEvents::class, 'onConsentAfterAdd']
 );
