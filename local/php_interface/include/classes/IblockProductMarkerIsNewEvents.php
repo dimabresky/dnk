@@ -10,7 +10,8 @@ use CIBlockPropertyEnum;
  */
 final class IblockProductMarkerIsNewEvents
 {
-    private const IS_NEW_ENUM_ID = 102253;
+    /** @var list<string> */
+    private const IS_NEW_ENUM_XML_IDS = ['Y', 'NEW', 'YES'];
 
     private const MARKER_NOVINKA_VALUE = 'Новинка';
 
@@ -75,8 +76,13 @@ final class IblockProductMarkerIsNewEvents
         }
 
         if ($isNovinka) {
+            $isNewEnumId = self::resolveIsNewEnumId($iblockId);
+            if ($isNewEnumId === null) {
+                return false;
+            }
+
             CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [
-                'IS_NEW' => self::IS_NEW_ENUM_ID,
+                'IS_NEW' => $isNewEnumId,
             ]);
         } else {
             CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [
@@ -96,6 +102,18 @@ final class IblockProductMarkerIsNewEvents
             (int) ($arFields['IBLOCK_ID'] ?? 0),
             (int) ($arFields['ID'] ?? 0)
         );
+    }
+
+    private static function resolveIsNewEnumId(int $iblockId): ?int
+    {
+        foreach (self::IS_NEW_ENUM_XML_IDS as $xmlId) {
+            $enumId = Utils::getIblockListPropertyEnumIdByXmlId($iblockId, 'IS_NEW', $xmlId);
+            if ($enumId !== null) {
+                return $enumId;
+            }
+        }
+
+        return null;
     }
 
     private static function getSingleMarkerEnumId(int $iblockId, int $elementId, int $propertyId): ?int
