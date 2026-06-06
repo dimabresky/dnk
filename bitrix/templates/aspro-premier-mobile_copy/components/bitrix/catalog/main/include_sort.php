@@ -17,6 +17,13 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 	$order_default = 'desc';
 
 	$arAvailableSort = array(
+		'IS_NEW' => array(
+			'KEY' => 'IS_NEW',
+			'SORT' => 'PROPERTY_IS_NEW',
+			'ORDER_VALUES' => array(
+				'desc' => GetMessage('sort_is_new'),
+			),
+		),
 		'SHOWS' => array(
 			'KEY' => 'SHOWS',
 			'SORT' => 'SHOWS',
@@ -128,7 +135,11 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 		$order = $order_default;
 	}
 	if (empty($arAvailableSort[$sortKey]['ORDER_VALUES'][$order])) {
-		$order = $sortKey === 'SHOWS' ? 'desc' : 'asc';
+		if ($sortKey === 'SHOWS' || $sortKey === 'IS_NEW') {
+			$order = 'desc';
+		} else {
+			$order = 'asc';
+		}
 	}
 	
 	$arDelUrlParams = array('sort', 'order', 'control_ajax', 'ajax_get_filter', 'ajax_get', 'linerow', 'display', 'is_aspro_mobile');
