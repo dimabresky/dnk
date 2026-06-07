@@ -61,3 +61,36 @@ function createField($entityId, $fieldName, $fieldType = 'string')
 
     return $FIELD_ID;
 }
+
+if (!function_exists('dnkGetFirstWord')) {
+    function dnkGetFirstWord(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+        $parts = preg_split('/\s+/u', $value, 2);
+
+        return (string)($parts[0] ?? $value);
+    }
+}
+
+if (!function_exists('dnkGetReviewAuthorFirstName')) {
+    function dnkGetReviewAuthorFirstName(array $comment): string
+    {
+        if (!empty($comment['arUser']['~NAME'])) {
+            return trim((string)$comment['arUser']['~NAME']);
+        }
+        if (!empty($comment['BlogUser']['~ALIAS'])) {
+            return dnkGetFirstWord((string)$comment['BlogUser']['~ALIAS']);
+        }
+        if (!empty($comment['AuthorName'])) {
+            return dnkGetFirstWord((string)$comment['AuthorName']);
+        }
+        if (!empty($comment['arUser']['~LOGIN'])) {
+            return dnkGetFirstWord((string)$comment['arUser']['~LOGIN']);
+        }
+
+        return '';
+    }
+}
