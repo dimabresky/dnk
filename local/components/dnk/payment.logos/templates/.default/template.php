@@ -25,32 +25,26 @@ if ($stripSrc === null && $items === [] && $badges === []) {
                 decoding="async"
             >
         </div>
-    <?php else: ?>
-        <?php if ($items !== []): ?>
-            <div class="dnk-payment-logos__inner dnk-payment-logos__inner--main">
-                <?php foreach ($items as $item): ?>
-                    <img
-                        class="dnk-payment-logos__img"
-                        src="<?= htmlspecialcharsbx($item['src']) ?>"
-                        alt="<?= htmlspecialcharsbx($item['alt']) ?>"
-                        loading="lazy"
-                        decoding="async"
-                    >
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-        <?php if ($badges !== []): ?>
-            <div class="dnk-payment-logos__inner dnk-payment-logos__inner--badges">
-                <?php foreach ($badges as $item): ?>
-                    <img
-                        class="dnk-payment-logos__img dnk-payment-logos__img--badge"
-                        src="<?= htmlspecialcharsbx($item['src']) ?>"
-                        alt="<?= htmlspecialcharsbx($item['alt']) ?>"
-                        loading="lazy"
-                        decoding="async"
-                    >
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+    <?php elseif ($items !== [] || $badges !== []): ?>
+        <div class="dnk-payment-logos__inner dnk-payment-logos__inner--row">
+            <?php foreach ($items as $item): ?>
+                <img
+                    class="dnk-payment-logos__img"
+                    src="<?= htmlspecialcharsbx($item['src']) ?>"
+                    alt="<?= htmlspecialcharsbx($item['alt']) ?>"
+                    loading="lazy"
+                    decoding="async"
+                >
+            <?php endforeach; ?>
+            <?php foreach ($badges as $item): ?>
+                <img
+                    class="dnk-payment-logos__img dnk-payment-logos__img--badge"
+                    src="<?= htmlspecialcharsbx($item['src']) ?>"
+                    alt="<?= htmlspecialcharsbx($item['alt']) ?>"
+                    loading="lazy"
+                    decoding="async"
+                >
+            <?php endforeach; ?>
+        </div>
     <?php endif; ?>
 </section>
