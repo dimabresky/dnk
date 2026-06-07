@@ -91,3 +91,11 @@
 .bx-soa-cart-total-line.bx-soa-cart-total-line-weight {
 	display: none;
 }
+
+.footer__main-part-inner .flexbox{
+	padding-bottom: 0;
+}
+
+.footer__bottom-part-inner.footer__divider--top {
+	padding: 10px 0;
+}
