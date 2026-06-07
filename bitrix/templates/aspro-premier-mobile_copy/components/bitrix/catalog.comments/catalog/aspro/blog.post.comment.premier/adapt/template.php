@@ -471,9 +471,12 @@ $pathForAjax = $templateFolder;
                                 <div class="blog-comment-cont table-full-width colored_theme_bg_before<?=$extraStyle;?>">
                                     <div class="blog-comment-cont-white flexbox gap gap--20">
                                         <div class="blog-comment-info line-block line-block--gap line-block--gap-16">
-                                            <?if (!$comment['PARENT_ID'] && strlen($comment['AuthorName'])):?>
-                                                <div class="block-comment-info__image color_light rounded line-block line-block--gap line-block--justify-center font_28" title="<?=$comment['AuthorName'];?>">
-                                                    <?=mb_substr($comment['AuthorName'], 0, 1);?>
+                                            <?
+                                            $authorFirstName = dnkGetReviewAuthorFirstName($comment);
+                                            ?>
+                                            <?if (!$comment['PARENT_ID'] && strlen($authorFirstName)):?>
+                                                <div class="block-comment-info__image color_light rounded line-block line-block--gap line-block--justify-center font_28" title="<?=htmlspecialcharsbx($authorFirstName);?>">
+                                                    <?=mb_substr($authorFirstName, 0, 1);?>
                                                 </div>
                                             <?endif;?>
 
@@ -494,17 +497,17 @@ $pathForAjax = $templateFolder;
                                                             "LAST_NAME" => "",
                                                             "SECOND_NAME" => "",
                                                             "LOGIN" => "",
-                                                            "NAME_LIST_FORMATTED" => $comment["BlogUser"]["~ALIAS"],
+                                                            "NAME_LIST_FORMATTED" => $authorFirstName,
                                                         );
                                                     } elseif (
                                                         strlen($comment["urlToBlog"]) > 0
                                                         || strlen($comment["urlToAuthor"]) > 0
                                                     ) {
                                                         $arTmpUser = array(
-                                                            "NAME" => $comment["arUser"]["~NAME"],
-                                                            "LAST_NAME" => $comment["arUser"]["~LAST_NAME"],
-                                                            "SECOND_NAME" => $comment["arUser"]["~SECOND_NAME"],
-                                                            "LOGIN" => $comment["arUser"]["~LOGIN"],
+                                                            "NAME" => $authorFirstName,
+                                                            "LAST_NAME" => "",
+                                                            "SECOND_NAME" => "",
+                                                            "LOGIN" => "",
                                                             "NAME_LIST_FORMATTED" => "",
                                                         );
                                                     }
@@ -530,7 +533,7 @@ $pathForAjax = $templateFolder;
                                                                     "SHOW_YEAR" => $arParams["SHOW_YEAR"],
                                                                     "CACHE_TYPE" => $arParams["CACHE_TYPE"],
                                                                     "CACHE_TIME" => $arParams["CACHE_TIME"],
-                                                                    "NAME_TEMPLATE" => $arParams["NAME_TEMPLATE"],
+                                                                    "NAME_TEMPLATE" => "#NAME#",
                                                                     "SHOW_LOGIN" => $arParams["SHOW_LOGIN"],
                                                                     "PATH_TO_CONPANY_DEPARTMENT" => $arParams["~PATH_TO_CONPANY_DEPARTMENT"],
                                                                     "PATH_TO_SONET_USER_PROFILE" => ($arParams["USE_SOCNET"] == "Y" ? $comment["urlToAuthor"] : $arParams["~PATH_TO_SONET_USER_PROFILE"]),
@@ -563,7 +566,7 @@ $pathForAjax = $templateFolder;
                                                                         "SHOW_YEAR" => $arParams["SHOW_YEAR"],
                                                                         "CACHE_TYPE" => $arParams["CACHE_TYPE"],
                                                                         "CACHE_TIME" => $arParams["CACHE_TIME"],
-                                                                        "NAME_TEMPLATE" => $arParams["NAME_TEMPLATE"],
+                                                                        "NAME_TEMPLATE" => "#NAME#",
                                                                         "SHOW_LOGIN" => $arParams["SHOW_LOGIN"],
                                                                         "PATH_TO_CONPANY_DEPARTMENT" => $arParams["~PATH_TO_CONPANY_DEPARTMENT"],
                                                                         "PATH_TO_SONET_USER_PROFILE" => ($arParams["USE_SOCNET"] == "Y" ? $comment["urlToAuthor"] : $arParams["~PATH_TO_SONET_USER_PROFILE"]),
@@ -578,7 +581,7 @@ $pathForAjax = $templateFolder;
                                                             </noindex>
                                                             <?endif;?>
                                                         <?else:?>
-                                                            <?=$comment["AuthorName"];?>
+                                                            <?=htmlspecialcharsbx($authorFirstName);?>
                                                         <?endif;?>
                                                     </div>
 
