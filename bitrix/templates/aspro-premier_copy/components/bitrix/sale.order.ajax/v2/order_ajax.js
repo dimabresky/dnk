@@ -8908,7 +8908,7 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
 
       if (this.options.showOrderWeight) {
         this.totalInfoBlockNode.appendChild(
-          this.createTotalUnit(BX.message("SOA_SUM_WEIGHT_SUM"), total.ORDER_WEIGHT_FORMATED)
+          this.createTotalUnit(BX.message("SOA_SUM_WEIGHT_SUM"), total.ORDER_WEIGHT_FORMATED, { weight: true })
         );
       }
 
@@ -9268,6 +9268,10 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
 
       if (params.highlighted) {
         className += " bx-soa-cart-total-line-highlighted";
+      }
+
+      if (params.weight) {
+        className += " bx-soa-cart-total-line-weight";
       }
 
       return BX.create("DIV", {
