@@ -55,3 +55,8 @@
 .index-block--fon {
 	background: transparent;
 }
+
+/* hide total weight line */
+.bx-soa-cart-total-line:nth-child(4) {
+	display: none;
+}

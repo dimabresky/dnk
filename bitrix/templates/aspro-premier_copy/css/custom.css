@@ -86,3 +86,8 @@
 	margin: 0;
 	vertical-align: middle;
 }
+
+/* hide total weight line */
+.bx-soa-cart-total-line:nth-child(4) {
+	display: none;
+}
