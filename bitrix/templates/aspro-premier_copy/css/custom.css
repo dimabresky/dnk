@@ -88,6 +88,6 @@
 }
 
 /* hide total weight line */
-.bx-soa-cart-total-line:nth-child(4) {
+.bx-soa-cart-total-line-weight {
 	display: none;
 }
