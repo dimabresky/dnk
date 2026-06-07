@@ -207,13 +207,39 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                             let $form = $(input).closest('form');
 
                                             if (
-                                                $form.length &&
-                                                !$form.find('button[type=submit].loadings').length
+                                                !$form.length ||
+                                                $form.find('button[type=submit].loadings').length
                                             ) {
+                                                return;
+                                            }
+
+                                            var submitAuthForm = function() {
                                                 $form.find('button[type=submit]').closest('.form-footer').removeClass('hidden');
                                                 $form.find('button[type=submit]').closest('.form-footer').addClass('hide_on_submit');
                                                 $form.find('button[type=submit]').eq(0).trigger('click');
-                                            }
+                                            };
+
+                                            $.ajax({
+                                                type: 'POST',
+                                                url: '/local/ajax/activate_phone_user.php',
+                                                dataType: 'json',
+                                                data: {
+                                                    sessid: BX.bitrix_sessid(),
+                                                    USER_PHONE_NUMBER: data.USER_PHONE_NUMBER,
+                                                    SMS_CODE: data.SMS_CODE
+                                                }
+                                            }).done(function(activateResponse) {
+                                                if (
+                                                    activateResponse
+                                                    && activateResponse.success
+                                                ) {
+                                                    submitAuthForm();
+                                                } else {
+                                                    $smsCodeError.text('<?=CUtil::JSEscape(GetMessage('AUTH_ERROR')); ?>').show();
+                                                }
+                                            }).fail(function() {
+                                                $smsCodeError.text('<?=CUtil::JSEscape(GetMessage('AUTH_ERROR')); ?>').show();
+                                            });
                                         } else if (response === 'false' && String($(input).val() || '').length >= 6) {
                                             $smsCodeError.text('<?=CUtil::JSEscape(GetMessage('AUTH_SMS_CODE_ERROR')); ?>').show();
                                         }
@@ -315,18 +341,56 @@ $rand = '_'.rand(1, 99).($arParams['POPUP_AUTH'] === 'Y' ? 'popup' : '');
                                                         $('#ajax_auth<?=$rand; ?>').parent().html(html);
                                                     }
                                                     else{
-                                                        <?php if($arParams['POPUP_AUTH'] !== 'Y' || $_POST['USER_REMEMBER'] !== 'Y'):?>
+                                                        var resetAuthLoading = function(message) {
+                                                            $button.removeClass('loadings');
+                                                            $form.closest('.form').removeClass('sending');
+                                                            $button.closest('.form-footer').removeClass('hidden').addClass('hide_on_submit');
+
+                                                            if (message) {
+                                                                var $alert = $form.find('.form-body .alert-danger');
+
+                                                                if (!$alert.length) {
+                                                                    $alert = $('<div class="alert alert-danger"></div>').prependTo($form.find('.form-body'));
+                                                                }
+
+                                                                $alert.html(message).show();
+                                                            }
+                                                        };
+
+                                                        var handleAuthSuccess = function() {
                                                             const match = html.match(/location\.href\s*=\s*['"]([^'"]*)['"]/);
 
                                                             if(match){
-                                                                location.href = match[1]
+                                                                location.href = match[1];
                                                             }else{
                                                                 BX.reload(false);
                                                             }
-                                                        <?php else:?>
-    
-                                                            location.href='/local/tools/auth_redirect.php';
-                                                        <?php endif?>
+                                                        };
+
+                                                        $.ajax({
+                                                            type: 'POST',
+                                                            url: '/local/ajax/check_auth.php',
+                                                            dataType: 'json',
+                                                            data: {
+                                                                sessid: BX.bitrix_sessid(),
+                                                                USER_REMEMBER: (
+                                                                    $form.find('input[name=USER_REMEMBER]').is(':checked') ||
+                                                                    $form.find('input[name=USER_REMEMBER][type=hidden]').val() === 'Y'
+                                                                ) ? 'Y' : 'N'
+                                                            }
+                                                        }).done(function(response) {
+                                                            if (
+                                                                response
+                                                                && response.success
+                                                                && response.authorized
+                                                            ) {
+                                                                handleAuthSuccess();
+                                                            } else {
+                                                                resetAuthLoading('<?=CUtil::JSEscape(GetMessage('AUTH_ERROR')); ?>');
+                                                            }
+                                                        }).fail(function() {
+                                                            resetAuthLoading('<?=CUtil::JSEscape(GetMessage('AUTH_ERROR')); ?>');
+                                                        });
                                                     }
                                                 });
                                             }
