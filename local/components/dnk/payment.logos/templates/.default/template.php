@@ -9,8 +9,19 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
 $stripSrc = $arResult['STRIP_SRC'] ?? null;
 $items = $arResult['ITEMS'] ?? [];
 $badges = $arResult['BADGES'] ?? [];
+$logos = [];
 
-if ($stripSrc === null && $items === [] && $badges === []) {
+foreach ($items as $item) {
+    $item['class'] = 'dnk-payment-logos__img';
+    $logos[] = $item;
+}
+
+foreach ($badges as $item) {
+    $item['class'] = 'dnk-payment-logos__img dnk-payment-logos__img--badge';
+    $logos[] = $item;
+}
+
+if ($stripSrc === null && $logos === []) {
     return;
 }
 ?>
@@ -25,20 +36,11 @@ if ($stripSrc === null && $items === [] && $badges === []) {
                 decoding="async"
             >
         </div>
-    <?php elseif ($items !== [] || $badges !== []): ?>
+    <?php elseif ($logos !== []): ?>
         <div class="dnk-payment-logos__inner dnk-payment-logos__inner--row">
-            <?php foreach ($items as $item): ?>
+            <?php foreach ($logos as $item): ?>
                 <img
-                    class="dnk-payment-logos__img"
-                    src="<?= htmlspecialcharsbx($item['src']) ?>"
-                    alt="<?= htmlspecialcharsbx($item['alt']) ?>"
-                    loading="lazy"
-                    decoding="async"
-                >
-            <?php endforeach; ?>
-            <?php foreach ($badges as $item): ?>
-                <img
-                    class="dnk-payment-logos__img dnk-payment-logos__img--badge"
+                    class="<?= htmlspecialcharsbx($item['class']) ?>"
                     src="<?= htmlspecialcharsbx($item['src']) ?>"
                     alt="<?= htmlspecialcharsbx($item['alt']) ?>"
                     loading="lazy"
