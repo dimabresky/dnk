@@ -30,6 +30,18 @@ final class UserConsentService
         'AGREEMENT_REVIEW' => 'review',
     ];
 
+    /** Имена полей чекбоксов согласий в формах (checkout, регистрация и т.д.). */
+    private const CONSENT_REQUEST_INPUT_NAMES = [
+        'offer',
+        'thirdParties',
+        'licence',
+        'licenses_popup',
+        'licenses_register',
+        'registrationConsent',
+        'orderConsent',
+        'reviewLicence',
+    ];
+
     /**
      * Есть ли у пользователя действующее (не отозванное) согласие на соглашение.
      */
@@ -309,7 +321,11 @@ final class UserConsentService
             return false;
         }
 
-        foreach ($request->getPostList()->toArray() as $value) {
+        foreach ($request->getPostList()->toArray() as $name => $value) {
+            if (!is_string($name) || !self::isConsentCheckboxInputName($name)) {
+                continue;
+            }
+
             if (is_array($value)) {
                 continue;
             }
@@ -320,6 +336,21 @@ final class UserConsentService
         }
 
         return false;
+    }
+
+    private static function isConsentCheckboxInputName(string $name): bool
+    {
+        if (in_array($name, self::CONSENT_REQUEST_INPUT_NAMES, true)) {
+            return true;
+        }
+
+        if (class_exists(\TSolution\Validation::class)
+            && $name === \TSolution\Validation::LICENSE_INPUT_NAME
+        ) {
+            return true;
+        }
+
+        return (bool)preg_match('/^licenses?[_a-z]/i', $name);
     }
 
     public static function persistOrderConsentsFromRequest(int $userId, HttpRequest $request): void
