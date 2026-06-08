@@ -25,11 +25,6 @@ if (!check_bitrix_sessid()) {
 }
 
 $userId = (int)CurrentUser::get()->getId();
-if ($userId <= 0) {
-    $response['error'] = 'Unauthorized';
-    echo json_encode($response);
-    return;
-}
 
 $request = Context::getCurrent()->getRequest();
 $action = (string)$request->getPost('action');
@@ -37,6 +32,18 @@ $agreementId = (int)$request->getPost('agreement_id');
 
 if ($agreementId <= 0) {
     $response['error'] = 'Invalid agreement_id';
+    echo json_encode($response);
+    return;
+}
+
+if ($userId <= 0 && $action === 'restore') {
+    $response['success'] = true;
+    echo json_encode($response);
+    return;
+}
+
+if ($userId <= 0) {
+    $response['error'] = 'Unauthorized';
     echo json_encode($response);
     return;
 }

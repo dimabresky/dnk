@@ -119,3 +119,9 @@ EventManager::getInstance()->addEventHandler(
     'OnAfterAdd',
     [UserConsentEvents::class, 'onConsentAfterAdd']
 );
+
+EventManager::getInstance()->addEventHandler(
+    'sale',
+    'OnSaleOrderSaved',
+    [UserConsentEvents::class, 'onSaleOrderSaved']
+);

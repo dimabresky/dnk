@@ -2,6 +2,7 @@
 
 namespace Dnk\PhpInterface;
 
+use Bitrix\Main\HttpRequest;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\UserConsent\Agreement;
@@ -27,6 +28,18 @@ final class UserConsentService
         'AGREEMENT_PUBLIC_OFFER' => 'public_offer',
         'AGREEMENT_THIRD_PARTIES' => 'third_parties',
         'AGREEMENT_REVIEW' => 'review',
+    ];
+
+    /** Имена полей чекбоксов согласий в формах (checkout, регистрация и т.д.). */
+    private const CONSENT_REQUEST_INPUT_NAMES = [
+        'offer',
+        'thirdParties',
+        'licence',
+        'licenses_popup',
+        'licenses_register',
+        'registrationConsent',
+        'orderConsent',
+        'reviewLicence',
     ];
 
     /**
@@ -300,6 +313,64 @@ final class UserConsentService
         }
 
         return null;
+    }
+
+    public static function isAgreementAcceptedInRequest(HttpRequest $request, int $agreementId): bool
+    {
+        if ($agreementId <= 0) {
+            return false;
+        }
+
+        foreach ($request->getPostList()->toArray() as $name => $value) {
+            if (!is_string($name) || !self::isConsentCheckboxInputName($name)) {
+                continue;
+            }
+
+            if (is_array($value)) {
+                continue;
+            }
+
+            if ((int)$value === $agreementId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function isConsentCheckboxInputName(string $name): bool
+    {
+        if (in_array($name, self::CONSENT_REQUEST_INPUT_NAMES, true)) {
+            return true;
+        }
+
+        if (class_exists(\TSolution\Validation::class)
+            && $name === \TSolution\Validation::LICENSE_INPUT_NAME
+        ) {
+            return true;
+        }
+
+        return (bool)preg_match('/^licenses?[_a-z]/i', $name);
+    }
+
+    public static function persistOrderConsentsFromRequest(int $userId, HttpRequest $request): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        foreach (self::MANAGEABLE_THEME_OPTIONS as $optionCode => $type) {
+            $agreementId = self::resolveAgreementIdByOption($optionCode);
+            if ($agreementId === null || !self::isAgreementAcceptedInRequest($request, $agreementId)) {
+                continue;
+            }
+
+            $originator = $optionCode === 'AGREEMENT_REGISTRATION'
+                ? self::ORIGINATOR_ACCEPT
+                : self::ORIGINATOR_ORDER;
+
+            self::acceptConsent($userId, $agreementId, $originator);
+        }
     }
 
     private static function hasConsentRecord(int $userId, int $agreementId): bool
