@@ -50,7 +50,11 @@
       return this.items;
     },
     isUserAuthorized: function () {
-      return typeof window.DNK_USER_ID !== "undefined" && parseInt(window.DNK_USER_ID, 10) > 0;
+      if (typeof window.DNK_USER_ID === "undefined") {
+        return true;
+      }
+
+      return parseInt(window.DNK_USER_ID, 10) > 0;
     },
     loadFromForms: function () {
       var formNodes = document.getElementsByTagName("FORM");
