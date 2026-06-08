@@ -2,10 +2,12 @@
 
 namespace Dnk\PhpInterface;
 
+use Bitrix\Main\Context;
 use Bitrix\Main\Event;
 use Bitrix\Main\EventResult;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\UserTable;
+use Bitrix\Sale\Order;
 
 /**
  * Обработчики событий модуля main для журнала согласий Bitrix.
@@ -62,6 +64,26 @@ final class UserConsentEvents
         }
 
         UserConsentService::clearRevokeIfReconsented($userId, $agreementId);
+    }
+
+    public static function onSaleOrderSaved(Event $event): void
+    {
+        if ($event->getParameter('IS_NEW') !== true) {
+            return;
+        }
+
+        $order = $event->getParameter('ENTITY');
+        if (!$order instanceof Order) {
+            return;
+        }
+
+        $request = Context::getCurrent()->getRequest();
+        if ((string)$request->getPost('action') !== 'saveOrderAjax') {
+            return;
+        }
+
+        $userId = (int)$order->getUserId();
+        UserConsentService::persistOrderConsentsFromRequest($userId, $request);
     }
 
     /**

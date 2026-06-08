@@ -49,6 +49,9 @@
     getItems: function () {
       return this.items;
     },
+    isUserAuthorized: function () {
+      return typeof window.DNK_USER_ID !== "undefined" && parseInt(window.DNK_USER_ID, 10) > 0;
+    },
     loadFromForms: function () {
       var formNodes = document.getElementsByTagName("FORM");
       formNodes = BX.convert.nodeListToArray(formNodes);
@@ -819,6 +822,13 @@
 
       callbackSuccess = callbackSuccess || null;
       callbackFailure = callbackFailure || null;
+
+      if (!this.isUserAuthorized()) {
+        if (callbackSuccess) {
+          callbackSuccess.apply(this, []);
+        }
+        return;
+      }
 
       var data = {
         action: "restore",

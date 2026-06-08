@@ -2,6 +2,7 @@
 
 namespace Dnk\PhpInterface;
 
+use Bitrix\Main\HttpRequest;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\UserConsent\Agreement;
@@ -300,6 +301,45 @@ final class UserConsentService
         }
 
         return null;
+    }
+
+    public static function isAgreementAcceptedInRequest(HttpRequest $request, int $agreementId): bool
+    {
+        if ($agreementId <= 0) {
+            return false;
+        }
+
+        foreach ($request->getPostList()->toArray() as $value) {
+            if (is_array($value)) {
+                continue;
+            }
+
+            if ((int)$value === $agreementId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static function persistOrderConsentsFromRequest(int $userId, HttpRequest $request): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        foreach (self::MANAGEABLE_THEME_OPTIONS as $optionCode => $type) {
+            $agreementId = self::resolveAgreementIdByOption($optionCode);
+            if ($agreementId === null || !self::isAgreementAcceptedInRequest($request, $agreementId)) {
+                continue;
+            }
+
+            $originator = $optionCode === 'AGREEMENT_REGISTRATION'
+                ? self::ORIGINATOR_ACCEPT
+                : self::ORIGINATOR_ORDER;
+
+            self::acceptConsent($userId, $agreementId, $originator);
+        }
     }
 
     private static function hasConsentRecord(int $userId, int $agreementId): bool

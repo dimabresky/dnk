@@ -573,6 +573,7 @@ else
 	?>
 	<script>
 		window.DNK_HIDDEN_AGREEMENT_IDS = <?=CUtil::PhpToJSObject($dnkHiddenAgreementIds)?>;
+		window.DNK_USER_ID = <?= (int)(is_object($USER) && $USER->IsAuthorized() ? $USER->GetID() : 0) ?>;
 		BX.message(<?=CUtil::PhpToJSObject($messages)?>);
 		BX.Sale.OrderAjaxComponent.init({
 			result: <?=CUtil::PhpToJSObject($arResult['JS_DATA'])?>,
