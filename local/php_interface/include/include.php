@@ -14,6 +14,7 @@ use Dnk\PhpInterface\BonusFetchAgent;
 use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\OrderExportQueueAgent;
 use Dnk\PhpInterface\OrderExportQueueTable;
+use Dnk\PhpInterface\ProductExtendedReviewsAgent;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\UserRegisterExportQueueAgent;
 use Dnk\PhpInterface\UserConsentEvents;
@@ -42,6 +43,7 @@ Loader::registerAutoLoadClasses(null, [
     OrderExportQueueTable::class => $classesPath . '/OrderExportQueueTable.php',
     OrderExportQueueAgent::class => $classesPath . '/OrderExportQueueAgent.php',
     OrderExportEvents::class => $classesPath . '/OrderExportEvents.php',
+    ProductExtendedReviewsAgent::class => $classesPath . '/ProductExtendedReviewsAgent.php',
     UserAddEvents::class => $classesPath . '/UserAddEvents.php',
     IblockProductBrandEvents::class => $classesPath . '/IblockProductBrandEvents.php',
     IblockProductMarkerHitEvents::class => $classesPath . '/IblockProductMarkerHitEvents.php',
