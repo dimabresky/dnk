@@ -38,9 +38,11 @@ final class ProductExtendedReviewsAgent
         while ($row = $res->Fetch()) {
             $elementId = (int) ($row['ID'] ?? 0);
             if ($elementId > 0) {
-                self::syncExtendedReviewsForElement($catalogIblockId, $elementId);
+                self::syncExtendedReviewsForElement($catalogIblockId, $elementId, false);
             }
         }
+
+        CIBlock::clearIblockTagCache($catalogIblockId);
 
         return $return;
     }
@@ -48,7 +50,7 @@ final class ProductExtendedReviewsAgent
     /**
      * Пересчитывает свойства отзывов для одного товара каталога.
      */
-    public static function syncExtendedReviewsForElement(int $iblockId, int $elementId): bool
+    public static function syncExtendedReviewsForElement(int $iblockId, int $elementId, bool $clearIblockCache = true): bool
     {
         if (!defined('DNK_CATALOG_IBLOCK_ID') || $iblockId !== (int) DNK_CATALOG_IBLOCK_ID || $elementId <= 0) {
             return false;
@@ -60,6 +62,10 @@ final class ProductExtendedReviewsAgent
         $blogPostId = self::getBlogPostId($iblockId, $elementId);
         if ($blogPostId <= 0) {
             self::saveExtendedReviewsProps($elementId, $iblockId, 0, 0);
+
+            if ($clearIblockCache) {
+                CIBlock::clearIblockTagCache($iblockId);
+            }
 
             return true;
         }
@@ -90,6 +96,10 @@ final class ProductExtendedReviewsAgent
 
         self::saveExtendedReviewsProps($elementId, $iblockId, $commentsCount, $rating);
 
+        if ($clearIblockCache) {
+            CIBlock::clearIblockTagCache($iblockId);
+        }
+
         return true;
     }
 
@@ -112,7 +122,6 @@ final class ProductExtendedReviewsAgent
 
     private static function saveExtendedReviewsProps(int $elementId, int $iblockId, int $count, float $rating): void
     {
-        CIBlock::clearIblockTagCache($iblockId);
         CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [
             'EXTENDED_REVIEWS_COUNT' => $count,
             'EXTENDED_REVIEWS_RAITING' => $rating,
