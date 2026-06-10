@@ -23,6 +23,29 @@ final class BasketBonusEvents
         $em->addEventHandler('sale', 'OnSaleComponentOrderResultPrepared', [self::class, 'onSaleComponentOrderResultPreparedEarly'], false, 1);
         $em->addEventHandler('sale', 'OnSaleComponentOrderResultPrepared', [self::class, 'onSaleComponentOrderResultPreparedLate'], false, 200);
         $em->addEventHandler('sale', 'OnSaleOrderSaved', [self::class, 'onSaleOrderSaved']);
+        $em->addEventHandler('main', 'OnPageStart', [self::class, 'onPageStart']);
+    }
+
+    public static function onPageStart(): void
+    {
+        if (!self::isBasketPage()) {
+            return;
+        }
+
+        BasketBonusService::reconcileOrphanedBonusDiscounts();
+    }
+
+    private static function isBasketPage(): bool
+    {
+        global $APPLICATION;
+
+        if (!is_object($APPLICATION)) {
+            return false;
+        }
+
+        $curPage = (string)$APPLICATION->GetCurPage(false);
+
+        return stripos($curPage, '/basket') !== false;
     }
 
   /** @param \Bitrix\Main\Event $event */

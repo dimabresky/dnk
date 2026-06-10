@@ -89,8 +89,6 @@ final class BasketBonusService
      */
     public static function getUiData(): array
     {
-        self::reconcileOrphanedBonusDiscounts();
-
         $empty = [
             'available' => false,
             'balance' => 0.0,
@@ -113,7 +111,7 @@ final class BasketBonusService
 
         $userId = (int)$USER->GetID();
         if ($userId <= 0 || BonusUser::getBalance($userId) <= 0) {
-            self::invalidateAppliedBonusesIfNeeded();
+            self::clearState();
 
             return $empty;
         }
@@ -126,7 +124,7 @@ final class BasketBonusService
         $appliedAmount = self::getAppliedAmount();
         $calc = self::calculatePayBonus($userId, $appliedAmount, $basket);
         if ($calc === null) {
-            self::invalidateAppliedBonusesIfNeeded();
+            self::clearState();
 
             return $empty;
         }
