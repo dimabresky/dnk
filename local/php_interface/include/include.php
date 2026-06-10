@@ -1,6 +1,8 @@
 <?php
 
 use Bitrix\Main\Loader;
+use Dnk\PhpInterface\BasketBonusEvents;
+use Dnk\PhpInterface\BasketBonusService;
 use Dnk\PhpInterface\BonusAccrualEvents;
 use Dnk\PhpInterface\CertificateBuyPhoneAuth;
 use Dnk\PhpInterface\CertificateRequestStatus;
@@ -33,6 +35,8 @@ if (is_file($includeDir . '/constants.php')) {
 
 Loader::registerAutoLoadClasses(null, [
     Utils::class => $classesPath . '/Utils.php',
+    BasketBonusService::class => $classesPath . '/BasketBonusService.php',
+    BasketBonusEvents::class => $classesPath . '/BasketBonusEvents.php',
     CertificateBuyPhoneAuth::class => $classesPath . '/CertificateBuyPhoneAuth.php',
     CertificateRequestStatus::class => $classesPath . '/CertificateRequestStatus.php',
     BonusAccrualEvents::class => $classesPath . '/BonusAccrualEvents.php',

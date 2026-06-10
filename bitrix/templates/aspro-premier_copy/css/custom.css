@@ -99,3 +99,13 @@
 .footer__bottom-part-inner.footer__divider--top {
 	padding: 10px 0;
 }
+
+/* Basket bonus apply block */
+.basket-total-outer .dnk-basket-bonus-apply {
+	margin-bottom: 16px;
+}
+
+/* Checkout: бонусы применяются только в корзине */
+.bx-soa .aspro-bonus-uses {
+	display: none !important;
+}

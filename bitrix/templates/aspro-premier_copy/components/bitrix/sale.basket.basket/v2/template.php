@@ -212,6 +212,15 @@ if (empty($arResult['ERROR_MESSAGE'])) {
             </div>
             <?if ($arParams['BASKET_WITH_ORDER_INTEGRATION'] !== 'Y'):?>
                 <div class="basket-total-outer">
+                    <?php
+                    $APPLICATION->IncludeComponent(
+                        'dnk:basket.bonus.apply',
+                        '.default',
+                        [],
+                        $component,
+                        ['HIDE_ICONS' => 'Y']
+                    );
+                    ?>
                     <div class="basket-total-block" data-entity="basket-total-block"></div>
                 </div>
             <?endif;?>
