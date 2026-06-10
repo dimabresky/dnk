@@ -392,7 +392,16 @@ final class BasketBonusService
      */
     public static function reconcileOrphanedBonusDiscounts(): void
     {
-        if (!self::ensureModules() || self::isApplied()) {
+        if (!self::ensureModules()) {
+            return;
+        }
+
+        $state = self::getState();
+        if ($state['applied'] && $state['payed'] > 0) {
+            return;
+        }
+
+        if (self::isApplied()) {
             return;
         }
 
