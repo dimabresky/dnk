@@ -42,6 +42,8 @@ final class BasketBonusEvents
   /** @param mixed $basket */
     public static function onSaleBasketSaved($basket): void
     {
+        BasketBonusService::reconcileOrphanedBonusDiscounts();
+
         if (!BasketBonusService::isApplied()) {
             return;
         }
@@ -78,6 +80,8 @@ final class BasketBonusEvents
    */
     public static function onSaleComponentOrderResultPreparedEarly($order, &$arUserResult, $request, &$arParams, &$arResult): void
     {
+        BasketBonusService::reconcileOrphanedBonusDiscounts();
+
         if (!$order instanceof Order || !BasketBonusService::isApplied()) {
             return;
         }

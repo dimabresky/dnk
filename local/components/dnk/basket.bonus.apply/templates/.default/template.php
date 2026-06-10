@@ -22,7 +22,7 @@ $maxPay = (float)($arResult['max_pay'] ?? 0);
 
     <?php if (!empty($arResult['error_min'])): ?>
         <div class="basket-bonus-section__hint font_13 color_999">
-            <?= Loc::getMessage('DNK_BASKET_BONUS_MIN_ERROR', ['#MIN#' => $arResult['max_pay_formatted']]); ?>
+            <?= Loc::getMessage('DNK_BASKET_BONUS_MIN_ERROR', ['#MIN#' => $arResult['min_pay_formatted']]); ?>
         </div>
     <?php else: ?>
         <div class="basket-bonus-section__meta font_13 color_999">
@@ -60,6 +60,17 @@ $maxPay = (float)($arResult['max_pay'] ?? 0);
                     <?= Loc::getMessage('DNK_BASKET_BONUS_RESET'); ?>
                 </button>
             <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($arResult['error_min']) && $applied > 0): ?>
+        <div class="basket-bonus-section__meta font_13 color_999 basket-bonus-section__meta--error">
+            <div class="basket-bonus-section__applied"><?= Loc::getMessage('DNK_BASKET_BONUS_APPLIED', ['#APPLIED#' => $arResult['applied_formatted']]); ?></div>
+        </div>
+        <div class="basket-bonus-section__links font_13">
+            <button type="button" class="basket-bonus-section__link" data-role="dnk-bonus-reset">
+                <?= Loc::getMessage('DNK_BASKET_BONUS_RESET'); ?>
+            </button>
         </div>
     <?php endif; ?>
 </div>

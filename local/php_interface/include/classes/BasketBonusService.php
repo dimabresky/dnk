@@ -80,6 +80,7 @@ final class BasketBonusService
      *     max_pay: float,
      *     max_pay_formatted: string,
      *     min_pay: float,
+     *     min_pay_formatted: string,
      *     applied: float,
      *     applied_formatted: string,
      *     error_min: bool,
@@ -88,6 +89,8 @@ final class BasketBonusService
      */
     public static function getUiData(): array
     {
+        self::reconcileOrphanedBonusDiscounts();
+
         $empty = [
             'available' => false,
             'balance' => 0.0,
@@ -95,6 +98,7 @@ final class BasketBonusService
             'max_pay' => 0.0,
             'max_pay_formatted' => '0',
             'min_pay' => 0.0,
+            'min_pay_formatted' => '0',
             'applied' => 0.0,
             'applied_formatted' => '0',
             'error_min' => false,
@@ -109,6 +113,8 @@ final class BasketBonusService
 
         $userId = (int)$USER->GetID();
         if ($userId <= 0 || BonusUser::getBalance($userId) <= 0) {
+            self::invalidateAppliedBonusesIfNeeded();
+
             return $empty;
         }
 
@@ -120,6 +126,8 @@ final class BasketBonusService
         $appliedAmount = self::getAppliedAmount();
         $calc = self::calculatePayBonus($userId, $appliedAmount, $basket);
         if ($calc === null) {
+            self::invalidateAppliedBonusesIfNeeded();
+
             return $empty;
         }
 
@@ -134,6 +142,7 @@ final class BasketBonusService
             'max_pay' => (float)$calc['MAX_ORDER_PAY'],
             'max_pay_formatted' => (string)$calc['MAX_ORDER_PAY_FORMATTED'],
             'min_pay' => (float)$calc['MIN_ORDER_PAY'],
+            'min_pay_formatted' => (string)($calc['MIN_ORDER_PAY_FORMATTED'] ?? $calc['MIN_ORDER_PAY']),
             'applied' => $appliedAmount,
             'applied_formatted' => $appliedFormatted,
             'error_min' => !empty($calc['ERROR_MIN_ORDER_PAY']),
@@ -195,17 +204,7 @@ final class BasketBonusService
      */
     public static function reset(): array
     {
-        if (!self::ensureModules()) {
-            return ['success' => false, 'message' => 'modules'];
-        }
-
-        $basket = self::loadBasket();
-        if ($basket !== null && !$basket->isEmpty()) {
-            self::resetBasketCustomPrices($basket);
-            $basket->save();
-        }
-
-        self::clearState();
+        self::clearAppliedBonusesFromBasket();
 
         return [
             'success' => true,
@@ -371,6 +370,78 @@ final class BasketBonusService
     public static function clearStateAfterOrder(): void
     {
         self::clearState();
+
+        if (!self::ensureModules()) {
+            return;
+        }
+
+        $basket = self::loadBasket();
+        if ($basket !== null && self::hasBonusCustomPrices($basket)) {
+            self::resetBasketCustomPrices($basket);
+            $basket->save();
+        }
+    }
+
+    /**
+     * Сбросить скидки в корзине, если сессия бонусов уже недействительна.
+     */
+    public static function reconcileOrphanedBonusDiscounts(): void
+    {
+        if (!self::ensureModules() || self::isApplied()) {
+            return;
+        }
+
+        $basket = self::loadBasket();
+        if ($basket === null || !self::hasBonusCustomPrices($basket)) {
+            return;
+        }
+
+        self::resetBasketCustomPrices($basket);
+        $basket->save();
+        self::clearState();
+    }
+
+    private static function invalidateAppliedBonusesIfNeeded(): void
+    {
+        if (!self::ensureModules()) {
+            return;
+        }
+
+        if (!self::isApplied() && !self::hasBonusCustomPrices(self::loadBasket())) {
+            return;
+        }
+
+        self::clearAppliedBonusesFromBasket();
+    }
+
+    private static function clearAppliedBonusesFromBasket(): void
+    {
+        if (!self::ensureModules()) {
+            return;
+        }
+
+        $basket = self::loadBasket();
+        if ($basket !== null && !$basket->isEmpty()) {
+            self::resetBasketCustomPrices($basket);
+            $basket->save();
+        }
+
+        self::clearState();
+    }
+
+    private static function hasBonusCustomPrices(?BasketBase $basket): bool
+    {
+        if ($basket === null || $basket->isEmpty()) {
+            return false;
+        }
+
+        foreach ($basket as $item) {
+            if ($item->getField('CUSTOM_PRICE') === 'Y') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function clearState(): void
