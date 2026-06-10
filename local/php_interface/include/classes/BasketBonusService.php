@@ -184,12 +184,14 @@ final class BasketBonusService
             return ['success' => false, 'message' => 'apply_failed'];
         }
 
+        self::persistState((float)$calc['PAYED'], $basket);
+
         $saveResult = $basket->save();
         if (!$saveResult->isSuccess()) {
+            self::clearState();
+
             return ['success' => false, 'message' => 'basket_save_failed'];
         }
-
-        self::persistState((float)$calc['PAYED'], $basket);
 
         return [
             'success' => true,
@@ -252,9 +254,14 @@ final class BasketBonusService
             return;
         }
 
-        self::applyPricesToBasket($basket, $calc);
-        $basket->save();
+        if (!self::applyPricesToBasket($basket, $calc)) {
+            self::reset();
+
+            return;
+        }
+
         self::persistState((float)$calc['PAYED'], $basket);
+        $basket->save();
     }
 
     /**

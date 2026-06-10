@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dnk\PhpInterface;
 
+use Bitrix\Main\Event;
 use Bitrix\Main\EventManager;
 use Bitrix\Sale\Order;
 
@@ -51,24 +52,38 @@ final class BasketBonusEvents
         BasketBonusService::syncAfterBasketChange();
     }
 
-  /** @param mixed $order */
-    public static function onSaleOrderBeforeSavedEarly($order): void
+  /** @param mixed $event */
+    public static function onSaleOrderBeforeSavedEarly($event): void
     {
-        if (!$order instanceof Order || !$order->isNew()) {
+        $order = self::extractOrderFromEvent($event);
+        if ($order === null || !$order->isNew()) {
             return;
         }
 
         BasketBonusService::suppressAsproBeforeSavePriceApply($order);
     }
 
-  /** @param mixed $order */
-    public static function onSaleOrderBeforeSavedLate($order): void
+  /** @param mixed $event */
+    public static function onSaleOrderBeforeSavedLate($event): void
     {
-        if (!$order instanceof Order || !$order->isNew()) {
+        $order = self::extractOrderFromEvent($event);
+        if ($order === null || !$order->isNew()) {
             return;
         }
 
         BasketBonusService::restoreOrderBonusPropertyAfterAspro($order);
+    }
+
+  /** @param mixed $event */
+    private static function extractOrderFromEvent($event): ?Order
+    {
+        if ($event instanceof Event) {
+            $entity = $event->getParameter('ENTITY');
+
+            return $entity instanceof Order ? $entity : null;
+        }
+
+        return $event instanceof Order ? $event : null;
     }
 
   /**
