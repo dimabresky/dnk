@@ -119,6 +119,10 @@ final class BasketBonusService
         }
 
         $basket = self::loadBasket();
+        if ($basket && self::isApplied()) {
+            self::resetBasketCustomPrices($basket);
+        }
+
         $appliedAmount = self::getAppliedAmount();
         $calc = self::calculatePayBonus($userId, $appliedAmount, $basket);
         if ($calc === null) {
@@ -478,7 +482,7 @@ final class BasketBonusService
             if (!$item->canBuy() || $item->isDelay()) {
                 continue;
             }
-            $parts[] = $item->getId() . ':' . $item->getProductId() . ':' . $item->getQuantity();
+            $parts[] = $item->getId() . ':' . $item->getProductId() . ':' . $item->getQuantity() . ':' . $item->getPrice();
         }
 
         sort($parts);
