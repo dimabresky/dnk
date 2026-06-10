@@ -97,6 +97,10 @@ final class BasketBonusEvents
     {
         BasketBonusService::reconcileOrphanedBonusDiscounts();
 
+        if ($order instanceof Order) {
+            BasketBonusService::syncCheckoutOrderBasketFromFuser($order);
+        }
+
         if (!$order instanceof Order || !BasketBonusService::isApplied()) {
             return;
         }

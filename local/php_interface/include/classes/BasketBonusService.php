@@ -126,24 +126,6 @@ final class BasketBonusService
         $appliedAmount = self::getAppliedAmount();
         $calc = self::calculatePayBonus($userId, $appliedAmount, $basket);
         if ($calc === null) {
-            if (self::isApplied()) {
-                $balance = (float)BonusUser::getBalance($userId);
-
-                return [
-                    'available' => true,
-                    'balance' => $balance,
-                    'balance_formatted' => (string)$balance,
-                    'max_pay' => $appliedAmount,
-                    'max_pay_formatted' => (string)$appliedAmount,
-                    'min_pay' => 0.0,
-                    'min_pay_formatted' => '0',
-                    'applied' => $appliedAmount,
-                    'applied_formatted' => (string)$appliedAmount,
-                    'error_min' => false,
-                    'message' => '',
-                ];
-            }
-
             self::invalidateAppliedBonusesIfNeeded();
 
             return $empty;
@@ -426,6 +408,44 @@ final class BasketBonusService
         self::clearState();
     }
 
+    /**
+     * Синхронизировать корзину заказа checkout с актуальной FUSER-корзиной после сброса бонусов.
+     */
+    public static function syncCheckoutOrderBasketFromFuser(Order $order): void
+    {
+        if (self::isApplied() || !self::ensureModules()) {
+            return;
+        }
+
+        $orderBasket = $order->getBasket();
+        if ($orderBasket === null || $orderBasket->isEmpty()) {
+            return;
+        }
+
+        $fuserBasket = self::loadBasket();
+        if ($fuserBasket === null || $fuserBasket->isEmpty()) {
+            return;
+        }
+
+        $fuserItems = [];
+        foreach ($fuserBasket as $fuserItem) {
+            $fuserItems[(int)$fuserItem->getId()] = $fuserItem;
+        }
+
+        foreach ($orderBasket as $orderItem) {
+            $basketItemId = (int)$orderItem->getId();
+            if ($basketItemId <= 0 || !isset($fuserItems[$basketItemId])) {
+                continue;
+            }
+
+            $fuserItem = $fuserItems[$basketItemId];
+            $orderItem->setField('CUSTOM_PRICE', $fuserItem->getField('CUSTOM_PRICE'));
+            $orderItem->setField('PRICE', $fuserItem->getPrice());
+            $orderItem->setField('BASE_PRICE', $fuserItem->getBasePrice());
+            $orderItem->setField('DISCOUNT_PRICE', $fuserItem->getDiscountPrice());
+        }
+    }
+
     private static function invalidateAppliedBonusesIfNeeded(): void
     {
         if (!self::ensureModules()) {
@@ -630,12 +650,20 @@ final class BasketBonusService
 
     private static function resetBasketCustomPrices(BasketBase $basket): void
     {
+        $resetItemIds = [];
+
         foreach ($basket as $item) {
             if ($item->getField('CUSTOM_PRICE') === 'Y') {
                 $item->setField('CUSTOM_PRICE', 'N');
+                $resetItemIds[(int)$item->getId()] = true;
             }
         }
 
+        if ($resetItemIds === []) {
+            return;
+        }
+
+        $updatedIds = [];
         $discounts = Discount::buildFromBasket(
             $basket,
             new Discount\Context\Fuser($basket->getFUserId(true))
@@ -645,7 +673,7 @@ final class BasketBonusService
             $applyResult = $discounts->getApplyResult(true);
             if (!empty($applyResult['PRICES']['BASKET'])) {
                 foreach ($basket as $item) {
-                    $basketId = $item->getId();
+                    $basketId = (int)$item->getId();
                     if (!isset($applyResult['PRICES']['BASKET'][$basketId])) {
                         continue;
                     }
@@ -653,9 +681,52 @@ final class BasketBonusService
                     $item->setField('PRICE', $priceData['PRICE']);
                     $item->setField('BASE_PRICE', $priceData['BASE_PRICE']);
                     $item->setField('DISCOUNT_PRICE', $priceData['DISCOUNT_PRICE']);
+                    $updatedIds[$basketId] = true;
                 }
             }
         }
+
+        foreach ($basket as $item) {
+            $basketId = (int)$item->getId();
+            if (!isset($resetItemIds[$basketId]) || isset($updatedIds[$basketId])) {
+                continue;
+            }
+
+            self::restoreBasketItemCatalogPrice($item);
+        }
+    }
+
+    /**
+     * @param \Bitrix\Sale\BasketItem|\Bitrix\Sale\BasketItemBase $item
+     */
+    private static function restoreBasketItemCatalogPrice($item): void
+    {
+        global $USER;
+
+        if (!Loader::includeModule('catalog')) {
+            return;
+        }
+
+        $siteId = Context::getCurrent()->getSite();
+        $userGroups = is_object($USER) ? $USER->GetUserGroupArray() : [2];
+
+        $optimalPrice = \CCatalogProduct::GetOptimalPrice(
+            (int)$item->getProductId(),
+            (float)$item->getQuantity(),
+            $userGroups,
+            'N',
+            [],
+            $siteId
+        );
+
+        if (empty($optimalPrice['RESULT_PRICE'])) {
+            return;
+        }
+
+        $resultPrice = $optimalPrice['RESULT_PRICE'];
+        $item->setField('PRICE', $resultPrice['DISCOUNT_PRICE']);
+        $item->setField('BASE_PRICE', $resultPrice['BASE_PRICE']);
+        $item->setField('DISCOUNT_PRICE', $resultPrice['DISCOUNT']);
     }
 
     private static function getBasketProductsSum(BasketBase $basket): float
