@@ -2469,3 +2469,8 @@ label[data-bx-user-consent] input {
     position: static;
   }
 }
+
+/* Bonuses are applied on basket page only */
+#bx-soa-order-form .aspro-bonus-uses {
+  display: none !important;
+}

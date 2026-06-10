@@ -48,6 +48,8 @@ class DnkBasketBonusApplyComponent extends CBitrixComponent implements Controlle
             return;
         }
 
+        \CJSCore::Init(['ajax']);
+
         $this->arResult = BasketBonusService::getUiData();
         $this->includeComponentTemplate();
     }

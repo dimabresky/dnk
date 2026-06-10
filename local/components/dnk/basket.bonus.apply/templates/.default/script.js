@@ -124,13 +124,36 @@
     }
   };
 
-  const init = () => {
-    if (!window.BX?.ajax?.runComponentAction) {
-      console.warn("dnk:basket.bonus.apply: BX.ajax.runComponentAction is not available");
+  const bindHandlers = () => {
+    document.addEventListener("click", handleClick);
+  };
+
+  const ensureAjaxAndInit = () => {
+    if (window.BX?.ajax?.runComponentAction) {
+      bindHandlers();
       return;
     }
 
-    document.addEventListener("click", handleClick);
+    if (window.BX?.loadExt) {
+      BX.loadExt("ajax")
+        .then(() => {
+          if (window.BX?.ajax?.runComponentAction) {
+            bindHandlers();
+            return;
+          }
+          console.warn("dnk:basket.bonus.apply: BX.ajax.runComponentAction is not available");
+        })
+        .catch(() => {
+          console.warn("dnk:basket.bonus.apply: failed to load ajax extension");
+        });
+      return;
+    }
+
+    console.warn("dnk:basket.bonus.apply: BX.ajax.runComponentAction is not available");
+  };
+
+  const init = () => {
+    ensureAjaxAndInit();
   };
 
   if (window.BX?.ready) {

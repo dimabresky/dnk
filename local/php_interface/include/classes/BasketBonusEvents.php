@@ -24,6 +24,7 @@ final class BasketBonusEvents
         $em->addEventHandler('sale', 'OnSaleComponentOrderResultPrepared', [self::class, 'onSaleComponentOrderResultPreparedLate'], false, 200);
         $em->addEventHandler('sale', 'OnSaleOrderSaved', [self::class, 'onSaleOrderSaved']);
         $em->addEventHandler('main', 'OnPageStart', [self::class, 'onPageStart']);
+        $em->addEventHandler('main', 'OnEndBufferContent', [self::class, 'onEndBufferContent']);
     }
 
     public static function onPageStart(): void
@@ -46,6 +47,62 @@ final class BasketBonusEvents
         $curPage = (string)$APPLICATION->GetCurPage(false);
 
         return stripos($curPage, '/basket') !== false;
+    }
+
+    /**
+     * Подключает блок бонусов на корзине, если шаблон сайта (в т.ч. mobile) ещё без IncludeComponent.
+     *
+     * @param string $content
+     */
+    public static function onEndBufferContent(&$content): void
+    {
+        if (!self::isBasketPage() || !is_string($content)) {
+            return;
+        }
+
+        if (strpos($content, 'dnk-basket-bonus-apply') !== false
+            || strpos($content, 'id="basket-root"') === false
+            || strpos($content, 'data-entity="basket-total-block"') === false
+        ) {
+            return;
+        }
+
+        $bonusHtml = self::captureBonusBlockHtml();
+        if ($bonusHtml === '') {
+            return;
+        }
+
+        $replaced = preg_replace(
+            '/(<div class="basket-total-block" data-entity="basket-total-block">)/',
+            $bonusHtml . '$1',
+            $content,
+            1,
+            $count
+        );
+
+        if ($count > 0 && is_string($replaced)) {
+            $content = $replaced;
+        }
+    }
+
+    private static function captureBonusBlockHtml(): string
+    {
+        global $APPLICATION, $USER;
+
+        if (!is_object($APPLICATION) || !is_object($USER) || !$USER->IsAuthorized()) {
+            return '';
+        }
+
+        ob_start();
+        $APPLICATION->IncludeComponent(
+            'dnk:basket.bonus.apply',
+            '.default',
+            [],
+            false,
+            ['HIDE_ICONS' => 'Y']
+        );
+
+        return (string)ob_get_clean();
     }
 
   /** @param \Bitrix\Main\Event $event */

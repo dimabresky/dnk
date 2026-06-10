@@ -72,10 +72,24 @@
 	color: var(--button_color_text) !important;
 }
 
+@media (max-width: 991px) {
+	#basket-root .basket-total-outer {
+		--total-block-pl: 0;
+		--total-block-width: 100%;
+	}
+
+	.basket-total-outer .dnk-basket-bonus-apply {
+		width: 100%;
+		padding-left: 0;
+		margin-bottom: 12px;
+	}
+}
+
 @media (max-width: 600px) {
 	.basket-total-outer .dnk-basket-bonus-apply {
 		padding-left: 0;
 		padding-inline: 16px;
+		margin-bottom: 8px;
 	}
 }
 
