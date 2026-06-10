@@ -466,12 +466,12 @@ final class BasketBonusService
         }
 
         $basket = self::loadBasket();
+        self::clearState();
+
         if ($basket !== null && !$basket->isEmpty()) {
             self::resetBasketCustomPrices($basket);
             $basket->save();
         }
-
-        self::clearState();
     }
 
     private static function hasBonusCustomPrices(?BasketBase $basket): bool
