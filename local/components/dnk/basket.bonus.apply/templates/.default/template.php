@@ -16,8 +16,20 @@ if (empty($arResult['available'])) {
 $this->setFrameMode(true);
 $applied = (float)($arResult['applied'] ?? 0);
 $maxPay = (float)($arResult['max_pay'] ?? 0);
+$messages = [
+    'generic' => Loc::getMessage('DNK_BASKET_BONUS_ERROR_GENERIC'),
+    'notAuthorized' => Loc::getMessage('DNK_BASKET_BONUS_ERROR_NOT_AUTHORIZED'),
+    'emptyBasket' => Loc::getMessage('DNK_BASKET_BONUS_ERROR_EMPTY_BASKET'),
+    'notApplicable' => Loc::getMessage('DNK_BASKET_BONUS_ERROR_NOT_APPLICABLE'),
+    'applyFailed' => Loc::getMessage('DNK_BASKET_BONUS_ERROR_APPLY_FAILED'),
+    'saveFailed' => Loc::getMessage('DNK_BASKET_BONUS_ERROR_SAVE_FAILED'),
+];
 ?>
-<div class="basket-bonus-section dnk-basket-bonus-apply" id="dnk-basket-bonus-apply">
+<div
+    class="basket-bonus-section dnk-basket-bonus-apply"
+    id="dnk-basket-bonus-apply"
+    data-messages="<?= htmlspecialcharsbx(json_encode($messages, JSON_UNESCAPED_UNICODE)); ?>"
+>
     <div class="basket-bonus-section__title font_15 font_short"><?= Loc::getMessage('DNK_BASKET_BONUS_WRITE_OFF'); ?></div>
 
     <?php if (!empty($arResult['error_min'])): ?>

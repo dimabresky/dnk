@@ -80,6 +80,11 @@
   cursor: pointer;
 }
 
+.dnk-basket-bonus-apply--loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 @media (max-width: 600px) {
   .basket-bonus-section {
     margin-top: 12px;

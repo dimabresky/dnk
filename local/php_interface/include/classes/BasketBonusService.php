@@ -562,24 +562,38 @@ final class BasketBonusService
             return false;
         }
 
+        $itemsByBasketId = self::indexBonusItemsByBasketId($payBonus);
+        if ($itemsByBasketId === []) {
+            return false;
+        }
+
         $updatedItems = 0;
 
-        foreach ($basket as $key => $item) {
+        foreach ($basket as $item) {
+            $basketItemId = (int)$item->getId();
+            if ($basketItemId <= 0 || !isset($itemsByBasketId[$basketItemId])) {
+                continue;
+            }
+
+            $bonusItem = $itemsByBasketId[$basketItemId];
             if (
-                !isset($payBonus['ITEMS'][$key])
-                || (
-                    !$payBonus['ITEMS'][$key]['DISPLAYED_BONUSES_WITH_QUANTITY']
-                    && !empty($payBonus['PROFILE']['CONDITIONS_USES'])
-                )
+                empty($bonusItem['DISPLAYED_BONUSES_WITH_QUANTITY'])
+                && !empty($payBonus['PROFILE']['CONDITIONS_USES'])
             ) {
                 continue;
             }
 
             $prices = SaleOrderAjax::getPrices(
-                bonusItem: $payBonus['ITEMS'][$key],
+                bonusItem: $bonusItem,
                 basketItem: $item->getFieldValues(),
                 payBonus: $payBonus
             );
+
+            if (
+                !isset($prices['PRICE'], $prices['BASE_PRICE'], $prices['DISCOUNT_PRICE'])
+            ) {
+                continue;
+            }
 
             $item->setField('CUSTOM_PRICE', 'Y');
             $item->setField('PRICE', $prices['PRICE']);
@@ -589,6 +603,29 @@ final class BasketBonusService
         }
 
         return $updatedItems > 0;
+    }
+
+    /**
+     * @param array<string, mixed> $payBonus
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function indexBonusItemsByBasketId(array $payBonus): array
+    {
+        $indexed = [];
+
+        foreach ($payBonus['ITEMS'] ?? [] as $bonusItem) {
+            if (!is_array($bonusItem)) {
+                continue;
+            }
+
+            $basketItemId = (int)($bonusItem['BASKET_ITEM_ID'] ?? 0);
+            if ($basketItemId > 0) {
+                $indexed[$basketItemId] = $bonusItem;
+            }
+        }
+
+        return $indexed;
     }
 
     private static function resetBasketCustomPrices(BasketBase $basket): void
