@@ -42,21 +42,25 @@
   width: 100%;
 }
 
-.basket-bonus-section__btn {
+#basket-root .dnk-basket-bonus-apply .basket-bonus-section__btn,
+.dnk-basket-bonus-apply .basket-bonus-section__btn {
   flex-shrink: 0;
   min-height: 40px;
   padding-inline: 16px;
-  background-color: var(--theme-base-color);
-  border-color: var(--theme-base-color);
-  color: var(--button_color_text);
+  background-color: var(--theme-base-color) !important;
+  border-color: var(--theme-base-color) !important;
+  color: var(--button_color_text) !important;
 }
 
-.basket-bonus-section__btn:hover,
-.basket-bonus-section__btn:focus,
-.basket-bonus-section__btn:active {
-  background-color: var(--theme-base-color);
-  border-color: var(--theme-base-color);
-  color: var(--button_color_text);
+#basket-root .dnk-basket-bonus-apply .basket-bonus-section__btn:hover,
+#basket-root .dnk-basket-bonus-apply .basket-bonus-section__btn:focus,
+#basket-root .dnk-basket-bonus-apply .basket-bonus-section__btn:active,
+.dnk-basket-bonus-apply .basket-bonus-section__btn:hover,
+.dnk-basket-bonus-apply .basket-bonus-section__btn:focus,
+.dnk-basket-bonus-apply .basket-bonus-section__btn:active {
+  background-color: var(--theme-base-color) !important;
+  border-color: var(--theme-base-color) !important;
+  color: var(--button_color_text) !important;
   opacity: 0.92;
 }
 

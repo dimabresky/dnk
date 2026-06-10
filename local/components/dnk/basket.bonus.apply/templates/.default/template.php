@@ -44,7 +44,7 @@ $maxPay = (float)($arResult['max_pay'] ?? 0);
                     inputmode="decimal"
                 />
             </div>
-            <button type="button" class="btn btn-default basket-bonus-section__btn" data-role="dnk-bonus-apply">
+            <button type="button" class="btn basket-bonus-section__btn" data-role="dnk-bonus-apply">
                 <?= Loc::getMessage('DNK_BASKET_BONUS_APPLY'); ?>
             </button>
         </div>

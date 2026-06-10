@@ -66,6 +66,12 @@
 	padding-left: var(--total-block-pl, 40px);
 }
 
+#basket-root .dnk-basket-bonus-apply .basket-bonus-section__btn {
+	background-color: var(--theme-base-color) !important;
+	border-color: var(--theme-base-color) !important;
+	color: var(--button_color_text) !important;
+}
+
 @media (max-width: 600px) {
 	.basket-total-outer .dnk-basket-bonus-apply {
 		padding-left: 0;
