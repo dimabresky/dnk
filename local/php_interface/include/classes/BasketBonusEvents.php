@@ -125,18 +125,16 @@ final class BasketBonusEvents
             return;
         }
 
-        if (!empty($arResult['JS_DATA']['ASPRO_BONUS']['USES'])) {
-            unset($arResult['JS_DATA']['ASPRO_BONUS']['USES']);
+        if (!isset($arResult['JS_DATA']['ASPRO_BONUS']) || !is_array($arResult['JS_DATA']['ASPRO_BONUS'])) {
+            $arResult['JS_DATA']['ASPRO_BONUS'] = [];
         }
 
-        if (!empty($arResult['JS_DATA']['ASPRO_BONUS'])) {
-            $arResult['JS_DATA']['ASPRO_BONUS']['USES'] = [
-                'PAYED' => BasketBonusService::getAppliedAmount(),
-                'PAYED_FORMATTED' => (string)BasketBonusService::getAppliedAmount(),
-                'NOT_SHOW_USED' => 'Y',
-                'TEMPLATE' => '',
-            ];
-        }
+        $arResult['JS_DATA']['ASPRO_BONUS']['USES'] = [
+            'PAYED' => BasketBonusService::getAppliedAmount(),
+            'PAYED_FORMATTED' => (string)BasketBonusService::getAppliedAmount(),
+            'NOT_SHOW_USED' => 'Y',
+            'TEMPLATE' => '',
+        ];
 
         $currency = $order->getCurrency();
         $cartSum = $order->getPrice() - $order->getDeliveryPrice();

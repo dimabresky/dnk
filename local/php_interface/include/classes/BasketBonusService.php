@@ -119,13 +119,27 @@ final class BasketBonusService
         }
 
         $basket = self::loadBasket();
-        if ($basket && self::isApplied()) {
-            self::resetBasketCustomPrices($basket);
-        }
-
         $appliedAmount = self::getAppliedAmount();
         $calc = self::calculatePayBonus($userId, $appliedAmount, $basket);
         if ($calc === null) {
+            if (self::isApplied()) {
+                $balance = (float)BonusUser::getBalance($userId);
+
+                return [
+                    'available' => true,
+                    'balance' => $balance,
+                    'balance_formatted' => (string)$balance,
+                    'max_pay' => $appliedAmount,
+                    'max_pay_formatted' => (string)$appliedAmount,
+                    'min_pay' => 0.0,
+                    'min_pay_formatted' => '0',
+                    'applied' => $appliedAmount,
+                    'applied_formatted' => (string)$appliedAmount,
+                    'error_min' => false,
+                    'message' => '',
+                ];
+            }
+
             self::invalidateAppliedBonusesIfNeeded();
 
             return $empty;
