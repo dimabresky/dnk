@@ -491,7 +491,7 @@ final class BasketBonusService
         }
 
         $order = Order::create($siteId, $userId);
-        $order->setPersonTypeId(self::resolvePersonTypeId($siteId));
+        $order->setPersonTypeId(self::resolvePersonTypeId($siteId, $userId));
         $order->setBasket($basket);
 
         $props = BonusOrder::getGruppedPropsByCode($order->getPropertyCollection());
@@ -544,6 +544,8 @@ final class BasketBonusService
             return false;
         }
 
+        $updatedItems = 0;
+
         foreach ($basket as $key => $item) {
             if (
                 !isset($payBonus['ITEMS'][$key])
@@ -565,9 +567,10 @@ final class BasketBonusService
             $item->setField('PRICE', $prices['PRICE']);
             $item->setField('BASE_PRICE', $prices['BASE_PRICE']);
             $item->setField('DISCOUNT_PRICE', $prices['DISCOUNT_PRICE']);
+            ++$updatedItems;
         }
 
-        return true;
+        return $updatedItems > 0;
     }
 
     private static function resetBasketCustomPrices(BasketBase $basket): void
@@ -612,8 +615,24 @@ final class BasketBonusService
         return $sum;
     }
 
-    private static function resolvePersonTypeId(string $siteId): int
+    private static function resolvePersonTypeId(string $siteId, int $userId = 0): int
     {
+        if ($userId > 0) {
+            $lastOrder = Order::getList([
+                'filter' => [
+                    '=USER_ID' => $userId,
+                    '=LID' => $siteId,
+                ],
+                'order' => ['DATE_INSERT' => 'DESC'],
+                'select' => ['PERSON_TYPE_ID'],
+                'limit' => 1,
+            ])->fetch();
+
+            if (!empty($lastOrder['PERSON_TYPE_ID'])) {
+                return (int)$lastOrder['PERSON_TYPE_ID'];
+            }
+        }
+
         $row = PersonType::getList([
             'filter' => ['ACTIVE' => 'Y', '=LID' => $siteId],
             'order' => ['SORT' => 'ASC'],
