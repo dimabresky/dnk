@@ -291,12 +291,12 @@ final class BasketBonusService
             return;
         }
 
-        self::$pendingOrderPayed = self::getAppliedAmount();
-
         $props = BonusOrder::getGruppedPropsByCode($order->getPropertyCollection());
         if (empty($props[BonusOrder::PROPERTY_BONUS_PAYMENT]['ORDER_PROPS_ID'])) {
             return;
         }
+
+        self::$pendingOrderPayed = self::getAppliedAmount();
 
         $prop = $order->getPropertyCollection()->getItemByOrderPropertyId(
             (int)$props[BonusOrder::PROPERTY_BONUS_PAYMENT]['ORDER_PROPS_ID']
@@ -313,6 +313,9 @@ final class BasketBonusService
             return;
         }
 
+        $payed = self::$pendingOrderPayed;
+        self::$pendingOrderPayed = null;
+
         $props = BonusOrder::getGruppedPropsByCode($order->getPropertyCollection());
         if (empty($props[BonusOrder::PROPERTY_BONUS_PAYMENT]['ORDER_PROPS_ID'])) {
             return;
@@ -321,8 +324,7 @@ final class BasketBonusService
         $prop = $order->getPropertyCollection()->getItemByOrderPropertyId(
             (int)$props[BonusOrder::PROPERTY_BONUS_PAYMENT]['ORDER_PROPS_ID']
         );
-        $prop?->setValue(self::$pendingOrderPayed);
-        self::$pendingOrderPayed = null;
+        $prop?->setValue($payed);
     }
 
     private static function ensureModules(): bool
@@ -356,6 +358,32 @@ final class BasketBonusService
         return $state['site_id'] === $siteId
             && $state['fuser_id'] === (int)Fuser::getId()
             && $state['user_id'] === $userId;
+    }
+
+    /**
+     * OnPageStart может выполниться до инициализации $USER при валидной сессии бонусов.
+     *
+     * @param array{applied: bool, payed: float, basket_hash: string, site_id: string, fuser_id: int, user_id: int} $state
+     */
+    private static function shouldDeferOrphanReconcile(array $state): bool
+    {
+        if ($state['user_id'] <= 0) {
+            return false;
+        }
+
+        global $USER;
+        $currentUserId = is_object($USER) ? (int)$USER->GetID() : 0;
+
+        if ($currentUserId !== 0) {
+            return false;
+        }
+
+        if (!self::ensureModules()) {
+            return false;
+        }
+
+        return $state['site_id'] === Context::getCurrent()->getSite()
+            && $state['fuser_id'] === (int)Fuser::getId();
     }
 
     private static function persistState(float $payed, BasketBase $basket): void
@@ -396,12 +424,12 @@ final class BasketBonusService
             return;
         }
 
-        $state = self::getState();
-        if ($state['applied'] && $state['payed'] > 0) {
+        if (self::isApplied()) {
             return;
         }
 
-        if (self::isApplied()) {
+        $state = self::getState();
+        if ($state['applied'] && $state['payed'] > 0 && self::shouldDeferOrphanReconcile($state)) {
             return;
         }
 
