@@ -37,6 +37,13 @@ class DnkBasketBonusApplyComponent extends CBitrixComponent implements Controlle
                     new ActionFilter\Authentication(),
                 ],
             ],
+            'sync' => [
+                'prefilters' => [
+                    new ActionFilter\HttpMethod([ActionFilter\HttpMethod::METHOD_POST]),
+                    new ActionFilter\Csrf(),
+                    new ActionFilter\Authentication(),
+                ],
+            ],
         ];
     }
 
@@ -81,5 +88,27 @@ class DnkBasketBonusApplyComponent extends CBitrixComponent implements Controlle
         }
 
         return BasketBonusService::reset();
+    }
+
+    /**
+     * Пересчитать применённые бонусы после изменения корзины.
+     *
+     * @return array{success: bool, message?: string, ui?: array, basket_refresh_needed?: bool}
+     */
+    public function syncAction(): array
+    {
+        if ((int)CurrentUser::get()->getId() <= 0) {
+            return ['success' => false, 'message' => 'not_authorized'];
+        }
+
+        $appliedBefore = BasketBonusService::getAppliedAmount();
+        BasketBonusService::syncAfterBasketChange();
+        $appliedAfter = BasketBonusService::getAppliedAmount();
+
+        return [
+            'success' => true,
+            'ui' => BasketBonusService::getUiData(),
+            'basket_refresh_needed' => $appliedBefore > 0 || $appliedAfter > 0,
+        ];
     }
 }
