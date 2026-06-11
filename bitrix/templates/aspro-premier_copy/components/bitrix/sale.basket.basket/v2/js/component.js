@@ -714,6 +714,15 @@
             document.querySelector('[data-filter="all"]').click();
           }
 
+          if (
+            action === "recalculateAjax"
+            && !data.skipBonusSync
+            && window.DnkBasketBonusApply
+            && typeof window.DnkBasketBonusApply.syncAfterBasketChange === "function"
+          ) {
+            window.DnkBasketBonusApply.syncAfterBasketChange(this);
+          }
+
           if (this.isBasketIntegrated() && this.isBasketChanged()) {
             BX.Sale.OrderAjaxComponent.sendRequest();
           }
