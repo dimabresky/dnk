@@ -31,6 +31,9 @@
 /bitrix/templates/aspro-premier-mobile_copy/components/bitrix/catalog.section/
 /bitrix/templates/aspro-premier-mobile_copy/components/bitrix/sale.basket.basket/v2/*
 !/bitrix/templates/aspro-premier-mobile_copy/components/bitrix/sale.basket.basket/v2/template.php
+!/bitrix/templates/aspro-premier-mobile_copy/components/bitrix/sale.basket.basket/v2/js/
+/bitrix/templates/aspro-premier-mobile_copy/components/bitrix/sale.basket.basket/v2/js/*
+!/bitrix/templates/aspro-premier-mobile_copy/components/bitrix/sale.basket.basket/v2/js/component.js
 
 /index.php
 
