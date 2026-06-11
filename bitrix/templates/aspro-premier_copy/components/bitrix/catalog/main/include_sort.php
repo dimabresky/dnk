@@ -28,7 +28,6 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 			'KEY' => 'SHOWS',
 			'SORT' => 'SHOWS',
 			'ORDER_VALUES' => array(
-				'asc' => GetMessage('sort_shows_asc'),
 				'desc' => GetMessage('sort_shows_desc'),
 			)
 		),
