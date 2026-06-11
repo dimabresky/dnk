@@ -44,18 +44,17 @@ $labels = [
     <div class="basket-bonus-section__title font_15 font_short"><?= Loc::getMessage('DNK_BASKET_BONUS_WRITE_OFF'); ?></div>
 
     <div data-role="dnk-bonus-content">
-    <?php if (!empty($arResult['error_min'])): ?>
-        <div class="basket-bonus-section__hint font_13 color_999" data-role="dnk-bonus-hint">
+        <div class="basket-bonus-section__hint font_13 color_999" data-role="dnk-bonus-hint"<?= !empty($arResult['error_min']) ? '' : ' style="display:none;"'; ?>>
             <?= Loc::getMessage('DNK_BASKET_BONUS_MIN_ERROR', ['#MIN#' => $arResult['min_pay_formatted']]); ?>
         </div>
-    <?php else: ?>
-        <div class="basket-bonus-section__meta font_13 color_999" data-role="dnk-bonus-meta">
+
+        <div class="basket-bonus-section__meta font_13 color_999" data-role="dnk-bonus-meta"<?= !empty($arResult['error_min']) ? ' style="display:none;"' : ''; ?>>
             <div data-role="dnk-bonus-balance"><?= Loc::getMessage('DNK_BASKET_BONUS_BALANCE', ['#BALANCE#' => $arResult['balance_formatted']]); ?></div>
             <div data-role="dnk-bonus-max"><?= Loc::getMessage('DNK_BASKET_BONUS_MAX', ['#MAX#' => $arResult['max_pay_formatted']]); ?></div>
             <div class="basket-bonus-section__applied" data-role="dnk-bonus-applied"<?= $applied > 0 ? '' : ' style="display:none;"'; ?>><?= Loc::getMessage('DNK_BASKET_BONUS_APPLIED', ['#APPLIED#' => $arResult['applied_formatted']]); ?></div>
         </div>
 
-        <div class="basket-bonus-section__controls">
+        <div class="basket-bonus-section__controls" data-role="dnk-bonus-controls"<?= !empty($arResult['error_min']) ? ' style="display:none;"' : ''; ?>>
             <div class="form-group basket-bonus-section__input-wrap">
                 <input
                     type="text"
@@ -71,7 +70,7 @@ $labels = [
             </button>
         </div>
 
-        <div class="basket-bonus-section__links font_13" data-role="dnk-bonus-links">
+        <div class="basket-bonus-section__links font_13" data-role="dnk-bonus-links"<?= !empty($arResult['error_min']) ? ' style="display:none;"' : ''; ?>>
             <button type="button" class="basket-bonus-section__link" data-role="dnk-bonus-apply-all" data-max="<?= htmlspecialcharsbx((string)$maxPay); ?>"<?= $maxPay > 0 ? '' : ' style="display:none;"'; ?>>
                 <?= Loc::getMessage('DNK_BASKET_BONUS_APPLY_ALL'); ?>
             </button>
@@ -79,17 +78,14 @@ $labels = [
                 <?= Loc::getMessage('DNK_BASKET_BONUS_RESET'); ?>
             </button>
         </div>
-    <?php endif; ?>
 
-    <?php if (!empty($arResult['error_min']) && $applied > 0): ?>
-        <div class="basket-bonus-section__meta font_13 color_999 basket-bonus-section__meta--error" data-role="dnk-bonus-meta-error">
+        <div class="basket-bonus-section__meta font_13 color_999 basket-bonus-section__meta--error" data-role="dnk-bonus-meta-error"<?= !empty($arResult['error_min']) && $applied > 0 ? '' : ' style="display:none;"'; ?>>
             <div class="basket-bonus-section__applied" data-role="dnk-bonus-applied-error"><?= Loc::getMessage('DNK_BASKET_BONUS_APPLIED', ['#APPLIED#' => $arResult['applied_formatted']]); ?></div>
         </div>
-        <div class="basket-bonus-section__links font_13" data-role="dnk-bonus-links-error">
+        <div class="basket-bonus-section__links font_13" data-role="dnk-bonus-links-error"<?= !empty($arResult['error_min']) && $applied > 0 ? '' : ' style="display:none;"'; ?>>
             <button type="button" class="basket-bonus-section__link" data-role="dnk-bonus-reset">
                 <?= Loc::getMessage('DNK_BASKET_BONUS_RESET'); ?>
             </button>
         </div>
-    <?php endif; ?>
     </div>
 </div>

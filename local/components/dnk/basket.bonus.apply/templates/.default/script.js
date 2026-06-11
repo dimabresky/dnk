@@ -1,6 +1,8 @@
 (() => {
   let isProcessing = false;
   let isSyncing = false;
+  let syncPending = false;
+  let pendingBasketComponent = null;
 
   const parseAmount = (value) => {
     const normalized = String(value || "").replace(",", ".");
@@ -102,7 +104,7 @@
     const maxPay = parseAmount(ui.max_pay);
     const hint = root.querySelector('[data-role="dnk-bonus-hint"]');
     const meta = root.querySelector('[data-role="dnk-bonus-meta"]');
-    const controls = root.querySelector(".basket-bonus-section__controls");
+    const controls = root.querySelector('[data-role="dnk-bonus-controls"]');
     const links = root.querySelector('[data-role="dnk-bonus-links"]');
     const metaError = root.querySelector('[data-role="dnk-bonus-meta-error"]');
     const linksError = root.querySelector('[data-role="dnk-bonus-links-error"]');
@@ -176,7 +178,13 @@
 
   const syncAfterBasketChange = async (basketComponent) => {
     const root = getRoot();
-    if (!root || isSyncing || isProcessing) {
+    if (!root) {
+      return;
+    }
+
+    if (isSyncing || isProcessing) {
+      syncPending = true;
+      pendingBasketComponent = basketComponent || pendingBasketComponent;
       return;
     }
 
@@ -202,6 +210,13 @@
       console.error(error);
     } finally {
       isSyncing = false;
+
+      if (syncPending) {
+        syncPending = false;
+        const component = pendingBasketComponent;
+        pendingBasketComponent = null;
+        await syncAfterBasketChange(component);
+      }
     }
   };
 
