@@ -29,11 +29,17 @@ final class BasketBonusEvents
 
     public static function onPageStart(): void
     {
-        if (!self::isBasketPage()) {
+        if (!self::isBasketContext()) {
             return;
         }
 
         BasketBonusService::reconcileOrphanedBonusDiscounts();
+
+        if (self::isBasketAjax()) {
+            BasketBonusService::clearFuserBasketReserves();
+        } else {
+            BasketBonusService::reconcileFuserBasketReserves();
+        }
     }
 
     private static function isBasketPage(): bool
@@ -47,6 +53,39 @@ final class BasketBonusEvents
         $curPage = (string)$APPLICATION->GetCurPage(false);
 
         return stripos($curPage, '/basket') !== false;
+    }
+
+    /**
+     * Страница корзины или штатный AJAX sale.basket.basket.
+     */
+    private static function isBasketContext(): bool
+    {
+        if (self::isBasketPage()) {
+            return true;
+        }
+
+        global $APPLICATION;
+
+        if (!is_object($APPLICATION)) {
+            return false;
+        }
+
+        $curPage = (string)$APPLICATION->GetCurPage(false);
+
+        return self::isBasketAjax();
+    }
+
+    private static function isBasketAjax(): bool
+    {
+        global $APPLICATION;
+
+        if (!is_object($APPLICATION)) {
+            return false;
+        }
+
+        $curPage = (string)$APPLICATION->GetCurPage(false);
+
+        return stripos($curPage, 'sale.basket.basket/ajax.php') !== false;
     }
 
     /**
@@ -124,6 +163,7 @@ final class BasketBonusEvents
     public static function onSaleBasketSaved($basket): void
     {
         BasketBonusService::reconcileOrphanedBonusDiscounts();
+        BasketBonusService::reconcileFuserBasketReserves();
 
         if (!BasketBonusService::isApplied()) {
             return;
