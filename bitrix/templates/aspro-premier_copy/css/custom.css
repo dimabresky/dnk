@@ -106,7 +106,8 @@
 }
 
 @media (min-width: 992px) {
-	.basket-total-outer .dnk-basket-bonus-apply .basket-bonus-section {
+	.basket-total-outer .basket-bonus-section.dnk-basket-bonus-apply {
+		margin-top: 0;
 		border-top: none;
 	}
 }

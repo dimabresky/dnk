@@ -30,6 +30,10 @@ $messages = [
     id="dnk-basket-bonus-apply"
     data-messages="<?= htmlspecialcharsbx(json_encode($messages, JSON_UNESCAPED_UNICODE)); ?>"
 >
+    <div class="basket-bonus-section__loader" aria-hidden="true" data-role="dnk-bonus-loader">
+        <span class="basket-bonus-section__loader-spinner" aria-hidden="true"></span>
+    </div>
+
     <div class="basket-bonus-section__title font_15 font_short"><?= Loc::getMessage('DNK_BASKET_BONUS_WRITE_OFF'); ?></div>
 
     <?php if (!empty($arResult['error_min'])): ?>

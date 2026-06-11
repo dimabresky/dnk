@@ -43,8 +43,15 @@
 
   const setLoading = (root, loading) => {
     root.classList.toggle("dnk-basket-bonus-apply--loading", loading);
-    root.querySelectorAll("button").forEach((btn) => {
-      btn.disabled = loading;
+    root.toggleAttribute("aria-busy", loading);
+
+    const loader = root.querySelector('[data-role="dnk-bonus-loader"]');
+    if (loader) {
+      loader.setAttribute("aria-hidden", loading ? "false" : "true");
+    }
+
+    root.querySelectorAll("button, [data-role='dnk-bonus-amount']").forEach((control) => {
+      control.disabled = loading;
     });
   };
 
