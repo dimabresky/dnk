@@ -29,6 +29,8 @@
 /bitrix/templates/aspro-premier-mobile_copy/template_styles.css
 /bitrix/templates/aspro-premier_copy/components/bitrix/catalog.section/
 /bitrix/templates/aspro-premier-mobile_copy/components/bitrix/catalog.section/
+/bitrix/templates/aspro-premier-mobile_copy/components/bitrix/sale.basket.basket/v2/*
+!/bitrix/templates/aspro-premier-mobile_copy/components/bitrix/sale.basket.basket/v2/template.php
 
 /index.php
 
