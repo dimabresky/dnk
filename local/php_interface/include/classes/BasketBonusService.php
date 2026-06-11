@@ -15,6 +15,8 @@ use Bitrix\Sale\Discount;
 use Bitrix\Sale\Fuser;
 use Bitrix\Sale\Order;
 use Bitrix\Sale\PersonType;
+use Bitrix\Sale\ReserveQuantityCollection;
+use Bitrix\Sale\Result;
 
 /**
  * Применение бонусов Aspro к FUSER-корзине на этапе корзины (только стоимость товаров).
@@ -25,6 +27,9 @@ final class BasketBonusService
 
   /** @var float|null Сумма списания, восстанавливаемая после обхода BeforeOrderSave Aspro */
     public static ?float $pendingOrderPayed = null;
+
+    /** @var bool Защита от рекурсии при syncAfterBasketChange внутри OnSaleBasketSaved */
+    private static bool $syncInProgress = false;
 
     /**
      * Текущее состояние применения бонусов из сессии.
@@ -178,13 +183,20 @@ final class BasketBonusService
             return ['success' => false, 'message' => 'bonus_not_applicable'];
         }
 
+        $basket = self::loadBasket();
+        if ($basket === null || $basket->isEmpty()) {
+            return ['success' => false, 'message' => 'empty_basket'];
+        }
+
+        self::resetBasketCustomPrices($basket);
+
         if (!self::applyPricesToBasket($basket, $calc)) {
             return ['success' => false, 'message' => 'apply_failed'];
         }
 
         self::persistState((float)$calc['PAYED'], $basket);
 
-        $saveResult = $basket->save();
+        $saveResult = self::saveFuserBasket($basket);
         if (!$saveResult->isSuccess()) {
             self::clearState();
 
@@ -217,7 +229,7 @@ final class BasketBonusService
      */
     public static function syncAfterBasketChange(): void
     {
-        if (!self::isApplied() || !self::ensureModules()) {
+        if (self::$syncInProgress || !self::isApplied() || !self::ensureModules()) {
             return;
         }
 
@@ -252,14 +264,29 @@ final class BasketBonusService
             return;
         }
 
-        if (!self::applyPricesToBasket($basket, $calc)) {
-            self::reset();
+        $basket = self::loadBasket();
+        if ($basket === null || $basket->isEmpty()) {
+            self::clearState();
 
             return;
         }
 
-        self::persistState((float)$calc['PAYED'], $basket);
-        $basket->save();
+        self::$syncInProgress = true;
+
+        try {
+            self::resetBasketCustomPrices($basket);
+
+            if (!self::applyPricesToBasket($basket, $calc)) {
+                self::reset();
+
+                return;
+            }
+
+            self::persistState((float)$calc['PAYED'], $basket);
+            self::saveFuserBasket($basket);
+        } finally {
+            self::$syncInProgress = false;
+        }
     }
 
     /**
@@ -411,8 +438,29 @@ final class BasketBonusService
         $basket = self::loadBasket();
         if ($basket !== null && self::hasBonusCustomPrices($basket)) {
             self::resetBasketCustomPrices($basket);
-            $basket->save();
+            self::saveFuserBasket($basket);
         }
+    }
+
+    /**
+     * Очистить orphan-резервы FUSER-корзины после применения бонусов или CUSTOM_PRICE.
+     */
+    public static function reconcileFuserBasketReserves(): void
+    {
+        if (!self::ensureModules()) {
+            return;
+        }
+
+        $basket = self::loadBasket();
+        if ($basket === null) {
+            return;
+        }
+
+        if (!self::isApplied() && !self::hasBonusCustomPrices($basket)) {
+            return;
+        }
+
+        self::clearFuserBasketReserves($basket);
     }
 
     /**
@@ -439,7 +487,7 @@ final class BasketBonusService
         }
 
         self::resetBasketCustomPrices($basket);
-        $basket->save();
+        self::saveFuserBasket($basket);
         self::clearState();
     }
 
@@ -505,7 +553,7 @@ final class BasketBonusService
 
         if ($basket !== null && !$basket->isEmpty()) {
             self::resetBasketCustomPrices($basket);
-            $basket->save();
+            self::saveFuserBasket($basket);
         }
     }
 
@@ -552,20 +600,25 @@ final class BasketBonusService
     {
         global $APPLICATION;
 
-        $basket ??= self::loadBasket();
-        if ($basket === null || $basket->isEmpty()) {
+        $sourceBasket = $basket ?? self::loadBasket();
+        if ($sourceBasket === null || $sourceBasket->isEmpty()) {
+            return null;
+        }
+
+        $calcBasket = self::createCalculationBasket($sourceBasket);
+        if ($calcBasket === null || $calcBasket->isEmpty()) {
             return null;
         }
 
         $siteId = Context::getCurrent()->getSite();
-        $cartSum = self::getBasketProductsSum($basket);
+        $cartSum = self::getBasketProductsSum($sourceBasket);
         if ($cartSum <= 0) {
             return null;
         }
 
         $order = Order::create($siteId, $userId);
         $order->setPersonTypeId(self::resolvePersonTypeId($siteId, $userId));
-        $order->setBasket($basket);
+        $order->setBasket($calcBasket);
 
         $props = BonusOrder::getGruppedPropsByCode($order->getPropertyCollection());
         if (!empty($props[BonusOrder::PROPERTY_BONUS_PAYMENT]['ORDER_PROPS_ID'])) {
@@ -801,5 +854,55 @@ final class BasketBonusService
         ])->fetch();
 
         return (int)($row['ID'] ?? 1);
+    }
+
+    /**
+     * Копия FUSER-корзины для расчёта бонусов через временный Order (без сохранения).
+     */
+    private static function createCalculationBasket(BasketBase $sourceBasket): ?BasketBase
+    {
+        if ($sourceBasket->getOrder() !== null) {
+            return null;
+        }
+
+        try {
+            return $sourceBasket->copy();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Очистить резервы позиций FUSER-корзины без вызова catalog provider.
+     */
+    public static function clearFuserBasketReserves(?BasketBase $basket = null): void
+    {
+        if (!self::ensureModules()) {
+            return;
+        }
+
+        $basket ??= self::loadBasket();
+        if ($basket === null || $basket->isEmpty() || $basket->getOrder() !== null) {
+            return;
+        }
+
+        foreach ($basket as $item) {
+            $basketItemId = (int)$item->getId();
+            if ($basketItemId <= 0) {
+                continue;
+            }
+
+            ReserveQuantityCollection::deleteNoDemand($basketItemId);
+        }
+    }
+
+    /**
+     * Сохранить FUSER-корзину после очистки orphan-резервов.
+     */
+    private static function saveFuserBasket(BasketBase $basket): Result
+    {
+        self::clearFuserBasketReserves($basket);
+
+        return $basket->save();
     }
 }
