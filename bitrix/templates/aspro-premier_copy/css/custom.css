@@ -99,3 +99,47 @@
 .footer__bottom-part-inner.footer__divider--top {
 	padding: 10px 0;
 }
+
+/* Basket bonus apply block */
+.basket-total-outer .dnk-basket-bonus-apply {
+	padding-left: var(--total-block-pl, 40px);
+}
+
+@media (min-width: 992px) {
+	.basket-total-outer .basket-bonus-section.dnk-basket-bonus-apply {
+		margin-top: 0;
+		border-top: none;
+	}
+}
+
+#basket-root .dnk-basket-bonus-apply .basket-bonus-section__btn {
+	background-color: var(--theme-base-color) !important;
+	border-color: var(--theme-base-color) !important;
+	color: var(--button_color_text) !important;
+}
+
+@media (max-width: 991px) {
+	#basket-root .basket-total-outer {
+		--total-block-pl: 0;
+		--total-block-width: 100%;
+	}
+
+	.basket-total-outer .dnk-basket-bonus-apply {
+		width: 100%;
+		padding-left: 0;
+		margin-bottom: 12px;
+	}
+}
+
+@media (max-width: 600px) {
+	.basket-total-outer .dnk-basket-bonus-apply {
+		padding-left: 0;
+		padding-inline: 16px;
+		margin-bottom: 8px;
+	}
+}
+
+/* Checkout: бонусы применяются только в корзине */
+.bx-soa .aspro-bonus-uses {
+	display: none !important;
+}

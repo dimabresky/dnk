@@ -143,7 +143,6 @@ foreach ($jsTemplates->getChildren() as $jsTemplate) {
     if (strpos($jsTemplate->getPath(), '.back')) {
         continue;
     }
-
     include $jsTemplate->getPath();
 }
 
@@ -166,12 +165,10 @@ if (empty($arResult['ERROR_MESSAGE'])) {
         <div id="basket-item-message">
             <?= Loc::getMessage('SBB_BASKET_ITEM_MAX_COUNT_EXCEEDED', ['#PATH#' => $arParams['PATH_TO_BASKET']]);?>
         </div>
-    <?php
+        <?php
     }
     ?>
     <div id="basket-root" class="bx-basket bx-<?= $arParams['TEMPLATE_THEME'];?> bx-step-opacity" style="opacity: 0;">
-
-
         <div class="row">
             <div class="col-xs-12">
                 <div class="alert alert-warning alert-dismissable" id="basket-warning" style="display: none;">

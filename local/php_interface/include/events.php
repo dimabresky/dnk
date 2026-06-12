@@ -1,6 +1,7 @@
 <?php
 
 use Bitrix\Main\EventManager;
+use Dnk\PhpInterface\BasketBonusEvents;
 use Dnk\PhpInterface\BonusAccrualEvents;
 use Dnk\PhpInterface\HeaderPromoEvents;
 use Dnk\PhpInterface\IblockProductBrandEvents;
@@ -16,6 +17,8 @@ EventManager::getInstance()->addEventHandler(
     'OnSaleOrderSaved',
     [OrderExportEvents::class, 'onSaleOrderSaved']
 );
+
+BasketBonusEvents::register();
 
 EventManager::getInstance()->addEventHandler(
     'aspro.bonus',
