@@ -45,7 +45,7 @@ $MESS["sort_sort_asc"] = "По возрастанию сортировки";
 $MESS["sort_sort_desc"] = "По убыванию сортировки";
 $MESS["sort_shows_asc"] = "Сначала непопулярные";
 $MESS["sort_shows_desc"] = "По популярности";
-$MESS["sort_is_new"] = "Новинка";
+$MESS["sort_is_new"] = "Новинки";
 $MESS["sort_custom_asc"] = "По умолчанию (возрастание)";
 $MESS["sort_custom_desc"] = "По умолчанию (убывание)";
 
