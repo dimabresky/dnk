@@ -21,107 +21,122 @@ $arParams['MESS_RELATIVE_QUANTITY_MANY'] ??= '';
 $arParams['~MESS_RELATIVE_QUANTITY_FEW'] ??= '';
 $arParams['MESS_RELATIVE_QUANTITY_FEW'] ??= '';
 
-$giftDisplayPrice = 0.01;
-$giftDisplayDiscountPercent = 99;
-
 /**
  * @param array<string, mixed> $price
  */
-function dnkPatchGiftBasketDisplayPrice(array &$price): void
+if (!function_exists('dnkPatchGiftBasketDisplayPrice'))
 {
-	global $giftDisplayPrice, $giftDisplayDiscountPercent;
-	if (empty($price['CURRENCY']))
+	function dnkPatchGiftBasketDisplayPrice(array &$price): void
 	{
-		return;
-	}
-
-	$currency = (string)$price['CURRENCY'];
-	$minQuantity = isset($price['MIN_QUANTITY']) ? (float)$price['MIN_QUANTITY'] : 1.0;
-	if ($minQuantity <= 0)
-	{
-		$minQuantity = 1.0;
-	}
-
-	$displayRatioPrice = $giftDisplayPrice;
-	$displayPrice = $displayRatioPrice * $minQuantity;
-
-	$price['RATIO_PRICE'] = $displayRatioPrice;
-	$price['PRICE'] = $displayPrice;
-	$price['PRINT_RATIO_PRICE'] = (string)\CCurrencyLang::CurrencyFormat($displayRatioPrice, $currency, true);
-	$price['PRINT_PRICE'] = (string)\CCurrencyLang::CurrencyFormat($displayPrice, $currency, true);
-	$price['PERCENT'] = $giftDisplayDiscountPercent;
-
-	if (isset($price['RATIO_BASE_PRICE']))
-	{
-		$discount = (float)$price['RATIO_BASE_PRICE'] - $displayRatioPrice;
-		if ($discount < 0)
+		if (empty($price['CURRENCY']))
 		{
-			$discount = 0.0;
+			return;
 		}
 
-		$price['DISCOUNT'] = $discount;
-		$price['PRINT_DISCOUNT'] = (string)\CCurrencyLang::CurrencyFormat($discount, $currency, true);
+		$displayRatioPrice = 0.01;
+		$displayDiscountPercent = 99;
+		$currency = (string)$price['CURRENCY'];
+		$minQuantity = isset($price['MIN_QUANTITY']) ? (float)$price['MIN_QUANTITY'] : 1.0;
+		if ($minQuantity <= 0)
+		{
+			$minQuantity = 1.0;
+		}
+
+		$displayPrice = $displayRatioPrice * $minQuantity;
+
+		$price['RATIO_PRICE'] = $displayRatioPrice;
+		$price['PRICE'] = $displayPrice;
+		$price['PRINT_RATIO_PRICE'] = (string)\CCurrencyLang::CurrencyFormat($displayRatioPrice, $currency, true);
+		$price['PRINT_PRICE'] = (string)\CCurrencyLang::CurrencyFormat($displayPrice, $currency, true);
+		$price['PERCENT'] = $displayDiscountPercent;
+
+		if (isset($price['RATIO_BASE_PRICE']))
+		{
+			$discount = (float)$price['RATIO_BASE_PRICE'] - $displayRatioPrice;
+			if ($discount < 0)
+			{
+				$discount = 0.0;
+			}
+
+			$price['DISCOUNT'] = $discount;
+			$price['PRINT_DISCOUNT'] = (string)\CCurrencyLang::CurrencyFormat($discount, $currency, true);
+		}
 	}
 }
 
 /**
  * @param array<int, array<string, mixed>>|null $itemPrices
  */
-function dnkPatchGiftBasketItemPrices(?array &$itemPrices): void
+if (!function_exists('dnkPatchGiftBasketItemPrices'))
 {
-	if (empty($itemPrices) || !is_array($itemPrices))
+	function dnkPatchGiftBasketItemPrices(?array &$itemPrices): void
 	{
-		return;
-	}
-
-	foreach ($itemPrices as &$price)
-	{
-		if (is_array($price))
+		if (empty($itemPrices) || !is_array($itemPrices))
 		{
-			dnkPatchGiftBasketDisplayPrice($price);
+			return;
 		}
+
+		foreach ($itemPrices as &$price)
+		{
+			if (is_array($price))
+			{
+				dnkPatchGiftBasketDisplayPrice($price);
+			}
+		}
+		unset($price);
 	}
-	unset($price);
 }
 
 /**
  * @param array<string, mixed> $item
  */
-function dnkPatchGiftBasketItem(array &$item): void
+if (!function_exists('dnkPatchGiftBasketItem'))
 {
-	dnkPatchGiftBasketItemPrices($item['ITEM_PRICES']);
-
-	if (!empty($item['ITEM_START_PRICE']) && is_array($item['ITEM_START_PRICE']))
+	function dnkPatchGiftBasketItem(array &$item): void
 	{
-		dnkPatchGiftBasketDisplayPrice($item['ITEM_START_PRICE']);
-	}
-
-	if (!empty($item['OFFERS']) && is_array($item['OFFERS']))
-	{
-		foreach ($item['OFFERS'] as &$offer)
+		if (isset($item['ITEM_PRICES']) && is_array($item['ITEM_PRICES']))
 		{
-			if (!is_array($offer))
-			{
-				continue;
-			}
-
-			dnkPatchGiftBasketItemPrices($offer['ITEM_PRICES']);
+			dnkPatchGiftBasketItemPrices($item['ITEM_PRICES']);
 		}
-		unset($offer);
-	}
 
-	if (!empty($item['JS_OFFERS']) && is_array($item['JS_OFFERS']))
-	{
-		foreach ($item['JS_OFFERS'] as &$jsOffer)
+		if (!empty($item['ITEM_START_PRICE']) && is_array($item['ITEM_START_PRICE']))
 		{
-			if (!is_array($jsOffer))
-			{
-				continue;
-			}
-
-			dnkPatchGiftBasketItemPrices($jsOffer['ITEM_PRICES']);
+			dnkPatchGiftBasketDisplayPrice($item['ITEM_START_PRICE']);
 		}
-		unset($jsOffer);
+
+		if (!empty($item['OFFERS']) && is_array($item['OFFERS']))
+		{
+			foreach ($item['OFFERS'] as &$offer)
+			{
+				if (!is_array($offer))
+				{
+					continue;
+				}
+
+				if (isset($offer['ITEM_PRICES']) && is_array($offer['ITEM_PRICES']))
+				{
+					dnkPatchGiftBasketItemPrices($offer['ITEM_PRICES']);
+				}
+			}
+			unset($offer);
+		}
+
+		if (!empty($item['JS_OFFERS']) && is_array($item['JS_OFFERS']))
+		{
+			foreach ($item['JS_OFFERS'] as &$jsOffer)
+			{
+				if (!is_array($jsOffer))
+				{
+					continue;
+				}
+
+				if (isset($jsOffer['ITEM_PRICES']) && is_array($jsOffer['ITEM_PRICES']))
+				{
+					dnkPatchGiftBasketItemPrices($jsOffer['ITEM_PRICES']);
+				}
+			}
+			unset($jsOffer);
+		}
 	}
 }
 
