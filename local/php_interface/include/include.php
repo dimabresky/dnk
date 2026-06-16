@@ -4,6 +4,7 @@ use Bitrix\Main\Loader;
 use Dnk\PhpInterface\BasketBonusEvents;
 use Dnk\PhpInterface\BasketBonusService;
 use Dnk\PhpInterface\BonusAccrualEvents;
+use Dnk\PhpInterface\BonusDisplayEvents;
 use Dnk\PhpInterface\CertificateBuyPhoneAuth;
 use Dnk\PhpInterface\CertificateRequestStatus;
 use Dnk\PhpInterface\BonusBalanceQueueAgent;
@@ -40,6 +41,7 @@ Loader::registerAutoLoadClasses(null, [
     CertificateBuyPhoneAuth::class => $classesPath . '/CertificateBuyPhoneAuth.php',
     CertificateRequestStatus::class => $classesPath . '/CertificateRequestStatus.php',
     BonusAccrualEvents::class => $classesPath . '/BonusAccrualEvents.php',
+    BonusDisplayEvents::class => $classesPath . '/BonusDisplayEvents.php',
     HeaderPromoEvents::class => $classesPath . '/HeaderPromoEvents.php',
     BonusFetchAgent::class => $classesPath . '/BonusFetchAgent.php',
     BonusBalanceQueueTable::class => $classesPath . '/BonusBalanceQueueTable.php',
