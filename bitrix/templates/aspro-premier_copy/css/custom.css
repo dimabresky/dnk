@@ -68,6 +68,18 @@
     display: none !important;
 }
 
+.aspro-bonus .aspro-bonus__link {
+	display: inline-flex;
+	align-items: flex-start;
+	gap: 5px;
+	color: inherit;
+	text-decoration: none;
+}
+
+.aspro-bonus .aspro-bonus__link:hover {
+	text-decoration: underline;
+}
+
 .personal__block #change-password {
     display: none !important;
 }
