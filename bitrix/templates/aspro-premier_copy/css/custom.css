@@ -68,6 +68,14 @@
     display: none !important;
 }
 
+.aspro-bonus .aspro-bonus__link {
+	display: inline-flex;
+	align-items: flex-start;
+	gap: 5px;
+	color: inherit;
+	text-decoration: underline;
+}
+
 .personal__block #change-password {
     display: none !important;
 }

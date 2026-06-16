@@ -3,6 +3,7 @@
 use Bitrix\Main\EventManager;
 use Dnk\PhpInterface\BasketBonusEvents;
 use Dnk\PhpInterface\BonusAccrualEvents;
+use Dnk\PhpInterface\BonusDisplayEvents;
 use Dnk\PhpInterface\HeaderPromoEvents;
 use Dnk\PhpInterface\IblockProductBrandEvents;
 use Dnk\PhpInterface\IblockProductMarkerHitEvents;
@@ -24,6 +25,12 @@ EventManager::getInstance()->addEventHandler(
     'aspro.bonus',
     'beforeCreateAddByOrder',
     [BonusAccrualEvents::class, 'onBeforeCreateAddByOrder']
+);
+
+EventManager::getInstance()->addEventHandler(
+    'aspro.bonus',
+    'getPatternBonusShow',
+    [BonusDisplayEvents::class, 'onGetPatternBonusShow']
 );
 
 EventManager::getInstance()->addEventHandlerCompatible(
