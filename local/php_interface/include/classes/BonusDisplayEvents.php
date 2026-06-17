@@ -131,6 +131,7 @@ final class BonusDisplayEvents
     };
 
     let componentReadyHandled = false;
+    let cleanupPollId = null;
 
     const onBonusComponentReady = () => {
         if (typeof replaceBonuses !== 'function') {
@@ -154,14 +155,19 @@ final class BonusDisplayEvents
     const scheduleCleanup = () => {
         cleanupBonusBlocks();
 
+        if (cleanupPollId !== null) {
+            return;
+        }
+
         let attempts = 0;
         const maxAttempts = 60;
-        const pollId = setInterval(() => {
+        cleanupPollId = setInterval(() => {
             attempts += 1;
-            revealValidBonusBlocks();
+            cleanupBonusBlocks();
 
             if (!hasUnreplacedBonusPlaceholders() || attempts >= maxAttempts) {
-                clearInterval(pollId);
+                clearInterval(cleanupPollId);
+                cleanupPollId = null;
                 cleanupBonusBlocks({ removeUnreplaced: true });
             }
         }, 50);
