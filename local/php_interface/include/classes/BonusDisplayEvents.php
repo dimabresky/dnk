@@ -91,6 +91,18 @@ final class BonusDisplayEvents
         node?.remove?.();
     };
 
+    const revealValidBonusBlocks = () => {
+        document.querySelectorAll('.aspro-bonus-wrapper label').forEach((label) => {
+            if (parseBonusAmount(label.textContent) <= 0) {
+                return;
+            }
+
+            const bonusNode = label.closest('.aspro-bonus');
+            bonusNode?.removeAttribute('hidden');
+            bonusNode?.removeAttribute('aria-hidden');
+        });
+    };
+
     const cleanupBonusBlocks = () => {
         document.querySelectorAll('.aspro-bonus-wrapper').forEach((wrapper) => {
             if (wrapper.textContent.includes('#BONUSES#')) {
@@ -103,6 +115,8 @@ final class BonusDisplayEvents
                 wrapper.remove();
             }
         });
+
+        revealValidBonusBlocks();
     };
 
     const patchReplaceBonuses = () => {
@@ -137,6 +151,7 @@ final class BonusDisplayEvents
     };
 
     const scheduleCleanup = () => {
+        cleanupBonusBlocks();
         setTimeout(cleanupBonusBlocks, 0);
         setTimeout(cleanupBonusBlocks, 100);
     };
@@ -148,7 +163,7 @@ final class BonusDisplayEvents
         }
 
         if (typeof BX === 'undefined' || typeof BX.loadExt !== 'function') {
-            setTimeout(bootstrap, 50);
+            setTimeout(bootstrap, 10);
             return;
         }
 
@@ -158,10 +173,17 @@ final class BonusDisplayEvents
         });
     };
 
+    bootstrap();
+
+    const patchInterval = setInterval(() => {
+        if (patchReplaceBonuses()) {
+            clearInterval(patchInterval);
+            scheduleCleanup();
+        }
+    }, 10);
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bootstrap);
-    } else {
-        bootstrap();
+        document.addEventListener('DOMContentLoaded', scheduleCleanup);
     }
 })();
 </script>

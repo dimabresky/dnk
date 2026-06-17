@@ -29,7 +29,7 @@
     display: none !important;
 }
 
-.aspro-bonus-wrapper:not(:has(label)) {
+.aspro-bonus-wrapper .aspro-bonus[hidden] {
     display: none !important;
 }
 
