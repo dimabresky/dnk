@@ -80,13 +80,32 @@ final class BonusDisplayEvents
         return Number.isFinite(amount) ? amount : 0;
     };
 
+    const getWrapperBonusAmount = (wrapper) => {
+        if (wrapper.textContent.includes('#BONUSES#')) {
+            return null;
+        }
+
+        const label = wrapper.querySelector('label');
+        if (label) {
+            return parseBonusAmount(label.textContent);
+        }
+
+        const textEl = wrapper.querySelector('.aspro-bonus__text');
+        if (textEl) {
+            return parseBonusAmount(textEl.textContent);
+        }
+
+        return parseBonusAmount(wrapper.textContent);
+    };
+
     const revealValidBonusBlocks = () => {
-        document.querySelectorAll('.aspro-bonus-wrapper label').forEach((label) => {
-            if (parseBonusAmount(label.textContent) <= 0) {
+        document.querySelectorAll('.aspro-bonus-wrapper').forEach((wrapper) => {
+            const amount = getWrapperBonusAmount(wrapper);
+            if (amount === null || amount <= 0) {
                 return;
             }
 
-            const bonusNode = label.closest('.aspro-bonus');
+            const bonusNode = wrapper.querySelector('.aspro-bonus');
             bonusNode?.removeAttribute('hidden');
             bonusNode?.removeAttribute('aria-hidden');
         });
@@ -94,16 +113,16 @@ final class BonusDisplayEvents
 
     const cleanupBonusBlocks = ({ removeUnreplaced = false } = {}) => {
         document.querySelectorAll('.aspro-bonus-wrapper').forEach((wrapper) => {
-            const label = wrapper.querySelector('label');
+            const amount = getWrapperBonusAmount(wrapper);
 
-            if (label) {
-                if (parseBonusAmount(label.textContent) <= 0) {
+            if (amount === null) {
+                if (removeUnreplaced) {
                     wrapper.remove();
                 }
                 return;
             }
 
-            if (removeUnreplaced && wrapper.textContent.includes('#BONUSES#')) {
+            if (amount <= 0) {
                 wrapper.remove();
             }
         });
@@ -126,10 +145,26 @@ final class BonusDisplayEvents
         return true;
     };
 
+    const hasUnreplacedBonusPlaceholders = () => {
+        return [...document.querySelectorAll('.aspro-bonus-wrapper')].some((wrapper) => {
+            return wrapper.textContent.includes('#BONUSES#');
+        });
+    };
+
     const scheduleCleanup = () => {
         cleanupBonusBlocks();
-        setTimeout(() => cleanupBonusBlocks({ removeUnreplaced: true }), 150);
-        setTimeout(() => cleanupBonusBlocks({ removeUnreplaced: true }), 500);
+
+        let attempts = 0;
+        const maxAttempts = 60;
+        const pollId = setInterval(() => {
+            attempts += 1;
+            revealValidBonusBlocks();
+
+            if (!hasUnreplacedBonusPlaceholders() || attempts >= maxAttempts) {
+                clearInterval(pollId);
+                cleanupBonusBlocks({ removeUnreplaced: true });
+            }
+        }, 50);
     };
 
     const bootstrap = () => {
