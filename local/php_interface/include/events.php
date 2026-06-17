@@ -27,11 +27,7 @@ EventManager::getInstance()->addEventHandler(
     [BonusAccrualEvents::class, 'onBeforeCreateAddByOrder']
 );
 
-EventManager::getInstance()->addEventHandler(
-    'aspro.bonus',
-    'getPatternBonusShow',
-    [BonusDisplayEvents::class, 'onGetPatternBonusShow']
-);
+BonusDisplayEvents::register();
 
 EventManager::getInstance()->addEventHandlerCompatible(
     'main',
