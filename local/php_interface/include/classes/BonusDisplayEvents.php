@@ -16,7 +16,7 @@ final class BonusDisplayEvents
 {
     private const BONUS_INFO_URL = '/bonus/';
 
-    private static bool $replaceBonusesPatchInjected = false;
+    private static bool $bonusCleanupScriptInjected = false;
 
     public static function register(): void
     {
@@ -52,7 +52,7 @@ final class BonusDisplayEvents
 
     public static function onEpilogInjectReplaceBonusesPatch(): void
     {
-        if (self::$replaceBonusesPatchInjected) {
+        if (self::$bonusCleanupScriptInjected) {
             return;
         }
 
@@ -64,7 +64,7 @@ final class BonusDisplayEvents
             return;
         }
 
-        self::$replaceBonusesPatchInjected = true;
+        self::$bonusCleanupScriptInjected = true;
 
         Asset::getInstance()->addString(<<<'HTML'
 <script data-skip-moving="true">
@@ -78,17 +78,6 @@ final class BonusDisplayEvents
         const amount = parseFloat(normalized);
 
         return Number.isFinite(amount) ? amount : 0;
-    };
-
-    const removeBonusWrapper = (node) => {
-        const wrapper = node?.closest?.('.aspro-bonus-wrapper');
-
-        if (wrapper) {
-            wrapper.remove();
-            return;
-        }
-
-        node?.remove?.();
     };
 
     const revealValidBonusBlocks = () => {
@@ -119,33 +108,17 @@ final class BonusDisplayEvents
         revealValidBonusBlocks();
     };
 
-    const patchReplaceBonuses = () => {
+    let componentReadyHandled = false;
+
+    const onBonusComponentReady = () => {
         if (typeof replaceBonuses !== 'function') {
             return false;
         }
 
-        if (replaceBonuses.__dnkZeroBonusPatched) {
-            cleanupBonusBlocks();
-            return true;
+        if (!componentReadyHandled) {
+            componentReadyHandled = true;
+            scheduleCleanup();
         }
-
-        replaceBonuses = (selector, bonuses) => {
-            const amount = parseBonusAmount(bonuses);
-
-            document.querySelectorAll(selector)?.forEach((node) => {
-                if (amount <= 0) {
-                    removeBonusWrapper(node);
-                    return;
-                }
-
-                node.innerHTML = node.innerHTML.replace('#BONUSES#', `<label>${bonuses}</label>`);
-                node.querySelector('.aspro-bonus')?.removeAttribute('hidden');
-                node.querySelector('.aspro-bonus')?.removeAttribute('aria-hidden');
-            });
-        };
-
-        replaceBonuses.__dnkZeroBonusPatched = true;
-        cleanupBonusBlocks();
 
         return true;
     };
@@ -154,11 +127,11 @@ final class BonusDisplayEvents
         cleanupBonusBlocks();
         setTimeout(cleanupBonusBlocks, 0);
         setTimeout(cleanupBonusBlocks, 100);
+        setTimeout(cleanupBonusBlocks, 300);
     };
 
     const bootstrap = () => {
-        if (patchReplaceBonuses()) {
-            scheduleCleanup();
+        if (onBonusComponentReady()) {
             return;
         }
 
@@ -167,23 +140,21 @@ final class BonusDisplayEvents
             return;
         }
 
-        BX.loadExt(['aspro.bonus.component']).then(() => {
-            patchReplaceBonuses();
-            scheduleCleanup();
-        });
+        BX.loadExt(['aspro.bonus.component']).then(scheduleCleanup);
     };
 
     bootstrap();
 
-    const patchInterval = setInterval(() => {
-        if (patchReplaceBonuses()) {
-            clearInterval(patchInterval);
-            scheduleCleanup();
+    const readyInterval = setInterval(() => {
+        if (onBonusComponentReady()) {
+            clearInterval(readyInterval);
         }
     }, 10);
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', scheduleCleanup);
+    } else {
+        scheduleCleanup();
     }
 })();
 </script>
