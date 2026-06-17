@@ -92,15 +92,18 @@ final class BonusDisplayEvents
         });
     };
 
-    const cleanupBonusBlocks = () => {
+    const cleanupBonusBlocks = ({ removeUnreplaced = false } = {}) => {
         document.querySelectorAll('.aspro-bonus-wrapper').forEach((wrapper) => {
-            if (wrapper.textContent.includes('#BONUSES#')) {
-                wrapper.remove();
+            const label = wrapper.querySelector('label');
+
+            if (label) {
+                if (parseBonusAmount(label.textContent) <= 0) {
+                    wrapper.remove();
+                }
                 return;
             }
 
-            const label = wrapper.querySelector('label');
-            if (label && parseBonusAmount(label.textContent) <= 0) {
+            if (removeUnreplaced && wrapper.textContent.includes('#BONUSES#')) {
                 wrapper.remove();
             }
         });
@@ -125,9 +128,8 @@ final class BonusDisplayEvents
 
     const scheduleCleanup = () => {
         cleanupBonusBlocks();
-        setTimeout(cleanupBonusBlocks, 0);
-        setTimeout(cleanupBonusBlocks, 100);
-        setTimeout(cleanupBonusBlocks, 300);
+        setTimeout(() => cleanupBonusBlocks({ removeUnreplaced: true }), 150);
+        setTimeout(() => cleanupBonusBlocks({ removeUnreplaced: true }), 500);
     };
 
     const bootstrap = () => {
@@ -153,8 +155,6 @@ final class BonusDisplayEvents
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', scheduleCleanup);
-    } else {
-        scheduleCleanup();
     }
 })();
 </script>
