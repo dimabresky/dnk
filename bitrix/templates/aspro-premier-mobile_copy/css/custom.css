@@ -29,6 +29,10 @@
     display: none !important;
 }
 
+.aspro-bonus-wrapper .aspro-bonus[hidden] {
+    display: none !important;
+}
+
 .aspro-bonus .aspro-bonus__link {
 	display: inline-flex;
 	align-items: flex-start;
