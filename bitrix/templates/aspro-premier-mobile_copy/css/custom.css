@@ -109,3 +109,8 @@
 .bx-soa .aspro-bonus-uses {
 	display: none !important;
 }
+
+/* Mobile catalog menu: parent section title expands submenu on click */
+.mobilemenu__menu--catalog-wide .mobilemenu__menu-item--parent > .link-wrapper > .mobilemenu__item-link {
+	cursor: pointer;
+}

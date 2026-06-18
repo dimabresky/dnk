@@ -10,8 +10,10 @@ $arrowPointer = TSolution::showSpriteIconSvg(SITE_TEMPLATE_PATH.'/images/svg/arr
 ob_start();
 	TSolution\Functions::showBlockHtml(['FILE' => 'menu/mobile/partials/button_prev.php']);
 $buttonBack = trim(ob_get_clean());
+
+$bCatalogWide = ($arParams['CATALOG_WIDE'] === 'Y');
 ?>
-<div class="mobilemenu__menu mobilemenu__menu--with-hover mobilemenu__menu--top">
+<div class="mobilemenu__menu mobilemenu__menu--with-hover mobilemenu__menu--top<?= $bCatalogWide ? ' mobilemenu__menu--catalog-wide' : ''; ?>">
 	<ul class="mobilemenu__menu-list">
 		<?foreach ($arResult as $arItem):?>
 			<?
