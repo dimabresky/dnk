@@ -1,14 +1,14 @@
 (function () {
-  if (window.__dnkMobileCatalogMenuBound) {
+  if (window.__dnkMobileMenuParentExpandBound) {
     return;
   }
 
-  window.__dnkMobileCatalogMenuBound = true;
+  window.__dnkMobileMenuParentExpandBound = true;
 
   BX.Aspro.Utils.readyDOM(() => {
     $(document).on(
       'click',
-      '.mobilemenu__menu--catalog-wide .mobilemenu__menu-item--parent > .link-wrapper > .mobilemenu__item-link',
+      '.mobilemenu__menu .mobilemenu__menu-item--parent > .link-wrapper > .mobilemenu__item-link',
       function (e) {
         e.preventDefault();
 
