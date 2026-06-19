@@ -11,6 +11,7 @@ use Dnk\PhpInterface\IblockProductMarkerIsNewEvents;
 use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\UserConsentEvents;
+use Dnk\PhpInterface\ProfileBirthdayEvents;
 use Bitrix\Main\UserConsent\Internals\ConsentTable;
 
 EventManager::getInstance()->addEventHandler(
@@ -39,6 +40,12 @@ EventManager::getInstance()->addEventHandlerCompatible(
     'main',
     'OnBeforeUserUpdate',
     [UserAddEvents::class, 'onBeforeUserSave']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'main',
+    'OnBeforeUserUpdate',
+    [ProfileBirthdayEvents::class, 'onBeforeUserUpdate']
 );
 
 EventManager::getInstance()->addEventHandlerCompatible(

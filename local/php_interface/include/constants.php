@@ -90,6 +90,9 @@ define('DNK_PICKUP_STORES_IBLOCK_ID', $dnkEnvInt('DNK_PICKUP_STORES_IBLOCK_ID'))
 /** ID почтового шаблона (событие CUSTOM_MAIL): уведомление менеджера о новой заявке на сертификаты. */
 define('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID', $dnkEnvInt('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID'));
 
+/** ID почтового шаблона (событие CUSTOM_MAIL): запрос пользователя на смену дня рождения. */
+define('DNK_BIRTHDAY_CHANGE_REQUEST_MAIL_TEMPLATE_ID', $dnkEnvInt('DNK_BIRTHDAY_CHANGE_REQUEST_MAIL_TEMPLATE_ID'));
+
 /** URL (GET): полный список данных по бонусам. */
 define('DNK_BONUS_ENDPOINT', $dnkEnv('DNK_BONUS_ENDPOINT'));
 
