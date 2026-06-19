@@ -2,6 +2,7 @@
 
 namespace Dnk\PhpInterface;
 
+use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\UserTable;
 
 /**
@@ -28,6 +29,12 @@ final class ProfileBirthdayEvents
             'filter' => ['=ID' => $userId],
         ]);
 
+        if ($row === null) {
+            unset($arFields['PERSONAL_BIRTHDAY']);
+
+            return true;
+        }
+
         $currentBirthday = $row['PERSONAL_BIRTHDAY'] ?? null;
         $currentDisplay = Utils::formatUserBirthDateForDisplay($currentBirthday);
 
@@ -47,7 +54,8 @@ final class ProfileBirthdayEvents
         $parsed = Utils::parseProfileBirthDateInput($newInput);
         if ($parsed === null) {
             global $APPLICATION;
-            $APPLICATION->ThrowException('Укажите корректную дату рождения в формате дд.мм.гггг.');
+            Loc::loadMessages(__FILE__);
+            $APPLICATION->ThrowException(Loc::getMessage('DNK_PROFILE_BIRTHDAY_INVALID'));
 
             return false;
         }
