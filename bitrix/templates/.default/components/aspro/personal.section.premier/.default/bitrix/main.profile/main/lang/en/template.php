@@ -129,3 +129,7 @@ $MESS["PASSWORDS_DOES_NOT_MATCH"] = "Passwords do not match";
 $MESS["CHANGE_PASSWORD"] = "Change Password";
 $MESS["NEW_PASSWORD"] = "New password";
 $MESS["NEW_PASSWORD_CONFIRM"] = "New password again";
+$MESS["PERSONAL_BIRTHDAY_PLACEHOLDER"] = "dd.mm.yyyy";
+$MESS["PERSONAL_BIRTHDAY_CHANGE_REQUEST"] = "Send a request to change date of birth";
+$MESS["PERSONAL_BIRTHDAY_CHANGE_REQUEST_SENT"] = "Request sent";
+$MESS["PERSONAL_BIRTHDAY_CHANGE_REQUEST_ERROR"] = "Failed to send the request. Please try again later.";

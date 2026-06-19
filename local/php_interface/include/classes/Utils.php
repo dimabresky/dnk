@@ -7,7 +7,9 @@ use Aspro\Bonus\Helper as BonusHelper;
 use Aspro\Bonus\History\User as BonusUser;
 use Aspro\Bonus\ORM\HistoryOperationsTable;
 use Bitrix\Iblock\ElementTable;
+use Bitrix\Main\Context;
 use Bitrix\Main\Loader;
+use Bitrix\Main\Mail\Event as MailEvent;
 use Bitrix\Main\Type\Date;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\UserPhoneAuthTable;
@@ -44,6 +46,166 @@ final class Utils
     public static function isTechnicalBuyerEmail(string $email): bool
     {
         return preg_match('/^buyer[0-9]+/i', trim($email)) === 1;
+    }
+
+    /**
+     * Форматирует дату рождения пользователя для отображения (дд.мм.гггг).
+     */
+    public static function formatUserBirthDateForDisplay(mixed $birthday): string
+    {
+        if ($birthday === null || $birthday === '') {
+            return '';
+        }
+
+        if ($birthday instanceof Date) {
+            return $birthday->format('d.m.Y');
+        }
+
+        if ($birthday instanceof \DateTimeInterface) {
+            return $birthday->format('d.m.Y');
+        }
+
+        $s = trim((string)$birthday);
+        if ($s === '') {
+            return '';
+        }
+
+        $fromDot = \DateTime::createFromFormat('d.m.Y', $s);
+        if ($fromDot instanceof \DateTime && $fromDot->format('d.m.Y') === $s) {
+            return $s;
+        }
+
+        $fromIso = \DateTime::createFromFormat('Y-m-d', $s);
+        if ($fromIso instanceof \DateTime && $fromIso->format('Y-m-d') === $s) {
+            return $fromIso->format('d.m.Y');
+        }
+
+        $ts = strtotime($s);
+
+        return $ts !== false ? date('d.m.Y', $ts) : '';
+    }
+
+    public static function isUserBirthdayFilled(mixed $birthday): bool
+    {
+        return self::formatUserBirthDateForDisplay($birthday) !== '';
+    }
+
+    /**
+     * Парсит ввод даты рождения из формы профиля (дд.мм.гггг).
+     */
+    public static function parseProfileBirthDateInput(string $input): ?\DateTime
+    {
+        $s = trim($input);
+        if ($s === '') {
+            return null;
+        }
+
+        $dt = \DateTime::createFromFormat('d.m.Y', $s);
+        if (!$dt instanceof \DateTime || $dt->format('d.m.Y') !== $s) {
+            return null;
+        }
+
+        $y = (int)$dt->format('Y');
+        if ($y < 1900 || $y > (int)date('Y')) {
+            return null;
+        }
+
+        return $dt;
+    }
+
+    /**
+     * Отправляет менеджеру письмо CUSTOM_MAIL с запросом на смену дня рождения.
+     */
+    public static function sendBirthdayChangeRequestMail(int $userId): bool
+    {
+        if ($userId <= 0) {
+            return false;
+        }
+
+        if (!defined('DNK_BIRTHDAY_CHANGE_REQUEST_MAIL_TEMPLATE_ID')
+            || (int)DNK_BIRTHDAY_CHANGE_REQUEST_MAIL_TEMPLATE_ID <= 0
+        ) {
+            return false;
+        }
+
+        $user = UserTable::getRow([
+            'select' => ['ID', 'NAME', 'LAST_NAME', 'SECOND_NAME', 'EMAIL', 'PERSONAL_PHONE', 'PERSONAL_BIRTHDAY'],
+            'filter' => ['=ID' => $userId],
+        ]);
+
+        if ($user === null) {
+            return false;
+        }
+
+        $birthdayDisplay = self::formatUserBirthDateForDisplay($user['PERSONAL_BIRTHDAY'] ?? null);
+        if ($birthdayDisplay === '') {
+            return false;
+        }
+
+        $fio = trim(implode(' ', array_filter([
+            (string)($user['LAST_NAME'] ?? ''),
+            (string)($user['NAME'] ?? ''),
+            (string)($user['SECOND_NAME'] ?? ''),
+        ])));
+
+        $siteIdForMail = (defined('SITE_ID') && is_string(SITE_ID) && SITE_ID !== '')
+            ? SITE_ID
+            : '';
+        if ($siteIdForMail === '') {
+            $appCtx = Context::getCurrent();
+            if ($appCtx !== null) {
+                $lid = $appCtx->getSite();
+                $siteIdForMail = ($lid !== null && $lid !== '') ? $lid : 's1';
+            } else {
+                $siteIdForMail = 's1';
+            }
+        }
+
+        $langMail = '';
+        if (defined('LANGUAGE_ID') && is_string(LANGUAGE_ID) && LANGUAGE_ID !== '') {
+            $langMail = LANGUAGE_ID;
+        } else {
+            $appCtxLang = Context::getCurrent();
+            if ($appCtxLang !== null) {
+                $langId = $appCtxLang->getLanguage();
+                if ($langId !== null && $langId !== '') {
+                    $langMail = (string)$langId;
+                }
+            }
+        }
+
+        $mailResult = MailEvent::send([
+            'EVENT_NAME' => 'CUSTOM_MAIL',
+            'LID' => $siteIdForMail,
+            'LANGUAGE_ID' => $langMail,
+            'MESSAGE_ID' => (int)DNK_BIRTHDAY_CHANGE_REQUEST_MAIL_TEMPLATE_ID,
+            'C_FIELDS' => [
+                'USER_ID' => (string)$userId,
+                'USER_EMAIL' => (string)($user['EMAIL'] ?? ''),
+                'USER_NAME' => $fio,
+                'USER_PHONE' => (string)($user['PERSONAL_PHONE'] ?? ''),
+                'PERSONAL_BIRTHDAY' => $birthdayDisplay,
+                'REQUEST_DATE' => date('d.m.Y H:i:s'),
+            ],
+        ]);
+
+        if (!$mailResult->isSuccess()) {
+            $mailErr = [];
+            foreach ($mailResult->getErrors() as $errItem) {
+                $mailErr[] = $errItem->getMessage();
+            }
+            if ($mailErr !== []) {
+                error_log(sprintf(
+                    '[dnk:profile] CUSTOM_MAIL birthday change request failed userId=%d: %s',
+                    $userId,
+                    implode('; ', $mailErr)
+                ));
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -945,26 +1107,14 @@ final class Utils
 
     private static function formatUserBirthDateForRegisterExport(mixed $birthday): ?string
     {
-        if ($birthday === null || $birthday === '') {
+        $display = self::formatUserBirthDateForDisplay($birthday);
+        if ($display === '') {
             return null;
         }
 
-        if ($birthday instanceof Date) {
-            return $birthday->format('Y-m-d');
-        }
+        $dt = \DateTime::createFromFormat('d.m.Y', $display);
 
-        if ($birthday instanceof \DateTimeInterface) {
-            return $birthday->format('Y-m-d');
-        }
-
-        $s = trim((string)$birthday);
-        if ($s === '') {
-            return null;
-        }
-
-        $ts = strtotime($s);
-
-        return $ts !== false ? date('Y-m-d', $ts) : null;
+        return $dt instanceof \DateTime ? $dt->format('Y-m-d') : null;
     }
 
     private static function mapPersonalGenderToRegisterApi(mixed $personalGender): ?string
