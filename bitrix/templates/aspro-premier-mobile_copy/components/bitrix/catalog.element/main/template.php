@@ -488,7 +488,8 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
                                 'nextEl' => '.detail-gallery-big-slider-main .swiper-button-next',
                                 'prevEl' => '.detail-gallery-big-slider-main .swiper-button-prev',
                             ],
-                            'slidesPerView' => 1,
+                            'spaceBetween' => 5,
+                            'slidesPerView' => $countPhoto > 1 ? 1.5 : 1,
                             'thumbs' => [
                                 'swiper' => '.gallery-slider-thumb',
                             ],
