@@ -2,6 +2,7 @@
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 
 use Bitrix\Main\Localization\Loc;
+use Dnk\PhpInterface\Utils;
 
 Loc::loadMessages(__FILE__);
 $this->setFrameMode(false);
@@ -25,6 +26,11 @@ if ($bPhoneAuthShow) {
 }
 
 $bChangePassword = ($_REQUEST['type'] ?? '') === 'pass';
+$birthdayDisplay = Utils::formatUserBirthDateForDisplay($arResult['arUser']['PERSONAL_BIRTHDAY'] ?? null);
+$birthdayLocked = $birthdayDisplay !== '';
+if (!$birthdayLocked) {
+	$this->addExternalJs(SITE_DIR . 'local/js/imask.js');
+}
 ?>
 <div class="personal__block personal__block--private">
 	<div class="form<?=(($arResult['SHOW_SMS_FIELD'] && !$arResult['strProfileError']) ? ' form--send-sms' : '')?>">
@@ -225,6 +231,34 @@ $bChangePassword = ($_REQUEST['type'] ?? '') === 'pass';
 							<div class="secondary-color font_13 mt mt--4"><?=Loc::getMessage('PERSONAL_PHONE_DESCRIPTION')?></div>
 						</div>
 
+						<div class="form-group form-group--birthday<?=($birthdayLocked ? ' form-group--birthday-locked' : ($birthdayDisplay ? ' input-filed' : ''));?>">
+							<label for="PERSONAL_BIRTHDAY" class="font_13 color_dark"><span><?=Loc::getMessage('USER_BIRTHDAY_DT')?></span></label>
+							<?if ($birthdayLocked):?>
+								<div class="input">
+									<div class="form-control form-control--readonly js-dnk-profile-birthday-value"><?=htmlspecialcharsbx($birthdayDisplay)?></div>
+								</div>
+								<div class="secondary-color font_13 mt mt--4">
+									<a href="#" class="dark_link js-dnk-birthday-change-request"><?=Loc::getMessage('PERSONAL_BIRTHDAY_CHANGE_REQUEST')?></a>
+									<span class="js-dnk-birthday-change-message personal-color--green hidden"><?=Loc::getMessage('PERSONAL_BIRTHDAY_CHANGE_REQUEST_SENT')?></span>
+									<span class="js-dnk-birthday-change-error personal-color--red hidden"><?=Loc::getMessage('PERSONAL_BIRTHDAY_CHANGE_REQUEST_ERROR')?></span>
+								</div>
+							<?else:?>
+								<div class="input">
+									<input
+										type="text"
+										name="PERSONAL_BIRTHDAY"
+										id="PERSONAL_BIRTHDAY"
+										class="form-control js-dnk-profile-birthday"
+										maxlength="10"
+										inputmode="numeric"
+										autocomplete="bday"
+										placeholder="<?=Loc::getMessage('PERSONAL_BIRTHDAY_PLACEHOLDER')?>"
+										value="<?=htmlspecialcharsbx($birthdayDisplay)?>"
+									/>
+								</div>
+							<?endif;?>
+						</div>
+
 						<?if($arResult['PHONE_REGISTRATION']):?>
 							<?$bConfirmed = $userPhoneAuth['CONFIRMED'] == 'Y';?>
 							<div class="form-group form-group--phone<?=($bConfirmed && strlen($arResult['arUser']['PHONE_NUMBER']) ? ' form-group--phone-confirmed' : '')?><?=(strlen($arResult['arUser']['PHONE_NUMBER']) ? ' input-filed' : ' form-group--phone-empty')?>">
@@ -347,6 +381,92 @@ $bChangePassword = ($_REQUEST['type'] ?? '') === 'pass';
 						) {
 							appAspro.phone.init($('.personal__block--private input.phone'));
 						}
+
+						<?if (!$birthdayLocked):?>
+						(function dnkProfileBirthdayImask() {
+							const el = document.querySelector('#profile-form input.js-dnk-profile-birthday');
+							if (!el || el.dataset.dnkImaskInit === '1') {
+								return;
+							}
+							const tryInit = () => {
+								if (typeof IMask === 'undefined') {
+									return false;
+								}
+								const y = new Date().getFullYear();
+								IMask(el, {
+									mask: Date,
+									min: new Date(1900, 0, 1),
+									max: new Date(y, 11, 31),
+									lazy: true
+								});
+								el.dataset.dnkImaskInit = '1';
+								return true;
+							};
+							if (!tryInit()) {
+								let n = 0;
+								const timer = setInterval(() => {
+									n += 1;
+									if (tryInit() || n > 60) {
+										clearInterval(timer);
+									}
+								}, 50);
+							}
+						})();
+						<?endif;?>
+
+						<?if ($birthdayLocked):?>
+						(function dnkProfileBirthdayChangeRequest() {
+							const link = document.querySelector('#profile-form .js-dnk-birthday-change-request');
+							if (!link) {
+								return;
+							}
+							const messageEl = document.querySelector('#profile-form .js-dnk-birthday-change-message');
+							const errorEl = document.querySelector('#profile-form .js-dnk-birthday-change-error');
+							const successText = <?=CUtil::PhpToJSObject(Loc::getMessage('PERSONAL_BIRTHDAY_CHANGE_REQUEST_SENT'))?>;
+							const errorText = <?=CUtil::PhpToJSObject(Loc::getMessage('PERSONAL_BIRTHDAY_CHANGE_REQUEST_ERROR'))?>;
+
+							BX.bind(link, 'click', function(e) {
+								e.preventDefault();
+								if (link.classList.contains('is-sending') || link.classList.contains('is-sent')) {
+									return;
+								}
+								link.classList.add('is-sending');
+								if (errorEl) {
+									errorEl.classList.add('hidden');
+								}
+								BX.ajax({
+									url: '/local/ajax/birthday_change_request.php',
+									method: 'POST',
+									dataType: 'json',
+									data: {
+										sessid: BX.bitrix_sessid()
+									},
+									onsuccess: function(response) {
+										link.classList.remove('is-sending');
+										if (response && response.success) {
+											link.classList.add('is-sent', 'hidden');
+											if (messageEl) {
+												messageEl.textContent = successText;
+												messageEl.classList.remove('hidden');
+											}
+										} else {
+											if (errorEl) {
+												errorEl.textContent = errorText;
+												errorEl.classList.remove('hidden');
+											}
+										}
+									},
+									onfailure: function() {
+										link.classList.remove('is-sending');
+										if (errorEl) {
+											errorEl.textContent = errorText;
+											errorEl.classList.remove('hidden');
+										}
+									}
+								});
+							});
+						})();
+						<?endif;?>
 					});
 					</script>
 				</form>

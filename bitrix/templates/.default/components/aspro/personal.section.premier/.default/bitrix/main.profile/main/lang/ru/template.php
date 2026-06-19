@@ -129,3 +129,7 @@ $MESS["PASSWORDS_DOES_NOT_MATCH"] = "Пароли не совпадают";
 $MESS["CHANGE_PASSWORD"] = "Изменить пароль";
 $MESS["NEW_PASSWORD"] = "Новый пароль";
 $MESS["NEW_PASSWORD_CONFIRM"] = "Новый пароль еще раз";
+$MESS["PERSONAL_BIRTHDAY_PLACEHOLDER"] = "дд.мм.гггг";
+$MESS["PERSONAL_BIRTHDAY_CHANGE_REQUEST"] = "Послать запрос на смену дня рождения";
+$MESS["PERSONAL_BIRTHDAY_CHANGE_REQUEST_SENT"] = "Запрос отправлен";
+$MESS["PERSONAL_BIRTHDAY_CHANGE_REQUEST_ERROR"] = "Не удалось отправить запрос. Попробуйте позже.";

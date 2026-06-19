@@ -45,3 +45,23 @@
 .personal__block--private .form--send-sms .phone_code .alert {
 	display: block;
 }
+.form-group--birthday .form-control--readonly {
+	background: var(--darkerblack_bg_black, #f8f8f8);
+	cursor: default;
+}
+.form-group--birthday .js-dnk-birthday-change-request {
+	text-decoration: underline;
+}
+.form-group--birthday .js-dnk-birthday-change-request.is-sending {
+	opacity: 0.6;
+	pointer-events: none;
+}
+.form-group--birthday .js-dnk-birthday-change-message,
+.form-group--birthday .js-dnk-birthday-change-error {
+	display: inline-block;
+	margin-left: 8px;
+}
+.form-group--birthday .js-dnk-birthday-change-message.hidden,
+.form-group--birthday .js-dnk-birthday-change-error.hidden {
+	display: none;
+}
