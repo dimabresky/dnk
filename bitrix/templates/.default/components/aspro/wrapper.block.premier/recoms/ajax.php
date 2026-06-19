@@ -173,12 +173,12 @@ $iblockId = $arParams['CATALOG_IBLOCK_ID'] ?? TSolution::GetFrontParametrValue('
             'ITEM_992' => '4',
             'ITEM_1200' => '5',
 
-            'BIG_DATA_MODE' => 'Y',
-            'BIGDATA_COUNT' => $arParams['ELEMENT_COUNT'] ?? '5',
-            'RCM_TYPE' => $arParams['RCM_TYPE'] ?? 'similar',
-            'RCM_PROD_ID' => $arParams['RCM_PROD_ID'] ?? '',
-            'SHOW_FROM_SECTION' => $arParams['SHOW_FROM_SECTION'] ?? 'N',
-            'PRODUCT_ROW_VARIANTS' => "[{'VARIANT':'5','BIG_DATA':true}]",
+//            'BIG_DATA_MODE' => 'Y',
+//            'BIGDATA_COUNT' => $arParams['ELEMENT_COUNT'] ?? '5',
+//            'RCM_TYPE' => $arParams['RCM_TYPE'] ?? 'similar',
+//            'RCM_PROD_ID' => $arParams['RCM_PROD_ID'] ?? '',
+//            'SHOW_FROM_SECTION' => $arParams['SHOW_FROM_SECTION'] ?? 'N',
+//            'PRODUCT_ROW_VARIANTS' => "[{'VARIANT':'5','BIG_DATA':true}]",
 
             'USE_MAIN_ELEMENT_SECTION' => 'Y',
 
