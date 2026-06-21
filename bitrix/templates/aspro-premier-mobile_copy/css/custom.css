@@ -134,3 +134,8 @@
         margin: auto;
     }
 }
+
+/* hide bonuses items table */
+.bonus-history__items {
+    display: none !important;
+}
