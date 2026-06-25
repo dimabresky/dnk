@@ -337,12 +337,12 @@ $pathForAjax = $templateFolder;
                                         <?$showLicence = $arParams['SHOW_LICENCE'] ?: TSolution::GetFrontParametrValue('SHOW_LICENCE');?>
                                         <?if ($showLicence === 'Y'):?>
                                             <?TSolution\Functions::showBlockHtml([
-                                                'FILE' => 'consent/userconsent.php',
+                                                'FILE' => 'consent/dnk/userconsent.php',
                                                 'PARAMS' => [
                                                     'OPTION_CODE' => 'AGREEMENT_COMMENT',
                                                     'SUBMIT_TEXT' => GetMessage('B_B_MS_SEND'),
                                                     'REPLACE_FIELDS' => [],
-                                                    'INPUT_NAME' => 'licenses_popup',
+                                                    'INPUT_NAME' => TSolution\Validation::LICENSE_INPUT_NAME,
                                                     'INPUT_ID' => "licenses_comment",
                                                     'SUBMIT_EVENT_NAME' => 'comment-send-aspro',
                                                     'PARENT_COMPONENT' => $this->__component,

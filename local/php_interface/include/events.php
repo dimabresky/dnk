@@ -10,6 +10,7 @@ use Dnk\PhpInterface\IblockProductMarkerHitEvents;
 use Dnk\PhpInterface\IblockProductMarkerIsNewEvents;
 use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\UserAddEvents;
+use Dnk\PhpInterface\BlogCommentConsentEvents;
 use Dnk\PhpInterface\UserConsentEvents;
 use Dnk\PhpInterface\ProfileBirthdayEvents;
 use Bitrix\Main\UserConsent\Internals\ConsentTable;
@@ -137,4 +138,12 @@ EventManager::getInstance()->addEventHandler(
     'sale',
     'OnSaleOrderSaved',
     [UserConsentEvents::class, 'onSaleOrderSaved']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'blog',
+    'OnBeforeCommentAdd',
+    [BlogCommentConsentEvents::class, 'onBeforeCommentAdd'],
+    false,
+    50
 );
