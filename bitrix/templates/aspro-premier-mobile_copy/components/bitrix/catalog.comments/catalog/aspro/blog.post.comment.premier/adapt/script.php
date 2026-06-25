@@ -734,9 +734,15 @@ $('.blog-add-comment .btn').on('click', function() {
 <?endif;?>
 
 <?if (!$arResult['CanUserComment']):?>
+    <?php
+    global $USER;
+    $commentPermMessage = (is_object($USER) && $USER->IsAuthorized())
+        ? GetMessage('BPC_ERROR_NO_COMMENT_PERM')
+        : GetMessage('BPC_ERROR_AUTH_TO_COMMENT');
+    ?>
     $('.show-comment.btn').on('click', function() {
         $('.blog-note-error').remove();
-        $('<div class="alert alert-danger blog-note-box blog-note-error"><div class="blog-error-text"><?=GetMessage('BPC_ERROR_NO_COMMENT_PERM');?></div></div>').insertBefore('#reviews_sort_continer');
+        $('<div class="alert alert-danger blog-note-box blog-note-error"><div class="blog-error-text"><?=CUtil::JSEscape($commentPermMessage);?></div></div>').insertBefore('#reviews_sort_continer');
     });
 <?endif;?>
 
