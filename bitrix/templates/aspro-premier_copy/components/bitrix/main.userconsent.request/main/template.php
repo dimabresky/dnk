@@ -11,6 +11,20 @@ use Bitrix\Main\Localization\Loc;
 Loc::loadMessages(__DIR__.'/user_consent.php');
 
 if (!empty($arResult['CONSENT_ALREADY_GIVEN'])) {
+    if (!class_exists('TSolution') || !class_exists('TSolution\Validation')) {
+        include $_SERVER['DOCUMENT_ROOT'].SITE_TEMPLATE_PATH.'/vendor/php/solution.php';
+    }
+
+    $inputName = $arParams['INPUT_NAME'] ?? 'licenses_popup';
+    $agreementId = (int)($arParams['ID'] ?? 0);
+
+    if ($agreementId > 0) {
+        ?>
+        <input type="hidden" name="<?= htmlspecialcharsbx($inputName); ?>" value="<?= $agreementId; ?>">
+        <?= TSolution\Validation::getFormField(); ?>
+        <?php
+    }
+
     return;
 }
 
