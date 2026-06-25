@@ -21,6 +21,7 @@ use Dnk\PhpInterface\ProductExtendedReviewsAgent;
 use Dnk\PhpInterface\ProfileBirthdayEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\UserRegisterExportQueueAgent;
+use Dnk\PhpInterface\BlogCommentConsentEvents;
 use Dnk\PhpInterface\UserConsentEvents;
 use Dnk\PhpInterface\UserConsentRevokeTable;
 use Dnk\PhpInterface\UserConsentService;
@@ -62,6 +63,7 @@ Loader::registerAutoLoadClasses(null, [
     UserConsentRevokeTable::class => $classesPath . '/UserConsentRevokeTable.php',
     UserConsentService::class => $classesPath . '/UserConsentService.php',
     UserConsentEvents::class => $classesPath . '/UserConsentEvents.php',
+    BlogCommentConsentEvents::class => $classesPath . '/BlogCommentConsentEvents.php',
 ]);
 
 
