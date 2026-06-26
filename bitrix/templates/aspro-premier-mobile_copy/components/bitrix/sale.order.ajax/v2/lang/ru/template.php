@@ -20,6 +20,7 @@ $MESS['SOA_DISTANCE_KM'] = 'км';
 $MESS['SOA_ORDER_PROPS'] = 'Свойства заказа';
 $MESS['SOA_FIELD'] = 'Поле';
 $MESS['SOA_REQUIRED'] = 'обязательно для заполнения';
+$MESS['ERROR_FORM_LICENSE'] = 'Согласитесь с условиями';
 $MESS['SOA_INVALID_EMAIL'] = 'Введен неверный e-mail';
 $MESS['SOA_MIN_LENGTH'] = 'Минимальная длина поля';
 $MESS['SOA_MAX_LENGTH'] = 'Максимальная длина поля';

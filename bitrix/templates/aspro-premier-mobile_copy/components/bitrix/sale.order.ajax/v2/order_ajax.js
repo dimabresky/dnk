@@ -1721,7 +1721,12 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
         return inputNode.validationMessage;
       }
 
-      return BX.message("ERROR_FORM_LICENSE") || "";
+      var messages = typeof BX.message === "function" ? BX.message() : {};
+      if (messages && messages.ERROR_FORM_LICENSE) {
+        return messages.ERROR_FORM_LICENSE;
+      }
+
+      return messages && messages.SOA_REQUIRED ? messages.SOA_REQUIRED : "";
     },
 
     getLicenseErrorLabel: function (node) {
