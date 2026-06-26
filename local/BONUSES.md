@@ -189,7 +189,9 @@ $rows = HistoryOperationsTable::getList([
   "НачисленоОстаток": 0,
   "ПартнерНомерТелефона": "375296609781",
   "УровеньКлиента": 1,
-  "СуммаДляПерехода": 300
+  "СуммаДляПерехода": 300,
+  "ДатаСписание": "07.05.2027",
+  "БлижайшееСписание": 1.65
 }
 ```
 
@@ -198,9 +200,12 @@ $rows = HistoryOperationsTable::getList([
 - `DNK_BONUS_JSON_KEY_BALANCE` — остаток бонусов;
 - `DNK_BONUS_JSON_KEY_PARTNER_PHONE` — телефон;
 - `DNK_BONUS_JSON_KEY_CLIENT_LEVEL` — уровень клиента (`UF_LEVEL`);
-- `DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST` — сумма для перехода (`UF_NEXT_LEVEL_COST`).
+- `DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST` — сумма для перехода (`UF_NEXT_LEVEL_COST`);
+- `DNK_BONUS_JSON_KEY_EXPIRE_DATE` — дата ближайшего списания (`UF_BONUS_EXPIRE_DATE`), по умолчанию `ДатаСписание`;
+- `DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT` — сумма ближайшего списания (`UF_BONUS_EXPIRE_AMOUNT`), по умолчанию `БлижайшееСписание`.
 
 Допустимые значения `УровеньКлиента`: `1`, `2`, `3`, `5`. Невалидное значение пишется в лог `[invalid_client_level]`, поле `UF_LEVEL` для строки не обновляется.
+Дата списания принимается в формате `дд.мм.гггг`; пустое значение очищает `UF_BONUS_EXPIRE_DATE`. Невалидная непустая дата пишется в лог `[invalid_expire_date]`, сохранённые поля даты и суммы ближайшего списания при этом не обновляются.
 
 ### Сопоставление пользователя
 
@@ -230,6 +235,14 @@ $rows = HistoryOperationsTable::getList([
   - добавляет `USER_ID` в `b_dnk_user_reauthorize_queue` (без дубля; при следующем запросе пользователь переавторизуется через `Utils::processUserReauthorizeIfNeeded()`);
   - снимает прежнюю уровневую группу и назначает новую (прочие группы пользователя сохраняются).
 
+`Utils::syncDnkBonusImportExpirationFromFile()` записывает `ДатаСписание` в `UF_BONUS_EXPIRE_DATE` и `БлижайшееСписание` в `UF_BONUS_EXPIRE_AMOUNT` (если ключи присутствуют в строке). Пользовательские поля создаются одноразовым скриптом:
+
+```bash
+php local/tools/install_bonus_user_fields.php
+```
+
+В блоке бонусов личного кабинета предупреждение о списании выводится только если сумма ближайшего списания больше `0`, дата валидна и находится в диапазоне от текущей даты до `+3 months` включительно.
+
 | УровеньКлиента | Группа Bitrix | Название |
 |----------------|---------------|----------|
 | 1 | 9 | Beauty Basic |
@@ -237,7 +250,7 @@ $rows = HistoryOperationsTable::getList([
 | 3 | 11 | Beauty Premium |
 | 5 | 12 | Сотрудник |
 
-> **Примечание:** точечная синхронизация по одному пользователю через HTTP (`DNK_BONUS_ENDPOINT`, очередь `BonusBalanceQueueAgent`, `Utils::trySyncDnkImportBonusesForUserByPhone`) обновляет баланс и при наличии в ответе ключей уровня — `UF_LEVEL` / `UF_NEXT_LEVEL_COST` (та же логика, что при файловом импорте). Массовый импорт агентом `BonusFetchAgent` работает только с файлами.
+> **Примечание:** точечная синхронизация по одному пользователю через HTTP (`DNK_BONUS_ENDPOINT`, очередь `BonusBalanceQueueAgent`, `Utils::trySyncDnkImportBonusesForUserByPhone`) обновляет баланс и при наличии в ответе ключей уровня/списания — `UF_LEVEL` / `UF_NEXT_LEVEL_COST` / `UF_BONUS_EXPIRE_DATE` / `UF_BONUS_EXPIRE_AMOUNT` (та же логика, что при файловом импорте). Массовый импорт агентом `BonusFetchAgent` работает только с файлами.
 
 ---
 

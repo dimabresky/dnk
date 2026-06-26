@@ -73,6 +73,16 @@ $dnkEnvInt = static function (string $name) use ($dnkEnv): int {
     return (int)$value;
 };
 
+$dnkEnvDefault = static function (string $name, string $default) use ($dnkEnv): string {
+    try {
+        $value = $dnkEnv($name);
+    } catch (RuntimeException $e) {
+        return $default;
+    }
+
+    return trim($value) !== '' ? $value : $default;
+};
+
 define('DNK_CATALOG_IBLOCK_ID', $dnkEnvInt('DNK_CATALOG_IBLOCK_ID'));
 
 /** Инфоблок узкого промо-баннера в шапке (CODE dnk_header_promo). */
@@ -146,6 +156,12 @@ define('DNK_BONUS_JSON_KEY_CLIENT_LEVEL', $dnkEnv('DNK_BONUS_JSON_KEY_CLIENT_LEV
 
 /** Ключ JSON: сумма для перехода на следующий уровень (UF_NEXT_LEVEL_COST). */
 define('DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST', $dnkEnv('DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST'));
+
+/** Ключ JSON: дата ближайшего списания бонусов (UF_BONUS_EXPIRE_DATE). */
+define('DNK_BONUS_JSON_KEY_EXPIRE_DATE', $dnkEnvDefault('DNK_BONUS_JSON_KEY_EXPIRE_DATE', 'ДатаСписание'));
+
+/** Ключ JSON: сумма ближайшего списания бонусов (UF_BONUS_EXPIRE_AMOUNT). */
+define('DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT', $dnkEnvDefault('DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT', 'БлижайшееСписание'));
 
 /** Каталог JSON-выгрузок остатков бонусов (относительно DOCUMENT_ROOT). */
 define('DNK_BONUS_CLIENT_IMPORT_DIR', $dnkEnv('DNK_BONUS_CLIENT_IMPORT_DIR'));
