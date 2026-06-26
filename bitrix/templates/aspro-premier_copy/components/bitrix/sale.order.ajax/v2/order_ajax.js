@@ -1659,6 +1659,8 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
             this.allowOrderSave();
             this.doSaveAction();
           }
+        } else {
+          BX.Sale.OrderAjaxComponent.consentQueue = false;
         }
       }
 
@@ -8494,7 +8496,10 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
 
       this.licensesConditions.forEach(($node) => {
         const licenseCheckbox = $node.querySelector('input[type="checkbox"]');
-        if (!licenseCheckbox || !licenseCheckbox.checked) {
+        if (!licenseCheckbox) {
+          return;
+        }
+        if (!licenseCheckbox.checked) {
           if (
             BX.UserConsent
             && this.options.userConsents
@@ -9115,15 +9120,36 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
           let tmpDiv = BX.create("div");
           tmpDiv.innerHTML = htmlText;
 
-          return tmpDiv.firstElementChild;
+          var checkbox = tmpDiv.querySelector('input[type="checkbox"]');
+          if (!checkbox) {
+            return null;
+          }
+
+          return checkbox.closest(".form-checkbox") || checkbox.parentElement;
         };
 
         if (!this.licensesConditions.length && appAspro.userConsent?.order) {
+          const hiddenAgreementIds = window.DNK_HIDDEN_AGREEMENT_IDS || [];
           for (let consent in appAspro.userConsent.order) {
-            const checkboxNode = getCheckboxContainer(appAspro.userConsent.order[consent].HTML);
-            if (checkboxNode) {
-              this.licensesConditions.push(checkboxNode);
+            const consentHtml = appAspro.userConsent.order[consent].HTML || "";
+            const checkboxNode = getCheckboxContainer(consentHtml);
+            if (!checkboxNode) {
+              continue;
             }
+
+            let agreementId = null;
+            const controlNode = checkboxNode.querySelector("[data-bx-user-consent]");
+            if (controlNode) {
+              try {
+                agreementId = parseInt(JSON.parse(controlNode.getAttribute("data-bx-user-consent")).id, 10);
+              } catch (e) {}
+            }
+
+            if (agreementId > 0 && hiddenAgreementIds.indexOf(agreementId) !== -1) {
+              continue;
+            }
+
+            this.licensesConditions.push(checkboxNode);
           }
         }
 
