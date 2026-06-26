@@ -95,6 +95,13 @@ final class BonusFetchAgent
                 $row['has_client_level'],
                 $row['has_next_level_cost']
             );
+            Utils::syncDnkBonusImportExpirationFromFile(
+                $userId,
+                $row['expire_date'],
+                $row['expire_amount'],
+                $row['has_expire_date'],
+                $row['has_expire_amount']
+            );
         }
 
         Utils::logClientBonusImportLine(
@@ -120,8 +127,12 @@ final class BonusFetchAgent
      *     balance: float,
      *     client_level: int|null,
      *     next_level_cost: float|null,
+     *     expire_date: \Bitrix\Main\Type\Date|null,
+     *     expire_amount: float|null,
      *     has_client_level: bool,
-     *     has_next_level_cost: bool
+     *     has_next_level_cost: bool,
+     *     has_expire_date: bool,
+     *     has_expire_amount: bool
      * }>
      */
     private static function buildImportDataByPhoneDigitsMap(array $rows, string $logDir, string $basename): array
@@ -159,8 +170,12 @@ final class BonusFetchAgent
                 'balance' => Utils::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_BALANCE] ?? null),
                 'client_level' => null,
                 'next_level_cost' => null,
+                'expire_date' => null,
+                'expire_amount' => null,
                 'has_client_level' => false,
                 'has_next_level_cost' => false,
+                'has_expire_date' => false,
+                'has_expire_amount' => false,
             ];
 
             if (array_key_exists(DNK_BONUS_JSON_KEY_CLIENT_LEVEL, $row)) {
@@ -180,6 +195,29 @@ final class BonusFetchAgent
             if (array_key_exists(DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST, $row)) {
                 $entry['next_level_cost'] = Utils::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST] ?? null);
                 $entry['has_next_level_cost'] = true;
+            }
+
+            $hasInvalidExpireDate = false;
+            if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_DATE, $row)) {
+                $rawExpireDate = $row[DNK_BONUS_JSON_KEY_EXPIRE_DATE] ?? null;
+                $parsedDate = Utils::parseBonusImportExpireDate($rawExpireDate);
+                if ($parsedDate === null && !Utils::isBlankBonusImportValue($rawExpireDate)) {
+                    $rawExpireDateLog = is_scalar($rawExpireDate) ? (string)$rawExpireDate : gettype($rawExpireDate);
+                    Utils::logClientBonusImportLine(
+                        $logDir,
+                        $basename,
+                        '[invalid_expire_date] phone=' . $digits . ' raw=' . $rawExpireDateLog
+                    );
+                    $hasInvalidExpireDate = true;
+                } else {
+                    $entry['expire_date'] = $parsedDate;
+                    $entry['has_expire_date'] = true;
+                }
+            }
+
+            if (!$hasInvalidExpireDate && array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT, $row)) {
+                $entry['expire_amount'] = Utils::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT] ?? null);
+                $entry['has_expire_amount'] = true;
             }
 
             $importByDigits[$digits] = $entry;

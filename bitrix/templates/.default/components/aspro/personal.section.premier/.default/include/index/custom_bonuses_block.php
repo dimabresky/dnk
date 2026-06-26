@@ -5,8 +5,11 @@ use Bitrix\Main\Localization\Loc;
 use CPremier as Solution;
 use Dnk\PhpInterface\Utils;
 
-$bonusBalance = Utils::getAsproBonusBalance((int)($arResult['USER_ID'] ?? 0));
+$userId = (int)($arResult['USER_ID'] ?? 0);
+$bonusBalance = Utils::getAsproBonusBalance($userId);
 $bonusFormatted = htmlspecialcharsbx(number_format(Utils::roundMoney($bonusBalance), 2, ',', ' '));
+$bonusExpiration = Utils::getUserBonusExpirationDisplayData($userId);
+$bonusExpirationAmount = rtrim(rtrim(number_format(Utils::roundMoney((float)$bonusExpiration['amount']), 2, ',', ' '), '0'), ',');
 $bonusHistoryUrl = htmlspecialcharsbx(rtrim(SITE_DIR, '/') . '/personal/bonus/history/');
 ?>
 <div class="grid-list grid-list--items grid-list--fill-bg grid-list--items-1">
@@ -29,6 +32,15 @@ $bonusHistoryUrl = htmlspecialcharsbx(rtrim(SITE_DIR, '/') . '/personal/bonus/hi
 					<div class="personal__main-private__value switcher-title color_dark font_24 mt mt--4">
 						<?=$bonusFormatted?> <?=htmlspecialcharsbx(Loc::getMessage('SPS_BONUS_BALANCE_UNIT'))?>
 					</div>
+					<?if ($bonusExpiration['show']):?>
+						<div class="personal__main-private__bonus-expiration font_clamp--16-14 color_666 mt mt--4">
+							<?=Loc::getMessage('SPS_BONUS_EXPIRATION_NOTICE', [
+								'#SUM#' => htmlspecialcharsbx($bonusExpirationAmount),
+								'#DATE#' => htmlspecialcharsbx((string)$bonusExpiration['date']),
+							])?><br>
+							<?=Loc::getMessage('SPS_BONUS_EXPIRATION_HINT')?>
+						</div>
+					<?endif;?>
 				</div>
 				<div class="personal__main-private__bottom font_clamp--16-14">
 					<a class="btn btn-xs btn-default btn-transparent-bg personal__main-account__more-details" href="<?=$bonusHistoryUrl?>"><?=Loc::getMessage('SPS_MORE_DETAILS')?></a>
