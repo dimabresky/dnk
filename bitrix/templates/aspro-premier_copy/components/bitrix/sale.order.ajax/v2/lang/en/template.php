@@ -20,6 +20,7 @@ $MESS['SOA_DISTANCE_KM'] = 'km';
 $MESS['SOA_ORDER_PROPS'] = 'Order Properties';
 $MESS['SOA_FIELD'] = 'Field';
 $MESS['SOA_REQUIRED'] = 'required';
+$MESS['ERROR_FORM_LICENSE'] = 'Agree to the terms';
 $MESS['SOA_INVALID_EMAIL'] = 'Invalid email entered';
 $MESS['SOA_MIN_LENGTH'] = 'Minimum field length';
 $MESS['SOA_MAX_LENGTH'] = 'Maximum field length';

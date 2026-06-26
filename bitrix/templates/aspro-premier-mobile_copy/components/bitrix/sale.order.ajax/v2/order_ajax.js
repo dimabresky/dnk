@@ -1659,6 +1659,8 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
             this.allowOrderSave();
             this.doSaveAction();
           }
+        } else {
+          BX.Sale.OrderAjaxComponent.consentQueue = false;
         }
       }
 
@@ -1716,8 +1718,56 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
       this.doSaveAction();
     },
 
-    validateConsent: function(item, valid) {
-      item.inputNode.closest('.form-checkbox').querySelector('label.error').classList.toggle('hidden', valid);
+    getLicenseErrorText: function (inputNode) {
+      if (inputNode && inputNode.validationMessage) {
+        return inputNode.validationMessage;
+      }
+
+      var messages = typeof BX.message === "function" ? BX.message() : {};
+      if (messages && messages.ERROR_FORM_LICENSE) {
+        return messages.ERROR_FORM_LICENSE;
+      }
+
+      return messages && messages.SOA_REQUIRED ? messages.SOA_REQUIRED : "";
+    },
+
+    getLicenseErrorLabel: function (node) {
+      if (!node) {
+        return null;
+      }
+
+      var errorLabel = node.querySelector("label.error");
+      if (errorLabel) {
+        return errorLabel;
+      }
+
+      var inputNode = node.querySelector('input[type="checkbox"]');
+      errorLabel = BX.create("label", {
+        props: {
+          className: "hidden error",
+        },
+        text: this.getLicenseErrorText(inputNode),
+      });
+
+      if (inputNode && inputNode.id) {
+        errorLabel.setAttribute("for", inputNode.id);
+      }
+
+      node.insertBefore(errorLabel, node.firstChild);
+
+      return errorLabel;
+    },
+
+    toggleLicenseError: function (node, hidden) {
+      var errorLabel = this.getLicenseErrorLabel(node);
+      if (errorLabel) {
+        errorLabel.classList.toggle("hidden", hidden);
+      }
+    },
+
+    validateConsent: function (item, valid) {
+      var checkboxNode = item && item.inputNode ? item.inputNode.closest(".form-checkbox") : null;
+      this.toggleLicenseError(checkboxNode, valid);
     },
 
     /**
@@ -8446,7 +8496,10 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
 
       this.licensesConditions.forEach(($node) => {
         const licenseCheckbox = $node.querySelector('input[type="checkbox"]');
-        if (!licenseCheckbox || !licenseCheckbox.checked) {
+        if (!licenseCheckbox) {
+          return;
+        }
+        if (!licenseCheckbox.checked) {
           if (
             BX.UserConsent
             && this.options.userConsents
@@ -8459,7 +8512,7 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
             }
           }
 
-          $node.querySelector("label.error").classList.remove("hidden");
+          this.toggleLicenseError($node, false);
 
           errors++;
         }
@@ -9030,7 +9083,7 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
                   change: (e) => {
                     const $node = e.target;
                     if ($node.checked) {
-                      $node.parentElement.querySelector("label.error").classList.add("hidden");
+                      this.toggleLicenseError($node.parentElement, true);
                     }
                   },
                 },
@@ -9067,15 +9120,36 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
           let tmpDiv = BX.create("div");
           tmpDiv.innerHTML = htmlText;
 
-          return tmpDiv.firstElementChild;
+          var checkbox = tmpDiv.querySelector('input[type="checkbox"]');
+          if (!checkbox) {
+            return null;
+          }
+
+          return checkbox.closest(".form-checkbox") || checkbox.parentElement;
         };
 
         if (!this.licensesConditions.length && appAspro.userConsent?.order) {
+          const hiddenAgreementIds = window.DNK_HIDDEN_AGREEMENT_IDS || [];
           for (let consent in appAspro.userConsent.order) {
-            const checkboxNode = getCheckboxContainer(appAspro.userConsent.order[consent].HTML);
-            if (checkboxNode) {
-              this.licensesConditions.push(checkboxNode);
+            const consentHtml = appAspro.userConsent.order[consent].HTML || "";
+            const checkboxNode = getCheckboxContainer(consentHtml);
+            if (!checkboxNode) {
+              continue;
             }
+
+            let agreementId = null;
+            const controlNode = checkboxNode.querySelector("[data-bx-user-consent]");
+            if (controlNode) {
+              try {
+                agreementId = parseInt(JSON.parse(controlNode.getAttribute("data-bx-user-consent")).id, 10);
+              } catch (e) {}
+            }
+
+            if (agreementId > 0 && hiddenAgreementIds.indexOf(agreementId) !== -1) {
+              continue;
+            }
+
+            this.licensesConditions.push(checkboxNode);
           }
         }
 
