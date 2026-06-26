@@ -318,6 +318,38 @@ final class Utils
     }
 
     /**
+     * Парсинг даты ближайшего списания бонусов из импорта.
+     */
+    public static function parseBonusImportExpireDate(mixed $value): ?Date
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($value instanceof Date) {
+            return $value;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return Date::createFromTimestamp($value->getTimestamp());
+        }
+
+        $raw = trim((string)$value);
+        if ($raw === '') {
+            return null;
+        }
+
+        foreach (['d.m.Y', 'Y-m-d'] as $format) {
+            $date = \DateTime::createFromFormat('!' . $format, $raw);
+            if ($date instanceof \DateTime && $date->format($format) === $raw) {
+                return Date::createFromTimestamp($date->getTimestamp());
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Парсинг «УровеньКлиента» из JSON-импорта бонусов (допустимые значения: 1, 2, 3, 5).
      */
     public static function parseBonusImportClientLevel(mixed $value): ?int
@@ -684,6 +716,58 @@ final class Utils
     }
 
     /**
+     * Данные для предупреждения о ближайшем списании бонусов в ЛК.
+     *
+     * @return array{
+     *     amount: float,
+     *     date: string,
+     *     show: bool
+     * }
+     */
+    public static function getUserBonusExpirationDisplayData(int $userId): array
+    {
+        $empty = [
+            'amount' => 0.0,
+            'date' => '',
+            'show' => false,
+        ];
+
+        if ($userId <= 0) {
+            return $empty;
+        }
+
+        $res = \CUser::GetByID($userId);
+        $row = $res->Fetch();
+        if (!is_array($row)) {
+            return $empty;
+        }
+
+        $amount = self::parseBonusImportAmount($row['UF_BONUS_EXPIRE_AMOUNT'] ?? null);
+        $date = self::parseBonusImportExpireDate($row['UF_BONUS_EXPIRE_DATE'] ?? null);
+        if ($amount <= 0.0 || $date === null) {
+            return $empty;
+        }
+
+        $dateFormatted = $date->format('d.m.Y');
+        $expirationDate = \DateTimeImmutable::createFromFormat('!d.m.Y', $dateFormatted);
+        if (!$expirationDate instanceof \DateTimeImmutable) {
+            return $empty;
+        }
+
+        $today = new \DateTimeImmutable('today');
+        $limit = $today->modify('+3 months');
+        if ($expirationDate < $today || $expirationDate > $limit) {
+            return $empty;
+        }
+
+        return [
+            'amount' => $amount,
+            'date' => $dateFormatted,
+            'show' => true,
+        ];
+    }
+
+    /**
      * GET DNK_BONUS_ENDPOINT: полный JSON-список бонусов или null при ошибке.
      *
      * @return array<int, mixed>|null
@@ -807,6 +891,13 @@ final class Utils
             $resolved['next_level_cost'],
             $resolved['has_client_level'],
             $resolved['has_next_level_cost']
+        );
+        self::syncDnkBonusImportExpirationFromFile(
+            $userId,
+            $resolved['expire_date'],
+            $resolved['expire_amount'],
+            $resolved['has_expire_date'],
+            $resolved['has_expire_amount']
         );
 
         return true;
@@ -1171,8 +1262,12 @@ final class Utils
      *     balance: float,
      *     client_level: int|null,
      *     next_level_cost: float|null,
+     *     expire_date: Date|null,
+     *     expire_amount: float|null,
      *     has_client_level: bool,
-     *     has_next_level_cost: bool
+     *     has_next_level_cost: bool,
+     *     has_expire_date: bool,
+     *     has_expire_amount: bool
      * }|null
      */
     private static function resolveBonusImportFromBonusJsonDecoded(mixed $decoded): ?array
@@ -1207,8 +1302,12 @@ final class Utils
      *     balance: float,
      *     client_level: int|null,
      *     next_level_cost: float|null,
+     *     expire_date: Date|null,
+     *     expire_amount: float|null,
      *     has_client_level: bool,
-     *     has_next_level_cost: bool
+     *     has_next_level_cost: bool,
+     *     has_expire_date: bool,
+     *     has_expire_amount: bool
      * }
      */
     private static function createEmptyBonusImportJsonEntry(): array
@@ -1217,8 +1316,12 @@ final class Utils
             'balance' => 0.0,
             'client_level' => null,
             'next_level_cost' => null,
+            'expire_date' => null,
+            'expire_amount' => null,
             'has_client_level' => false,
             'has_next_level_cost' => false,
+            'has_expire_date' => false,
+            'has_expire_amount' => false,
         ];
     }
 
@@ -1230,15 +1333,23 @@ final class Utils
      *     balance: float,
      *     client_level: int|null,
      *     next_level_cost: float|null,
+     *     expire_date: Date|null,
+     *     expire_amount: float|null,
      *     has_client_level: bool,
-     *     has_next_level_cost: bool
+     *     has_next_level_cost: bool,
+     *     has_expire_date: bool,
+     *     has_expire_amount: bool
      * } $entry
      * @return array{
      *     balance: float,
      *     client_level: int|null,
      *     next_level_cost: float|null,
+     *     expire_date: Date|null,
+     *     expire_amount: float|null,
      *     has_client_level: bool,
-     *     has_next_level_cost: bool
+     *     has_next_level_cost: bool,
+     *     has_expire_date: bool,
+     *     has_expire_amount: bool
      * }|null
      */
     private static function mergeBonusImportJsonRowIntoEntry(array $entry, array $row): ?array
@@ -1265,6 +1376,16 @@ final class Utils
         if (array_key_exists(DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST, $row)) {
             $entry['next_level_cost'] = self::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST] ?? null);
             $entry['has_next_level_cost'] = true;
+        }
+
+        if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_DATE, $row)) {
+            $entry['expire_date'] = self::parseBonusImportExpireDate($row[DNK_BONUS_JSON_KEY_EXPIRE_DATE] ?? null);
+            $entry['has_expire_date'] = true;
+        }
+
+        if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT, $row)) {
+            $entry['expire_amount'] = self::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT] ?? null);
+            $entry['has_expire_amount'] = true;
         }
 
         return $entry;
@@ -1498,6 +1619,38 @@ final class Utils
 
         self::enqueueUserReauthorize($userId);
         self::syncUserBonusClientLevelGroup($userId, $clientLevel);
+    }
+
+    /**
+     * Синхронизация ближайшего списания бонусов из файлового импорта или ответа API по телефону.
+     *
+     * @param Date|null $expireDate Дата списания или null для очистки при наличии ключа в источнике.
+     * @param float|null $expireAmount Сумма списания или null для очистки при наличии ключа в источнике.
+     */
+    public static function syncDnkBonusImportExpirationFromFile(
+        int $userId,
+        ?Date $expireDate,
+        ?float $expireAmount,
+        bool $hasExpireDate,
+        bool $hasExpireAmount
+    ): void {
+        if ($userId <= 0 || (!$hasExpireDate && !$hasExpireAmount)) {
+            return;
+        }
+
+        $ufFields = [];
+
+        if ($hasExpireDate) {
+            $ufFields['UF_BONUS_EXPIRE_DATE'] = $expireDate instanceof Date ? $expireDate->format('d.m.Y') : '';
+        }
+
+        if ($hasExpireAmount) {
+            $ufFields['UF_BONUS_EXPIRE_AMOUNT'] = $expireAmount !== null ? max(0.0, $expireAmount) : '';
+        }
+
+        if ($ufFields !== []) {
+            $GLOBALS['USER_FIELD_MANAGER']->Update('USER', $userId, $ufFields);
+        }
     }
 
     /**
