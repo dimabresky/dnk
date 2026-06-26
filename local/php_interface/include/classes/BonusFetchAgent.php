@@ -198,17 +198,19 @@ final class BonusFetchAgent
             }
 
             if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_DATE, $row)) {
-                $parsedDate = Utils::parseBonusImportExpireDate($row[DNK_BONUS_JSON_KEY_EXPIRE_DATE] ?? null);
-                if ($parsedDate === null && !empty($row[DNK_BONUS_JSON_KEY_EXPIRE_DATE])) {
+                $rawExpireDate = $row[DNK_BONUS_JSON_KEY_EXPIRE_DATE] ?? null;
+                $parsedDate = Utils::parseBonusImportExpireDate($rawExpireDate);
+                if ($parsedDate === null && !Utils::isBlankBonusImportValue($rawExpireDate)) {
+                    $rawExpireDateLog = is_scalar($rawExpireDate) ? (string)$rawExpireDate : gettype($rawExpireDate);
                     Utils::logClientBonusImportLine(
                         $logDir,
                         $basename,
-                        '[invalid_expire_date] phone=' . $digits . ' raw=' . (string)$row[DNK_BONUS_JSON_KEY_EXPIRE_DATE]
+                        '[invalid_expire_date] phone=' . $digits . ' raw=' . $rawExpireDateLog
                     );
+                } else {
+                    $entry['expire_date'] = $parsedDate;
+                    $entry['has_expire_date'] = true;
                 }
-
-                $entry['expire_date'] = $parsedDate;
-                $entry['has_expire_date'] = true;
             }
 
             if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT, $row)) {

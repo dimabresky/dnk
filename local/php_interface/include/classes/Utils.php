@@ -349,6 +349,23 @@ final class Utils
         return null;
     }
 
+    public static function isBlankBonusImportValue(mixed $value): bool
+    {
+        if ($value === null) {
+            return true;
+        }
+
+        if (is_string($value)) {
+            return trim($value) === '';
+        }
+
+        if (is_object($value)) {
+            return false;
+        }
+
+        return trim((string)$value) === '';
+    }
+
     /**
      * Парсинг «УровеньКлиента» из JSON-импорта бонусов (допустимые значения: 1, 2, 3, 5).
      */
@@ -1379,8 +1396,12 @@ final class Utils
         }
 
         if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_DATE, $row)) {
-            $entry['expire_date'] = self::parseBonusImportExpireDate($row[DNK_BONUS_JSON_KEY_EXPIRE_DATE] ?? null);
-            $entry['has_expire_date'] = true;
+            $rawExpireDate = $row[DNK_BONUS_JSON_KEY_EXPIRE_DATE] ?? null;
+            $parsedExpireDate = self::parseBonusImportExpireDate($rawExpireDate);
+            if ($parsedExpireDate !== null || self::isBlankBonusImportValue($rawExpireDate)) {
+                $entry['expire_date'] = $parsedExpireDate;
+                $entry['has_expire_date'] = true;
+            }
         }
 
         if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT, $row)) {
