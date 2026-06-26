@@ -1716,8 +1716,51 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
       this.doSaveAction();
     },
 
-    validateConsent: function(item, valid) {
-      item.inputNode.closest('.form-checkbox').querySelector('label.error').classList.toggle('hidden', valid);
+    getLicenseErrorText: function (inputNode) {
+      if (inputNode && inputNode.validationMessage) {
+        return inputNode.validationMessage;
+      }
+
+      return BX.message("ERROR_FORM_LICENSE") || "";
+    },
+
+    getLicenseErrorLabel: function (node) {
+      if (!node) {
+        return null;
+      }
+
+      var errorLabel = node.querySelector("label.error");
+      if (errorLabel) {
+        return errorLabel;
+      }
+
+      var inputNode = node.querySelector('input[type="checkbox"]');
+      errorLabel = BX.create("label", {
+        props: {
+          className: "hidden error",
+        },
+        text: this.getLicenseErrorText(inputNode),
+      });
+
+      if (inputNode && inputNode.id) {
+        errorLabel.setAttribute("for", inputNode.id);
+      }
+
+      node.insertBefore(errorLabel, node.firstChild);
+
+      return errorLabel;
+    },
+
+    toggleLicenseError: function (node, hidden) {
+      var errorLabel = this.getLicenseErrorLabel(node);
+      if (errorLabel) {
+        errorLabel.classList.toggle("hidden", hidden);
+      }
+    },
+
+    validateConsent: function (item, valid) {
+      var checkboxNode = item && item.inputNode ? item.inputNode.closest(".form-checkbox") : null;
+      this.toggleLicenseError(checkboxNode, valid);
     },
 
     /**
@@ -8459,7 +8502,7 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
             }
           }
 
-          $node.querySelector("label.error").classList.remove("hidden");
+          this.toggleLicenseError($node, false);
 
           errors++;
         }
@@ -9030,7 +9073,7 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
                   change: (e) => {
                     const $node = e.target;
                     if ($node.checked) {
-                      $node.parentElement.querySelector("label.error").classList.add("hidden");
+                      this.toggleLicenseError($node.parentElement, true);
                     }
                   },
                 },
