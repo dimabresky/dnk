@@ -197,6 +197,7 @@ final class BonusFetchAgent
                 $entry['has_next_level_cost'] = true;
             }
 
+            $hasInvalidExpireDate = false;
             if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_DATE, $row)) {
                 $rawExpireDate = $row[DNK_BONUS_JSON_KEY_EXPIRE_DATE] ?? null;
                 $parsedDate = Utils::parseBonusImportExpireDate($rawExpireDate);
@@ -207,13 +208,14 @@ final class BonusFetchAgent
                         $basename,
                         '[invalid_expire_date] phone=' . $digits . ' raw=' . $rawExpireDateLog
                     );
+                    $hasInvalidExpireDate = true;
                 } else {
                     $entry['expire_date'] = $parsedDate;
                     $entry['has_expire_date'] = true;
                 }
             }
 
-            if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT, $row)) {
+            if (!$hasInvalidExpireDate && array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT, $row)) {
                 $entry['expire_amount'] = Utils::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT] ?? null);
                 $entry['has_expire_amount'] = true;
             }

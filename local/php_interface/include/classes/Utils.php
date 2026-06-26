@@ -1395,16 +1395,19 @@ final class Utils
             $entry['has_next_level_cost'] = true;
         }
 
+        $hasInvalidExpireDate = false;
         if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_DATE, $row)) {
             $rawExpireDate = $row[DNK_BONUS_JSON_KEY_EXPIRE_DATE] ?? null;
             $parsedExpireDate = self::parseBonusImportExpireDate($rawExpireDate);
             if ($parsedExpireDate !== null || self::isBlankBonusImportValue($rawExpireDate)) {
                 $entry['expire_date'] = $parsedExpireDate;
                 $entry['has_expire_date'] = true;
+            } else {
+                $hasInvalidExpireDate = true;
             }
         }
 
-        if (array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT, $row)) {
+        if (!$hasInvalidExpireDate && array_key_exists(DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT, $row)) {
             $entry['expire_amount'] = self::parseBonusImportAmount($row[DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT] ?? null);
             $entry['has_expire_amount'] = true;
         }
