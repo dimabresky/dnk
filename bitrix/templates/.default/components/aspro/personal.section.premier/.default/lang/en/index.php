@@ -27,7 +27,7 @@ $MESS['SPS_MAIN_BLOCK_TITLE_ACCOUNT'] = 'My account';
 $MESS['SPS_MAIN_BLOCK_TITLE_BONUSES'] = 'Bonus balance';
 $MESS['SPS_BONUS_BALANCE_UNIT'] = 'pts';
 $MESS['SPS_BONUS_EXPIRATION_NOTICE'] = '#SUM# bonuses expire on #DATE#.';
-$MESS['SPS_BONUS_EXPIRATION_HINT'] = 'use your bonuses in time (1 pt = 1 BYN)';
+$MESS['SPS_BONUS_EXPIRATION_HINT'] = 'use your bonuses in time<br>(1 pt = 1 BYN)';
 $MESS['SPS_MAIN_BLOCK_TITLE_USER_LEVEL'] = 'Your level';
 $MESS['SPS_USER_LEVEL_NEXT_LEVEL'] = 'To the next level: #SUM# BYN';
 $MESS['SPS_MAIN_BLOCK_TITLE_ORDERS'] = 'Active Orders';

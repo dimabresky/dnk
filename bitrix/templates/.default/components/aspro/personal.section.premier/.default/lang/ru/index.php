@@ -27,7 +27,7 @@ $MESS['SPS_MAIN_BLOCK_TITLE_ACCOUNT'] = 'Мой баланс';
 $MESS['SPS_MAIN_BLOCK_TITLE_BONUSES'] = 'Бонусный баланс';
 $MESS['SPS_BONUS_BALANCE_UNIT'] = 'б.';
 $MESS['SPS_BONUS_EXPIRATION_NOTICE'] = '#SUM# бонусов сгорят #DATE#г.';
-$MESS['SPS_BONUS_EXPIRATION_HINT'] = 'успейте использовать свои бонусы (1б. = 1р.)';
+$MESS['SPS_BONUS_EXPIRATION_HINT'] = 'успейте использовать свои бонусы<br>(1б. = 1р.)';
 $MESS['SPS_MAIN_BLOCK_TITLE_USER_LEVEL'] = 'Ваш уровень';
 $MESS['SPS_USER_LEVEL_NEXT_LEVEL'] = 'До следующего уровня: #SUM# BYN';
 $MESS['SPS_MAIN_BLOCK_TITLE_ORDERS'] = 'Активные заказы';
