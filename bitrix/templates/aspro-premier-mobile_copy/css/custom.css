@@ -139,3 +139,8 @@
 .bonus-history__items {
     display: none !important;
 }
+
+/* gallery: white background for items */
+.section-gallery-wrapper__item {
+	background-color: #fff;
+}

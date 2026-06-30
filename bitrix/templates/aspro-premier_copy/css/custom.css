@@ -155,3 +155,8 @@
 .bx-soa .aspro-bonus-uses {
 	display: none !important;
 }
+
+/* gallery: white background for items */
+.section-gallery-wrapper__item {
+	background-color: #fff;
+}
