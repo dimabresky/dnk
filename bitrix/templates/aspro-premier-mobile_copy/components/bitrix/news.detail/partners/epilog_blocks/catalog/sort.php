@@ -1,11 +1,13 @@
 <?
 if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 
-if ($_SESSION['UF_VIEWTYPE_BRAND_'.$arParams['IBLOCK_ID']] === NULL){
-	$arUserFieldViewType = CUserTypeEntity::GetList(array(), array('ENTITY_ID' => 'IBLOCK_'.$arParams['IBLOCK_ID'].'_SECTION', 'FIELD_NAME' => $arParams["SECTION_DISPLAY_PROPERTY"]))->Fetch();
-	$resUserFieldViewTypeEnum = CUserFieldEnum::GetList(array(), array('USER_FIELD_ID' => $arUserFieldViewType['ID']));
-	while($arUserFieldViewTypeEnum = $resUserFieldViewTypeEnum->GetNext()){
-		$_SESSION['UF_VIEWTYPE_BRAND_'.$arParams['IBLOCK_ID']][$arUserFieldViewTypeEnum['ID']] = $arUserFieldViewTypeEnum['XML_ID'];
+if (($_SESSION['UF_VIEWTYPE_BRAND_'.$arParams['IBLOCK_ID']] ?? null) === null && !empty($arParams['SECTION_DISPLAY_PROPERTY'])) {
+	$arUserFieldViewType = CUserTypeEntity::GetList(array(), array('ENTITY_ID' => 'IBLOCK_'.$arParams['IBLOCK_ID'].'_SECTION', 'FIELD_NAME' => $arParams['SECTION_DISPLAY_PROPERTY']))->Fetch();
+	if (!empty($arUserFieldViewType['ID'])) {
+		$resUserFieldViewTypeEnum = CUserFieldEnum::GetList(array(), array('USER_FIELD_ID' => $arUserFieldViewType['ID']));
+		while ($arUserFieldViewTypeEnum = $resUserFieldViewTypeEnum->GetNext()) {
+			$_SESSION['UF_VIEWTYPE_BRAND_'.$arParams['IBLOCK_ID']][$arUserFieldViewTypeEnum['ID']] = $arUserFieldViewTypeEnum['XML_ID'];
+		}
 	}
 }
 
@@ -88,8 +90,9 @@ if (isset($_COOKIE['catalogViewMode']) && $_COOKIE['catalogViewMode']) {
 	$display = $_COOKIE['catalogViewMode'];
 } else {
 	if (
-		$arSection[$arParams["SECTION_DISPLAY_PROPERTY"]] && 
-		isset($_SESSION[$arParams["SECTION_DISPLAY_PROPERTY"].'_'.$arParams['IBLOCK_ID']][$arSection[$arParams["SECTION_DISPLAY_PROPERTY"]]])
+		isset($arSection)
+		&& $arSection[$arParams['SECTION_DISPLAY_PROPERTY']]
+		&& isset($_SESSION[$arParams['SECTION_DISPLAY_PROPERTY'].'_'.$arParams['IBLOCK_ID']][$arSection[$arParams['SECTION_DISPLAY_PROPERTY']]])
 	) {
 		$display = $_SESSION[$arParams["SECTION_DISPLAY_PROPERTY"].'_'.$arParams['IBLOCK_ID']][$arSection[$arParams["SECTION_DISPLAY_PROPERTY"]]];
 	} else {
@@ -98,7 +101,7 @@ if (isset($_COOKIE['catalogViewMode']) && $_COOKIE['catalogViewMode']) {
 }
 
 $bForceDisplay = false;
-if ($arSection["DISPLAY"] && $obDisplayType->isValid($arSection["DISPLAY"])) {
+if (isset($arSection) && $arSection['DISPLAY'] && $obDisplayType->isValid($arSection['DISPLAY'])) {
 	if ($arParams['SHOW_LIST_TYPE_SECTION'] != 'N') {
 		if (!isset($_COOKIE['catalogViewMode'])) {
 			$display = $arSection["DISPLAY"];
@@ -138,6 +141,7 @@ if (empty($arAvailableSort[$sortKey]['ORDER_VALUES'][$order])) {
 
 $arDelUrlParams = array('sort', 'order', 'control_ajax', 'ajax_get_filter', 'linerow', 'display', 'ajax_get', 'is_aspro_mobile');
 ?>
+<?if (!empty($bLinkedCatalog)):?>
 <!-- noindex -->
 <div class="filter-panel sort_header view_<?=$display?> flexbox flexbox--direction-row flexbox--justify-between ">
 	<div class="filter-panel__part-left">
@@ -237,3 +241,4 @@ $arDelUrlParams = array('sort', 'order', 'control_ajax', 'ajax_get_filter', 'lin
 </div>
 <?TSolution\Extensions::init(['filter_panel', 'dropdown_select']);?>
 <!-- /noindex -->
+<?endif;?>

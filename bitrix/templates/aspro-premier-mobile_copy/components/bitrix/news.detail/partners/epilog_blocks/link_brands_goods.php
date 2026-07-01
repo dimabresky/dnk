@@ -61,9 +61,7 @@ $bLinkedCatalog = in_array('catalog', $GLOBALS["SHOW_TYPE_ITEMS"]);
 					<?
 					$GLOBALS['preFilterBrand'] = $arItemsFilter;
 					
-					if ($bLinkedCatalog) {
-						include_once('catalog/sort.php');
-					}
+					include_once('catalog/sort.php');
 
 					switch ($display) {
 						case 'price':
