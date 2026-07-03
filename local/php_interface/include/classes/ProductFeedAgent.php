@@ -117,7 +117,8 @@ final class ProductFeedAgent
     private static function resolveSiteId(): string
     {
         $siteId = Context::getCurrent()->getSite();
-        if ($siteId !== '') {
+        
+        if (is_null($siteId) || $siteId !== '') {
             return $siteId;
         }
 
