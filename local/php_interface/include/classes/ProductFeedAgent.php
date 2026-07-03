@@ -79,7 +79,7 @@ final class ProductFeedAgent
 
         while ($ob = $res->GetNextElement()) {
             $fields = $ob->GetFields();
-            $props = $ob->GetProperties(false, ['CODE' => ['BRAND', 'HIT']]);
+            $props = $ob->GetProperties();
 
             $productId = (int) ($fields['ID'] ?? 0);
             if ($productId <= 0) {
