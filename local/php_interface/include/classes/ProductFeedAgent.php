@@ -118,7 +118,7 @@ final class ProductFeedAgent
     {
         $siteId = Context::getCurrent()->getSite();
         
-        if (is_null($siteId) || $siteId !== '') {
+        if (!is_null($siteId) && $siteId !== '') {
             return $siteId;
         }
 
