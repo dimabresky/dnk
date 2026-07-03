@@ -18,6 +18,7 @@ use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\OrderExportQueueAgent;
 use Dnk\PhpInterface\OrderExportQueueTable;
 use Dnk\PhpInterface\ProductExtendedReviewsAgent;
+use Dnk\PhpInterface\ProductFeedAgent;
 use Dnk\PhpInterface\ProfileBirthdayEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\UserRegisterExportQueueAgent;
@@ -52,6 +53,7 @@ Loader::registerAutoLoadClasses(null, [
     OrderExportQueueAgent::class => $classesPath . '/OrderExportQueueAgent.php',
     OrderExportEvents::class => $classesPath . '/OrderExportEvents.php',
     ProductExtendedReviewsAgent::class => $classesPath . '/ProductExtendedReviewsAgent.php',
+    ProductFeedAgent::class => $classesPath . '/ProductFeedAgent.php',
     UserAddEvents::class => $classesPath . '/UserAddEvents.php',
     ProfileBirthdayEvents::class => $classesPath . '/ProfileBirthdayEvents.php',
     IblockProductBrandEvents::class => $classesPath . '/IblockProductBrandEvents.php',
