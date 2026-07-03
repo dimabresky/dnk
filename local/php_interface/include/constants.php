@@ -178,6 +178,15 @@ define('DNK_USER_REGISTER_EXPORT_QUEUE_BATCH', $dnkEnvInt('DNK_USER_REGISTER_EXP
 /** После стольких неудачных попыток статус E. */
 define('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS', $dnkEnvInt('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS'));
 
+/** Базовый URL сайта для абсолютных ссылок в product feed (без завершающего /). */
+define('DNK_SITE_URL', rtrim($dnkEnv('DNK_SITE_URL'), '/'));
+
+/** Заголовок channel в dnk_products_feed.xml. */
+define('DNK_PRODUCT_FEED_CHANNEL_TITLE', $dnkEnvDefault('DNK_PRODUCT_FEED_CHANNEL_TITLE', 'DNK.BY'));
+
+/** Интервал агента product feed (секунды, для регистрации в админке). */
+define('DNK_PRODUCT_FEED_AGENT_INTERVAL', $dnkEnvInt('DNK_PRODUCT_FEED_AGENT_INTERVAL'));
+
 unset(
     $dnkEnvPath,
     $dnkEnvValues,
