@@ -1,5 +1,8 @@
 .dnk-sku-list {
     margin-top: 20px;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
 }
 
 .dnk-sku-list__label {
@@ -13,10 +16,14 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .dnk-sku-list__item {
     display: block;
+    box-sizing: border-box;
+    flex: 0 0 auto;
     flex-shrink: 0;
     width: 52px;
     height: 52px;
@@ -69,11 +76,20 @@
     background-size: 18px 18px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 991px) {
     .dnk-sku-list__items {
+        display: flex;
         flex-wrap: nowrap;
         overflow-x: auto;
+        overflow-y: visible;
         -webkit-overflow-scrolling: touch;
-        padding-bottom: 4px;
+        width: 100%;
+        max-width: 100%;
+        padding-bottom: 6px;
+        scrollbar-width: thin;
+    }
+
+    .dnk-sku-list__item {
+        flex: 0 0 auto;
     }
 }
