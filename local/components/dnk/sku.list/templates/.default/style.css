@@ -75,21 +75,3 @@
     background-position: center;
     background-size: 18px 18px;
 }
-
-@media (max-width: 991px) {
-    .dnk-sku-list__items {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        overflow-y: visible;
-        -webkit-overflow-scrolling: touch;
-        width: 100%;
-        max-width: 100%;
-        padding-bottom: 6px;
-        scrollbar-width: thin;
-    }
-
-    .dnk-sku-list__item {
-        flex: 0 0 auto;
-    }
-}
