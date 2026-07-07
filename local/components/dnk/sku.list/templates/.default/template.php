@@ -1,7 +1,5 @@
 <?php
 
-use Bitrix\Main\Page\Asset;
-
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
     die();
 }
@@ -11,349 +9,42 @@ if (empty($arResult['ITEMS']) || empty($arResult['CURRENT_ITEM'])) {
 }
 
 $current = $arResult['CURRENT_ITEM'];
-$uid = htmlspecialcharsbx($this->randString(8));
+$currentName = htmlspecialcharsbx($current['NAME']);
 
 ?>
-<style>
-    .dnk-sku-list {
-    margin-top: 20px;
-    overflow: visible;
-    position: relative;
-    z-index: 1;
-}
-
-.dnk-sku-list.dnk-sku-list--open {
-    z-index: 120;
-}
-
-.dnk-sku-list__title {
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-}
-
-.dnk-sku-list__dropdown {
-    position: relative;
-    max-width: 100%;
-    overflow: visible;
-    isolation: isolate;
-}
-
-.dnk-sku-list__trigger {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    min-height: 48px;
-    padding: 0.35rem 0.75rem 0.35rem 0.5rem;
-    margin: 0;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    border-radius: 8px;
-    background: #fff;
-    cursor: pointer;
-    text-align: left;
-    font: inherit;
-    color: inherit;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.dnk-sku-list__trigger:hover {
-    border-color: var(--theme-base-color, #999);
-}
-
-.dnk-sku-list__trigger:focus {
-    outline: none;
-    border-color: var(--theme-base-color, #333);
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
-}
-
-.dnk-sku-list__trigger[aria-expanded="true"] {
-    border-color: var(--theme-base-color, #333);
-}
-
-.dnk-sku-list__trigger .dnk-sku-list__row {
-    flex: 1;
-    min-width: 0;
-}
-
-.dnk-sku-list__caret {
-    flex-shrink: 0;
-    width: 0;
-    height: 0;
-    margin-left: 0.5rem;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 6px solid currentColor;
-    opacity: 0.55;
-    transition: transform 0.2s ease;
-}
-
-.dnk-sku-list__trigger[aria-expanded="true"] .dnk-sku-list__caret {
-    transform: rotate(180deg);
-}
-
-.dnk-sku-list__row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.dnk-sku-list__option {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    text-decoration: none;
-    color: inherit;
-    background-color: #fff;
-    transition: background-color 0.15s ease;
-}
-
-.dnk-sku-list__option:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-}
-
-.dnk-sku-list__option--current {
-    background-color: rgba(0, 0, 0, 0.06);
-}
-
-.dnk-sku-list__menu {
-    position: absolute;
-    z-index: 99999;
-    left: 0;
-    right: 0;
-    top: calc(100% + 4px);
-    margin: 0;
-    padding: 0.25rem 0;
-    padding-left: 0;
-    list-style: none;
-    list-style-type: none;
-    max-height: min(320px, 50vh);
-    overflow-y: auto;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    border-radius: 8px;
-    background: #fff;
-    background-color: #fff !important;
-    background-clip: padding-box;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.dnk-sku-list__menu:not(.dnk-sku-list__menu--open) {
-    display: none !important;
-}
-
-.dnk-sku-list__menu.dnk-sku-list__menu--open {
-    display: block !important;
-    background-color: #fff !important;
-    background-clip: padding-box;
-}
-
-.dnk-sku-list__menu-item {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    list-style-type: none;
-}
-
-/* Тема: ul > li::before — только внутри выпадающего списка вариантов */
-.dnk-sku-list .dnk-sku-list__menu > li::before {
-    display: none !important;
-    content: none !important;
-}
-
-.dnk-sku-list__image-wrap {
-    display: block;
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-    background-color: #f0f0f0;
-}
-
-.dnk-sku-list__image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.dnk-sku-list__name {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.95rem;
-    line-height: 1.3;
-}
-
-.dnk-sku-list__placeholder {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background-color: #e0e0e0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpath d='M21 15l-5-5L5 21'%3E%3C/path%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-</style>
-
 <div class="dnk-sku-list" data-dnk-sku-list>
-    <div class="dnk-sku-list__title">Вариант товара</div>
-    <div class="dnk-sku-list__dropdown">
-        <button
-            type="button"
-            class="dnk-sku-list__trigger"
-            id="dnk-sku-list-trigger-<?= $uid ?>"
-            aria-haspopup="listbox"
-            aria-expanded="false"
-            aria-controls="dnk-sku-list-menu-<?= $uid ?>"
-        >
-            <span class="dnk-sku-list__row">
+    <div
+        class="dnk-sku-list__label"
+        data-dnk-sku-label
+        data-default-name="<?= $currentName ?>"
+    ><?= $currentName ?></div>
+    <div class="dnk-sku-list__items" role="list">
+        <?php foreach ($arResult['ITEMS'] as $item): ?>
+            <?php
+            $itemName = htmlspecialcharsbx($item['NAME']);
+            $isCurrent = !empty($item['IS_CURRENT']);
+            ?>
+            <a
+                href="<?= htmlspecialcharsbx($item['DETAIL_PAGE_URL']) ?>"
+                class="dnk-sku-list__item<?= $isCurrent ? ' dnk-sku-list__item--current' : '' ?>"
+                role="listitem"
+                data-sku-name="<?= $itemName ?>"
+                title="<?= $itemName ?>"
+                <?= $isCurrent ? 'aria-current="page"' : '' ?>
+            >
                 <span class="dnk-sku-list__image-wrap" aria-hidden="true">
-                    <?php if (!empty($current['PICTURE_SRC'])): ?>
-                        <img src="<?= htmlspecialcharsbx($current['PICTURE_SRC']) ?>" alt="" class="dnk-sku-list__image" loading="lazy">
+                    <?php if (!empty($item['PICTURE_SRC'])): ?>
+                        <img
+                            src="<?= htmlspecialcharsbx($item['PICTURE_SRC']) ?>"
+                            alt="<?= $itemName ?>"
+                            class="dnk-sku-list__image"
+                            loading="lazy"
+                        >
                     <?php else: ?>
                         <span class="dnk-sku-list__placeholder"></span>
                     <?php endif; ?>
                 </span>
-                <span class="dnk-sku-list__name"><?= htmlspecialcharsbx($current['NAME']) ?></span>
-            </span>
-            <span class="dnk-sku-list__caret" aria-hidden="true"></span>
-        </button>
-        <ul
-            class="dnk-sku-list__menu"
-            id="dnk-sku-list-menu-<?= $uid ?>"
-            role="listbox"
-            aria-hidden="true"
-        >
-            <?php foreach ($arResult['ITEMS'] as $item): ?>
-                <li class="dnk-sku-list__menu-item" role="none">
-                    <a
-                        href="<?= htmlspecialcharsbx($item['DETAIL_PAGE_URL']) ?>"
-                        class="dnk-sku-list__option<?= !empty($item['IS_CURRENT']) ? ' dnk-sku-list__option--current' : '' ?>"
-                        role="option"
-                        <?= !empty($item['IS_CURRENT']) ? 'aria-current="page"' : '' ?>
-                        title="<?= htmlspecialcharsbx($item['NAME']) ?>"
-                    >
-                        <span class="dnk-sku-list__image-wrap">
-                            <?php if (!empty($item['PICTURE_SRC'])): ?>
-                                <img src="<?= htmlspecialcharsbx($item['PICTURE_SRC']) ?>" alt="" class="dnk-sku-list__image" loading="lazy">
-                            <?php else: ?>
-                                <span class="dnk-sku-list__placeholder"></span>
-                            <?php endif; ?>
-                        </span>
-                        <span class="dnk-sku-list__name"><?= htmlspecialcharsbx($item['NAME']) ?></span>
-                    </a>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+            </a>
+        <?php endforeach; ?>
     </div>
 </div>
-<script>
-    (function () {
-    'use strict';
-
-    /** @type {{ root: Element, close: function(): void }[]} */
-    var instances = [];
-    var documentListenersBound = false;
-
-    function bindDocumentListenersOnce() {
-        if (documentListenersBound) {
-            return;
-        }
-        documentListenersBound = true;
-
-        document.addEventListener('click', function (e) {
-            instances.forEach(function (inst) {
-                if (!inst.root.contains(e.target)) {
-                    inst.close();
-                }
-            });
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                instances.forEach(function (inst) {
-                    inst.close();
-                });
-            }
-        });
-    }
-
-    function bindRoot(root) {
-        if (root.getAttribute('data-dnk-sku-list-init') === '1') {
-            return;
-        }
-
-        var trigger = root.querySelector('.dnk-sku-list__trigger');
-        var menu = root.querySelector('.dnk-sku-list__menu');
-        if (!trigger || !menu) {
-            return;
-        }
-
-        root.setAttribute('data-dnk-sku-list-init', '1');
-
-        function open() {
-            root.classList.add('dnk-sku-list--open');
-            menu.classList.add('dnk-sku-list__menu--open');
-            menu.setAttribute('aria-hidden', 'false');
-            trigger.setAttribute('aria-expanded', 'true');
-        }
-
-        function close() {
-            root.classList.remove('dnk-sku-list--open');
-            menu.classList.remove('dnk-sku-list__menu--open');
-            menu.setAttribute('aria-hidden', 'true');
-            trigger.setAttribute('aria-expanded', 'false');
-        }
-
-        function toggle() {
-            if (menu.classList.contains('dnk-sku-list__menu--open')) {
-                close();
-            } else {
-                open();
-            }
-        }
-
-        var inst = { root: root, close: close };
-        instances.push(inst);
-
-        trigger.addEventListener('mousedown', function (e) {
-            e.stopPropagation();
-        });
-
-        trigger.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            instances.forEach(function (other) {
-                if (other.root !== root) {
-                    other.close();
-                }
-            });
-            toggle();
-        });
-    }
-
-    function scan() {
-        bindDocumentListenersOnce();
-        document.querySelectorAll('[data-dnk-sku-list]').forEach(bindRoot);
-    }
-
-    function boot() {
-        scan();
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot);
-    } else {
-        boot();
-    }
-
-    window.addEventListener('load', boot);
-
-    if (typeof BX !== 'undefined' && BX.addCustomEvent) {
-        BX.addCustomEvent(window, 'onAjaxSuccess', boot);
-    }
-})();
-
-</script>
