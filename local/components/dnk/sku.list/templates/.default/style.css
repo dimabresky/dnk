@@ -29,13 +29,17 @@
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.dnk-sku-list__item:hover {
+.dnk-sku-list__item:not(.dnk-sku-list__item--current):hover {
     border-color: rgba(0, 0, 0, 0.35);
 }
 
 .dnk-sku-list__item--current {
     border: 2px solid #000;
     padding: 3px;
+}
+
+.dnk-sku-list__item--current:hover {
+    border-color: #000;
 }
 
 .dnk-sku-list__image-wrap {
