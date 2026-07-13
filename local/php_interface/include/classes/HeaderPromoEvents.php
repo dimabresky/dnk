@@ -35,6 +35,11 @@ class HeaderPromoEvents
         if (!defined('DNK_HEADER_PROMO_IBLOCK_ID') || (int) DNK_HEADER_PROMO_IBLOCK_ID <= 0) {
             return;
         }
+        
+        $noscript = '<!-- Google Tag Manager (noscript) -->
+                <noscript data-skip-moving="true"><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TL3G6JF8"
+                height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+                <!-- End Google Tag Manager (noscript) -->';
 
         ob_start();
         $APPLICATION->IncludeComponent(
@@ -49,7 +54,7 @@ class HeaderPromoEvents
             false,
             ['HIDE_ICONS' => 'Y']
         );
-        $html = ob_get_clean();
+        $html = $noscript.ob_get_clean();
         if ($html === '' || trim($html) === '') {
             return;
         }
