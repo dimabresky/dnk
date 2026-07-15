@@ -4,12 +4,24 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
     die();
 }
 
+use Bitrix\Main\Web\Json;
+
 if (empty($arResult['ITEMS']) || empty($arResult['CURRENT_ITEM'])) {
     return;
 }
 
 $current = $arResult['CURRENT_ITEM'];
-$currentName = htmlspecialcharsbx($current['NAME']);
+$currentName = htmlspecialcharsbx($current['SHADE_NAME'] ?? $current['NAME']);
+
+$swiperOptions = Json::encode([
+    'slidesPerView' => 'auto',
+    'freeMode' => [
+        'enabled' => true,
+        'momentum' => true,
+    ],
+    'spaceBetween' => 8,
+    'pagination' => false,
+]);
 
 ?>
 <style>
@@ -27,12 +39,14 @@ $currentName = htmlspecialcharsbx($current['NAME']);
     font-weight: 400;
 }
 
-.dnk-sku-list__items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+.dnk-sku-list__slider {
+    overflow: hidden;
     min-width: 0;
     max-width: 100%;
+}
+
+.dnk-sku-list__slider .swiper-slide {
+    width: auto;
 }
 
 .dnk-sku-list__item {
@@ -90,6 +104,7 @@ $currentName = htmlspecialcharsbx($current['NAME']);
     background-position: center;
     background-size: 18px 18px;
 }
+
 </style>
 <div class="dnk-sku-list" data-dnk-sku-list>
     <div
@@ -97,34 +112,41 @@ $currentName = htmlspecialcharsbx($current['NAME']);
         data-dnk-sku-label
         data-default-name="<?= $currentName ?>"
     ><?= $currentName ?></div>
-    <div class="dnk-sku-list__items" role="list">
-        <?php foreach ($arResult['ITEMS'] as $item): ?>
-            <?php
-            $itemName = htmlspecialcharsbx($item['NAME']);
-            $isCurrent = !empty($item['IS_CURRENT']);
-            ?>
-            <a
-                href="<?= htmlspecialcharsbx($item['DETAIL_PAGE_URL']) ?>"
-                class="dnk-sku-list__item<?= $isCurrent ? ' dnk-sku-list__item--current' : '' ?>"
-                role="listitem"
-                data-sku-name="<?= $itemName ?>"
-                title="<?= $itemName ?>"
-                <?= $isCurrent ? 'aria-current="page"' : '' ?>
-            >
-                <span class="dnk-sku-list__image-wrap" aria-hidden="true">
-                    <?php if (!empty($item['PICTURE_SRC'])): ?>
-                        <img
-                            src="<?= htmlspecialcharsbx($item['PICTURE_SRC']) ?>"
-                            alt="<?= $itemName ?>"
-                            class="dnk-sku-list__image"
-                            loading="lazy"
-                        >
-                    <?php else: ?>
-                        <span class="dnk-sku-list__placeholder"></span>
-                    <?php endif; ?>
-                </span>
-            </a>
-        <?php endforeach; ?>
+    <div
+        class="dnk-sku-list__slider swiper slider-solution swipeignore"
+        data-plugin-options='<?= $swiperOptions ?>'
+        role="list"
+    >
+        <div class="swiper-wrapper">
+            <?php foreach ($arResult['ITEMS'] as $item): ?>
+                <?php
+                $itemName = htmlspecialcharsbx($item['SHADE_NAME'] ?? $item['NAME']);
+                $pictureSrc = (string) ($item['SHADE_PICTURE_SRC'] ?? $item['PICTURE_SRC'] ?? '');
+                $isCurrent = !empty($item['IS_CURRENT']);
+                ?>
+                <a
+                    href="<?= htmlspecialcharsbx($item['DETAIL_PAGE_URL']) ?>"
+                    class="dnk-sku-list__item swiper-slide<?= $isCurrent ? ' dnk-sku-list__item--current' : '' ?>"
+                    role="listitem"
+                    data-sku-name="<?= $itemName ?>"
+                    title="<?= $itemName ?>"
+                    <?= $isCurrent ? 'aria-current="page"' : '' ?>
+                >
+                    <span class="dnk-sku-list__image-wrap" aria-hidden="true">
+                        <?php if ($pictureSrc !== ''): ?>
+                            <img
+                                src="<?= htmlspecialcharsbx($pictureSrc) ?>"
+                                alt="<?= $itemName ?>"
+                                class="dnk-sku-list__image"
+                                loading="lazy"
+                            >
+                        <?php else: ?>
+                            <span class="dnk-sku-list__placeholder"></span>
+                        <?php endif; ?>
+                    </span>
+                </a>
+            <?php endforeach; ?>
+        </div>
     </div>
 </div>
 <script>
@@ -137,7 +159,7 @@ $currentName = htmlspecialcharsbx($current['NAME']);
         }
 
         var label = root.querySelector('[data-dnk-sku-label]');
-        var itemsWrap = root.querySelector('.dnk-sku-list__items');
+        var itemsWrap = root.querySelector('.dnk-sku-list__slider');
         if (!label || !itemsWrap) {
             return;
         }
