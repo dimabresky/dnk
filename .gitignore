@@ -10,6 +10,7 @@
 /bitrix/tmp/
 /bitrix/catalog_export/
 /bitrix/admin
+/bitrix/templates/aspro-premier/
 /bitrix/templates/aspro-premier_copy/css/*
 !/bitrix/templates/aspro-premier_copy/css/custom.css
 /bitrix/templates/aspro-premier-mobile_copy/css/*
