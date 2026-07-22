@@ -117,6 +117,7 @@ class DnkSkuListComponent extends CBitrixComponent
         int $shadesIblockId
     ): array {
         $rawItems = [];
+        $ottenokEnumXmlIdMap = Utils::buildIblockListPropertyEnumXmlIdMap($iblockId, self::SHADE_PROPERTY_CODE);
 
         $rs = CIBlockElement::GetList(
             ['SORT' => 'ASC', 'NAME' => 'ASC'],
@@ -144,10 +145,11 @@ class DnkSkuListComponent extends CBitrixComponent
             $pictureSrc = $pictureId > 0 ? CFile::GetPath($pictureId) : '';
 
             $enumId = Utils::coerceIblockListEnumId(
-                $ob['PROPERTY_' . self::SHADE_PROPERTY_CODE . '_ENUM_ID']
-                    ?? $ob['PROPERTY_' . self::SHADE_PROPERTY_CODE . '_VALUE']
-                    ?? null
+                $ob['PROPERTY_' . self::SHADE_PROPERTY_CODE . '_ENUM_ID'] ?? null
             );
+            $ottenokXmlId = ($enumId !== null && isset($ottenokEnumXmlIdMap[$enumId]))
+                ? $ottenokEnumXmlIdMap[$enumId]
+                : '';
 
             $rawItems[] = [
                 'ID' => (int) $ob['ID'],
@@ -155,21 +157,30 @@ class DnkSkuListComponent extends CBitrixComponent
                 'DETAIL_PAGE_URL' => $ob['DETAIL_PAGE_URL'] ?? '',
                 'PICTURE_SRC' => $pictureSrc,
                 'IS_CURRENT' => (int) $ob['ID'] === $currentElementId,
-                'OTTENOK_ENUM_ID' => $enumId,
+                'OTTENOK_XML_ID' => $ottenokXmlId,
             ];
         }
 
-        $shadesMap = $shadesIblockId > 0
-            ? $this->buildShadesMapByEnumIds($rawItems, $shadesIblockId)
+        $ottenokXmlIds = [];
+        foreach ($rawItems as $row) {
+            $xmlId = trim((string) ($row['OTTENOK_XML_ID'] ?? ''));
+            if ($xmlId !== '') {
+                $ottenokXmlIds[$xmlId] = true;
+            }
+        }
+
+        $shadesMap = ($shadesIblockId > 0 && $ottenokXmlIds !== [])
+            ? $this->loadShadesByXmlIds($shadesIblockId, array_keys($ottenokXmlIds))
             : [];
 
         $items = [];
         foreach ($rawItems as $row) {
-            if (empty($row['OTTENOK_ENUM_ID']) || !isset($shadesMap[$row['OTTENOK_ENUM_ID']])) {
+            $ottenokXmlId = trim((string) ($row['OTTENOK_XML_ID'] ?? ''));
+            if ($ottenokXmlId === '' || !isset($shadesMap[$ottenokXmlId])) {
                 continue;
             }
 
-            $shade = $shadesMap[$row['OTTENOK_ENUM_ID']];
+            $shade = $shadesMap[$ottenokXmlId];
             $shadePicture = trim((string) ($shade['PICTURE_SRC'] ?? ''));
 
             $items[] = [
@@ -184,53 +195,6 @@ class DnkSkuListComponent extends CBitrixComponent
         }
 
         return $items;
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $rawItems
-     * @param int $shadesIblockId
-     * @return array<int, array{NAME: string, PICTURE_SRC: string}>
-     */
-    private function buildShadesMapByEnumIds(array $rawItems, int $shadesIblockId): array
-    {
-        $enumIds = [];
-        foreach ($rawItems as $row) {
-            $enumId = $row['OTTENOK_ENUM_ID'] ?? null;
-            if ($enumId !== null && $enumId > 0) {
-                $enumIds[$enumId] = true;
-            }
-        }
-
-        if ($enumIds === []) {
-            return [];
-        }
-
-        $enumIdToXmlId = [];
-        foreach (array_keys($enumIds) as $enumId) {
-            $arEnum = CIBlockPropertyEnum::GetByID($enumId);
-            if (!is_array($arEnum)) {
-                continue;
-            }
-            $xmlId = trim((string) ($arEnum['XML_ID'] ?? ''));
-            if ($xmlId !== '') {
-                $enumIdToXmlId[$enumId] = $xmlId;
-            }
-        }
-
-        if ($enumIdToXmlId === []) {
-            return [];
-        }
-
-        $shadesByXmlId = $this->loadShadesByXmlIds($shadesIblockId, array_values(array_unique($enumIdToXmlId)));
-
-        $map = [];
-        foreach ($enumIdToXmlId as $enumId => $xmlId) {
-            if (isset($shadesByXmlId[$xmlId])) {
-                $map[$enumId] = $shadesByXmlId[$xmlId];
-            }
-        }
-
-        return $map;
     }
 
     /**
