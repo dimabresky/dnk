@@ -1868,6 +1868,39 @@ final class Utils
     }
 
     /**
+     * Карта ID варианта списка => XML_ID для свойства типа L в инфоблоке.
+     *
+     * @return array<int, string>
+     */
+    public static function buildIblockListPropertyEnumXmlIdMap(int $iblockId, string $propertyCode): array
+    {
+        $map = [];
+        $arProp = self::getIblockPropertyByCode($iblockId, $propertyCode);
+        if (!$arProp || (string) ($arProp['PROPERTY_TYPE'] ?? '') !== 'L') {
+            return $map;
+        }
+
+        $propertyId = (int) ($arProp['ID'] ?? 0);
+        if ($propertyId <= 0) {
+            return $map;
+        }
+
+        $rsEnum = \CIBlockPropertyEnum::GetList(
+            ['SORT' => 'ASC', 'ID' => 'ASC'],
+            ['PROPERTY_ID' => $propertyId]
+        );
+        while ($enum = $rsEnum->Fetch()) {
+            $enumId = (int) ($enum['ID'] ?? 0);
+            $xmlId = trim((string) ($enum['XML_ID'] ?? ''));
+            if ($enumId > 0 && $xmlId !== '') {
+                $map[$enumId] = $xmlId;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
      * ID варианта списка (свойство типа L) по коду свойства и XML_ID в инфоблоке.
      */
     public static function getIblockListPropertyEnumIdByXmlId(int $iblockId, string $propertyCode, string $xmlId): ?int

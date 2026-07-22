@@ -21,6 +21,7 @@ $swiperOptions = Json::encode([
     ],
     'spaceBetween' => 8,
     'pagination' => false,
+    'watchOverflow' => true,
 ]);
 
 ?>
@@ -39,14 +40,53 @@ $swiperOptions = Json::encode([
     font-weight: 400;
 }
 
-.dnk-sku-list__slider {
-    overflow: hidden;
+.dnk-sku-list__slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     min-width: 0;
     max-width: 100%;
 }
 
+.dnk-sku-list__slider {
+    flex: 1;
+    overflow: hidden;
+    min-width: 0;
+}
+
 .dnk-sku-list__slider .swiper-slide {
     width: auto;
+}
+
+.dnk-sku-list__nav {
+    box-sizing: border-box;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background-color: #fff;
+    color: var(--theme-base-color, #000);
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.dnk-sku-list__nav:hover {
+    border-color: rgba(0, 0, 0, 0.35);
+}
+
+.dnk-sku-list__nav[hidden] {
+    display: none;
+}
+
+.dnk-sku-list__nav-icon {
+    display: block;
+    width: 8px;
+    height: 14px;
 }
 
 .dnk-sku-list__item {
@@ -112,46 +152,126 @@ $swiperOptions = Json::encode([
         data-dnk-sku-label
         data-default-name="<?= $currentName ?>"
     ><?= $currentName ?></div>
-    <div
-        class="dnk-sku-list__slider swiper slider-solution swipeignore"
-        data-plugin-options='<?= $swiperOptions ?>'
-        role="list"
-    >
-        <div class="swiper-wrapper">
-            <?php foreach ($arResult['ITEMS'] as $item): ?>
-                <?php
-                $itemName = htmlspecialcharsbx($item['SHADE_NAME'] ?? $item['NAME']);
-                $pictureSrc = (string) ($item['SHADE_PICTURE_SRC'] ?? $item['PICTURE_SRC'] ?? '');
-                $isCurrent = !empty($item['IS_CURRENT']);
-                ?>
-                <a
-                    href="<?= htmlspecialcharsbx($item['DETAIL_PAGE_URL']) ?>"
-                    class="dnk-sku-list__item swiper-slide<?= $isCurrent ? ' dnk-sku-list__item--current' : '' ?>"
-                    role="listitem"
-                    data-sku-name="<?= $itemName ?>"
-                    title="<?= $itemName ?>"
-                    <?= $isCurrent ? 'aria-current="page"' : '' ?>
-                >
-                    <span class="dnk-sku-list__image-wrap" aria-hidden="true">
-                        <?php if ($pictureSrc !== ''): ?>
-                            <img
-                                src="<?= htmlspecialcharsbx($pictureSrc) ?>"
-                                alt="<?= $itemName ?>"
-                                class="dnk-sku-list__image"
-                                loading="lazy"
-                            >
-                        <?php else: ?>
-                            <span class="dnk-sku-list__placeholder"></span>
-                        <?php endif; ?>
-                    </span>
-                </a>
-            <?php endforeach; ?>
+    <div class="dnk-sku-list__slider-wrap">
+        <button
+            type="button"
+            class="dnk-sku-list__nav dnk-sku-list__prev"
+            data-dnk-sku-prev
+            aria-label="Предыдущие оттенки"
+            hidden
+        >
+            <svg class="dnk-sku-list__nav-icon" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M7 1L1 7L7 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+        <div
+            class="dnk-sku-list__slider swiper slider-solution swipeignore"
+            data-plugin-options='<?= $swiperOptions ?>'
+            role="list"
+        >
+            <div class="swiper-wrapper">
+                <?php foreach ($arResult['ITEMS'] as $item): ?>
+                    <?php
+                    $itemName = htmlspecialcharsbx($item['SHADE_NAME'] ?? $item['NAME']);
+                    $pictureSrc = (string) ($item['SHADE_PICTURE_SRC'] ?? $item['PICTURE_SRC'] ?? '');
+                    $isCurrent = !empty($item['IS_CURRENT']);
+                    ?>
+                    <a
+                        href="<?= htmlspecialcharsbx($item['DETAIL_PAGE_URL']) ?>"
+                        class="dnk-sku-list__item swiper-slide<?= $isCurrent ? ' dnk-sku-list__item--current' : '' ?>"
+                        role="listitem"
+                        data-sku-name="<?= $itemName ?>"
+                        title="<?= $itemName ?>"
+                        <?= $isCurrent ? 'aria-current="page"' : '' ?>
+                    >
+                        <span class="dnk-sku-list__image-wrap" aria-hidden="true">
+                            <?php if ($pictureSrc !== ''): ?>
+                                <img
+                                    src="<?= htmlspecialcharsbx($pictureSrc) ?>"
+                                    alt="<?= $itemName ?>"
+                                    class="dnk-sku-list__image"
+                                    loading="lazy"
+                                >
+                            <?php else: ?>
+                                <span class="dnk-sku-list__placeholder"></span>
+                            <?php endif; ?>
+                        </span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
         </div>
+        <button
+            type="button"
+            class="dnk-sku-list__nav dnk-sku-list__next"
+            data-dnk-sku-next
+            aria-label="Следующие оттенки"
+            hidden
+        >
+            <svg class="dnk-sku-list__nav-icon" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M1 1L7 7L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
     </div>
 </div>
 <script>
     (function () {
     'use strict';
+
+    var navEvents = ['resize', 'fromEdge', 'toEdge', 'slideChange', 'update', 'setTranslate'];
+
+    function waitForSwiper(sliderEl, callback) {
+        if (sliderEl.swiper) {
+            callback(sliderEl.swiper);
+            return;
+        }
+
+        var observer = new MutationObserver(function () {
+            if (sliderEl.classList.contains('swiper-initialized') && sliderEl.swiper) {
+                observer.disconnect();
+                callback(sliderEl.swiper);
+            }
+        });
+
+        observer.observe(sliderEl, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+    }
+
+    function bindNavButtons(sliderEl, prevBtn, nextBtn) {
+        if (sliderEl.getAttribute('data-dnk-sku-nav-init') === '1') {
+            return;
+        }
+
+        waitForSwiper(sliderEl, function (swiper) {
+            if (sliderEl.getAttribute('data-dnk-sku-nav-init') === '1') {
+                return;
+            }
+
+            sliderEl.setAttribute('data-dnk-sku-nav-init', '1');
+
+            function updateNavVisibility() {
+                prevBtn.hidden = swiper.isLocked || swiper.isBeginning;
+                nextBtn.hidden = swiper.isLocked || swiper.isEnd;
+            }
+
+            prevBtn.addEventListener('click', function () {
+                swiper.slidePrev();
+            });
+
+            nextBtn.addEventListener('click', function () {
+                swiper.slideNext();
+            });
+
+            updateNavVisibility();
+
+            navEvents.forEach(function (eventName) {
+                swiper.on(eventName, updateNavVisibility);
+            });
+
+            window.addEventListener('resize', updateNavVisibility);
+        });
+    }
 
     function bindRoot(root) {
         if (root.getAttribute('data-dnk-sku-list-init') === '1') {
@@ -160,7 +280,9 @@ $swiperOptions = Json::encode([
 
         var label = root.querySelector('[data-dnk-sku-label]');
         var itemsWrap = root.querySelector('.dnk-sku-list__slider');
-        if (!label || !itemsWrap) {
+        var prevBtn = root.querySelector('[data-dnk-sku-prev]');
+        var nextBtn = root.querySelector('[data-dnk-sku-next]');
+        if (!label || !itemsWrap || !prevBtn || !nextBtn) {
             return;
         }
 
@@ -182,6 +304,7 @@ $swiperOptions = Json::encode([
         });
 
         itemsWrap.addEventListener('mouseleave', restoreLabel);
+        bindNavButtons(itemsWrap, prevBtn, nextBtn);
     }
 
     function scan() {
