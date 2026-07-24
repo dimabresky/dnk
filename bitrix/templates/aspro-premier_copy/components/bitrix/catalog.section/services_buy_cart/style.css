@@ -1,0 +1,91 @@
+.services-items {
+	position: relative;
+}
+body .services-buy .btn.btn-default.in_cart:hover {
+	background-color: var(--secondary-black-dark-light-bg);
+    border-color: var(--secondary-black-dark-light-bg);
+	color: var(--button_color_text);
+}
+.services-item.services-item--selected .services-item__info-title {
+    --text-opacity: 100%;
+}
+.services-item > .flexbox {
+    min-height: 30px;
+}
+
+.services-item__on-off-switch {
+	position: relative;
+	font-size: 0;
+	flex-shrink: 0;
+}
+.services-item__on-off-switch input[type="checkbox"] {
+	display: none;
+}
+.services-item__on-off-switch input[type="checkbox"] + label {
+	cursor: pointer;
+	position: relative;
+	cursor: pointer;
+	outline: none;
+	display: block;
+	width: 35px;
+	height: 26px;
+	margin: 0;
+}
+.services-item__on-off-switch input[type="checkbox"] + label:before {
+	content: "";
+	position: absolute;
+	display: block;
+	top: 4px;
+	bottom: 4px;
+	border-radius: 10px;
+	font-size: 0;
+	left: 1px;
+	right: 1px;
+}
+.services-item__on-off-switch input[type="checkbox"] + label:before {
+	background: #e0e0e0;
+	background: var(--light, #e0e0e0) var(--dark, #444);
+}
+.services-item__on-off-switch input[type="checkbox"]:checked + label:before {
+	background: #5b7fff;
+	background: var(--theme-base-color);
+}
+.services-item__on-off-switch input[type="checkbox"] + label:after {
+	content: "";
+	position: absolute;
+	display: block;
+	top: 4px;
+	bottom: 0;
+	border-radius: 100%;
+	background: #fff;
+	width: 14px;
+	height: 14px;
+	border: none;
+	margin: 2px;
+	left: 1px;
+	box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.3);
+	transition: left 0.1s ease-in;
+	z-index: 11;
+}
+.services-item__on-off-switch input[type="checkbox"]:checked + label:after {
+    left: 16px;
+}
+
+@media (max-width: 499px) {
+	.services-items--table .services-item > .flexbox {
+		flex-wrap: wrap;
+	}
+	.services-item__price {
+		margin-left: 43px;
+		white-space: nowrap;
+		width: auto;
+	}
+	.services-item > .flexbox--align-center {
+		align-items: flex-start;
+	}
+}
+
+.basket-items-list .services-items--show-all .grid-list__item.hidden {
+	display: block !important;
+	visibility: visible !important;
+}
