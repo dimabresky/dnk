@@ -24,7 +24,7 @@ $swiperOptions = Json::encode([
     'watchOverflow' => true,
 ]);
 
-$rootModifierClass = '';
+$rootModifierClass = ' dnk-sku-list--catalog-block';
 
 ?>
 <div class="dnk-sku-list<?= $rootModifierClass ?>" data-dnk-sku-list>
