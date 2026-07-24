@@ -19,7 +19,7 @@ $swiperOptions = Json::encode([
         'enabled' => true,
         'momentum' => true,
     ],
-    'spaceBetween' => 8,
+    'spaceBetween' => 6,
     'pagination' => false,
     'watchOverflow' => true,
 ]);
@@ -45,7 +45,8 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
 }
 
 .dnk-sku-list--catalog-block {
-    --dnk-sku-catalog-size: 40px;
+    --dnk-sku-catalog-size: 35px;
+    --dnk-sku-catalog-gap: 6px;
     margin-top: 12px;
 }
 
@@ -148,7 +149,7 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
 .dnk-sku-list--catalog-block .dnk-sku-list__slider:not(.swiper-initialized) .swiper-wrapper {
     display: flex;
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: var(--dnk-sku-catalog-gap);
 }
 
 .dnk-sku-list--catalog-block .dnk-sku-list__slider:not(.swiper-initialized) .swiper-slide {
@@ -206,7 +207,7 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
 }
 
 .dnk-sku-list--catalog-block .dnk-sku-list__placeholder {
-    background-size: 14px 14px;
+    background-size: 12px 12px;
 }
 </style>
     <?php
