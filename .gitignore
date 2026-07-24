@@ -28,6 +28,9 @@
 /bitrix/templates/aspro-premier-mobile_copy/styles.css
 /bitrix/templates/aspro-premier-mobile_copy/styles.min.css
 /bitrix/templates/aspro-premier-mobile_copy/template_styles.css
+/bitrix/templates/aspro-premier_copy/components/bitrix/catalog.section/*
+!/bitrix/templates/aspro-premier_copy/components/bitrix/catalog.section/catalog_block/
+!/bitrix/templates/aspro-premier_copy/components/bitrix/catalog.section/catalog_block/**
 /bitrix/templates/aspro-premier-mobile_copy/components/bitrix/catalog.section/*
 !/bitrix/templates/aspro-premier-mobile_copy/components/bitrix/catalog.section/catalog_block/
 !/bitrix/templates/aspro-premier-mobile_copy/components/bitrix/catalog.section/catalog_block/**
