@@ -41,4 +41,5 @@
 	$MESS['VOTES_RESULT'] = 'Рейтинг #VALUE# из 5';
 	$MESS['VOTES_RESULT_NONE'] = 'Нет оценок';
     $MESS["CATALOG_SECTION_LIST"] = 'Список товаров раздела ';
+    $MESS['CATALOG_BLOCK_SKU_MORE'] = 'Ещё #COUNT# #WORD#';
 ?>

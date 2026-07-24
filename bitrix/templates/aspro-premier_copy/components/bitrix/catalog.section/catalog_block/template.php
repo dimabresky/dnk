@@ -386,6 +386,7 @@ if ($arParams['BORDERED'] !== 'N') {
                             'ADDITIONAL_WRAPPER_CLASS' => ($arParams['IMG_CORNER'] == 'Y' ? 'catalog-block__item--img-corner' : ''),
                         ]; ?>
                         <div class="js-config-img" data-img-config='<?=str_replace('\'', '"', CUtil::PhpToJSObject($arImgConfig, false, true)); ?>'></div>
+                        <div class="catalog-block__image-badge-wrap">
                         <?=TSolution\Product\Image::showImage(
                             array_merge(
                                 [
@@ -397,6 +398,19 @@ if ($arParams['BORDERED'] !== 'N') {
                                 $arImgConfig
                             )
                         ); ?>
+                        <?php
+                        $dnkSkuExtraCount = (int) ($arItem['DNK_SKU_EXTRA_COUNT'] ?? 0);
+                        if ($dnkSkuExtraCount > 0):
+                            $dnkSkuVariantsWord = \Dnk\PhpInterface\Utils::formatSkuVariantsWordRu($dnkSkuExtraCount);
+                            ?>
+                            <span class="catalog-block__sku-more-badge font_12">
+                                <?=GetMessage('CATALOG_BLOCK_SKU_MORE', [
+                                    '#COUNT#' => $dnkSkuExtraCount,
+                                    '#WORD#' => $dnkSkuVariantsWord,
+                                ]); ?>
+                            </span>
+                        <?php endif; ?>
+                        </div>
 
                         <?if ($bUseSchema):?>
                             <?$imagePath = $arItem['PREVIEW_PICTURE']['SRC'] ?? $arItem['DETAIL_PICTURE']['SRC'] ?? SITE_TEMPLATE_PATH . '/images/svg/noimage_product.svg';?>
@@ -471,19 +485,6 @@ if ($arParams['BORDERED'] !== 'N') {
                                             </div>
                                         </div>
                                     <?endif; ?>
-                                    <?php $APPLICATION->IncludeComponent(
-                                        'dnk:sku.list',
-                                        'catalog_block',
-                                        [
-                                            'CACHE_TYPE' => 'N',
-                                            'CACHE_TIME' => 3600,
-                                            'IBLOCK_ID' => (int) $arItem['IBLOCK_ID'],
-                                            'ELEMENT_ID' => (int) $arItem['ID'],
-                                            'SHADES_IBLOCK_ID' => 47,
-                                        ],
-                                        $component,
-                                        ['HIDE_ICONS' => 'Y']
-                                    ); ?>
                                 </div>
                             </div>
                         </div>

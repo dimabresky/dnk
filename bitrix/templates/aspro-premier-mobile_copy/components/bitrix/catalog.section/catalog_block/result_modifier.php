@@ -1,4 +1,6 @@
 <?
+use Dnk\PhpInterface\Utils;
+
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 
 if (($arParams['BIG_DATA_MODE'] ?? 'N') === 'Y') {
@@ -180,6 +182,21 @@ if (!empty($arResult['ITEMS'])) {
 
     $arNewItemsList[$key]['LAST_ELEMENT'] = 'Y';
     $arResult['ITEMS'] = $arNewItemsList;
+
+    $pageElementIds = [];
+    foreach ($arResult['ITEMS'] as $arCatalogItem) {
+        $pageElementIds[] = (int) $arCatalogItem['ID'];
+    }
+    $skuExtraCountMap = Utils::getSkuGroupExtraCountMap(
+        (int) $arParams['IBLOCK_ID'],
+        47,
+        $pageElementIds
+    );
+    foreach ($arResult['ITEMS'] as $itemKey => $arCatalogItem) {
+        $arResult['ITEMS'][$itemKey]['DNK_SKU_EXTRA_COUNT'] = (int) (
+            $skuExtraCountMap[(int) $arCatalogItem['ID']] ?? 0
+        );
+    }
 
     unset($arNewItemsList);
 }
