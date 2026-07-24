@@ -45,6 +45,7 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
 }
 
 .dnk-sku-list--catalog-block {
+    --dnk-sku-catalog-size: 40px;
     margin-top: 12px;
 }
 
@@ -68,10 +69,6 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
     max-width: 100%;
 }
 
-.dnk-sku-list--catalog-block .dnk-sku-list__slider-wrap {
-    gap: 0;
-}
-
 .dnk-sku-list__slider {
     flex: 1;
     overflow: hidden;
@@ -80,10 +77,6 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
 
 .dnk-sku-list__slider .swiper-slide {
     width: auto;
-}
-
-.dnk-sku-list--catalog-block .dnk-sku-list__nav {
-    display: none !important;
 }
 
 .dnk-sku-list__nav {
@@ -117,6 +110,11 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
     height: 14px;
 }
 
+.dnk-sku-list--catalog-block .dnk-sku-list__nav {
+    width: var(--dnk-sku-catalog-size);
+    height: var(--dnk-sku-catalog-size);
+}
+
 .dnk-sku-list__item {
     display: block;
     box-sizing: border-box;
@@ -135,15 +133,15 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
 
 .catalog-block .dnk-sku-list--catalog-block .dnk-sku-list__item,
 .dnk-sku-list--catalog-block .dnk-sku-list__item {
-    width: 52px;
-    height: 52px;
-    max-width: 52px;
+    width: var(--dnk-sku-catalog-size);
+    height: var(--dnk-sku-catalog-size);
+    max-width: var(--dnk-sku-catalog-size);
 }
 
 .catalog-block .dnk-sku-list--catalog-block .dnk-sku-list__slider .swiper-slide,
 .dnk-sku-list--catalog-block .dnk-sku-list__slider .swiper-slide {
-    width: 52px !important;
-    max-width: 52px;
+    width: var(--dnk-sku-catalog-size) !important;
+    max-width: var(--dnk-sku-catalog-size);
     flex-shrink: 0;
 }
 
@@ -154,8 +152,8 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
 }
 
 .dnk-sku-list--catalog-block .dnk-sku-list__slider:not(.swiper-initialized) .swiper-slide {
-    width: 52px !important;
-    max-width: 52px;
+    width: var(--dnk-sku-catalog-size) !important;
+    max-width: var(--dnk-sku-catalog-size);
 }
 
 .dnk-sku-list__item:not(.dnk-sku-list__item--current):hover {
@@ -205,6 +203,10 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
     background-repeat: no-repeat;
     background-position: center;
     background-size: 18px 18px;
+}
+
+.dnk-sku-list--catalog-block .dnk-sku-list__placeholder {
+    background-size: 14px 14px;
 }
 </style>
     <?php
