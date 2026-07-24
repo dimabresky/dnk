@@ -19,7 +19,7 @@ $swiperOptions = Json::encode([
         'enabled' => true,
         'momentum' => true,
     ],
-    'spaceBetween' => 6,
+    'spaceBetween' => 4,
     'pagination' => false,
     'watchOverflow' => true,
 ]);
@@ -46,7 +46,7 @@ if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
 
 .dnk-sku-list--catalog-block {
     --dnk-sku-catalog-size: 35px;
-    --dnk-sku-catalog-gap: 6px;
+    --dnk-sku-catalog-gap: 4px;
     margin-top: 12px;
 }
 
