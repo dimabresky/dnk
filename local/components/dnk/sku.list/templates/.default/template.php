@@ -26,9 +26,16 @@ $swiperOptions = Json::encode([
 
 $rootModifierClass = '';
 
+/** @var string $componentPath */
+$skuListPartial = $_SERVER['DOCUMENT_ROOT'] . $componentPath . '/partials/slider.php';
+
+if (!is_file($skuListPartial)) {
+    return;
+}
+
 ?>
 <div class="dnk-sku-list<?= $rootModifierClass ?>" data-dnk-sku-list>
 <?php
-include $componentPath . '/partials/slider.php';
+include $skuListPartial;
 ?>
 </div>
