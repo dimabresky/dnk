@@ -33,7 +33,9 @@ if (!is_file($skuListPartial)) {
     return;
 }
 
-?>
+if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
+    $GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'] = true;
+    ?>
 <style>
 .dnk-sku-list {
     margin-top: 20px;
@@ -66,6 +68,10 @@ if (!is_file($skuListPartial)) {
     max-width: 100%;
 }
 
+.dnk-sku-list--catalog-block .dnk-sku-list__slider-wrap {
+    gap: 0;
+}
+
 .dnk-sku-list__slider {
     flex: 1;
     overflow: hidden;
@@ -74,6 +80,10 @@ if (!is_file($skuListPartial)) {
 
 .dnk-sku-list__slider .swiper-slide {
     width: auto;
+}
+
+.dnk-sku-list--catalog-block .dnk-sku-list__nav {
+    display: none !important;
 }
 
 .dnk-sku-list__nav {
@@ -123,6 +133,31 @@ if (!is_file($skuListPartial)) {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.catalog-block .dnk-sku-list--catalog-block .dnk-sku-list__item,
+.dnk-sku-list--catalog-block .dnk-sku-list__item {
+    width: 52px;
+    height: 52px;
+    max-width: 52px;
+}
+
+.catalog-block .dnk-sku-list--catalog-block .dnk-sku-list__slider .swiper-slide,
+.dnk-sku-list--catalog-block .dnk-sku-list__slider .swiper-slide {
+    width: 52px !important;
+    max-width: 52px;
+    flex-shrink: 0;
+}
+
+.dnk-sku-list--catalog-block .dnk-sku-list__slider:not(.swiper-initialized) .swiper-wrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+
+.dnk-sku-list--catalog-block .dnk-sku-list__slider:not(.swiper-initialized) .swiper-slide {
+    width: 52px !important;
+    max-width: 52px;
+}
+
 .dnk-sku-list__item:not(.dnk-sku-list__item--current):hover {
     border-color: rgba(0, 0, 0, 0.35);
 }
@@ -152,6 +187,15 @@ if (!is_file($skuListPartial)) {
     object-fit: contain;
 }
 
+.catalog-block .dnk-sku-list--catalog-block img.dnk-sku-list__image,
+.dnk-sku-list--catalog-block .dnk-sku-list__image {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
 .dnk-sku-list__placeholder {
     display: block;
     width: 100%;
@@ -163,11 +207,20 @@ if (!is_file($skuListPartial)) {
     background-size: 18px 18px;
 }
 </style>
+    <?php
+}
+
+?>
 <div class="dnk-sku-list<?= $rootModifierClass ?>" data-dnk-sku-list>
 <?php
 include $skuListPartial;
 ?>
 </div>
+<?php
+
+if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_SCRIPT'])) {
+    $GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_SCRIPT'] = true;
+    ?>
 <script>
 (function () {
     'use strict';
@@ -283,3 +336,5 @@ include $skuListPartial;
     }
 })();
 </script>
+    <?php
+}
