@@ -471,7 +471,19 @@ if ($arParams['BORDERED'] !== 'N') {
                                             </div>
                                         </div>
                                     <?endif; ?>
-                                    sku.list
+                                    <?php $APPLICATION->IncludeComponent(
+                                        'dnk:sku.list',
+                                        'catalog_block',
+                                        [
+                                            'CACHE_TYPE' => 'N',
+                                            'CACHE_TIME' => 3600,
+                                            'IBLOCK_ID' => (int) $arItem['IBLOCK_ID'],
+                                            'ELEMENT_ID' => (int) $arItem['ID'],
+                                            'SHADES_IBLOCK_ID' => 47,
+                                        ],
+                                        $component,
+                                        ['HIDE_ICONS' => 'Y']
+                                    ); ?>
                                 </div>
                             </div>
                         </div>

@@ -19,12 +19,12 @@ $swiperOptions = Json::encode([
         'enabled' => true,
         'momentum' => true,
     ],
-    'spaceBetween' => 8,
+    'spaceBetween' => 5,
     'pagination' => false,
     'watchOverflow' => true,
 ]);
 
-$rootModifierClass = '';
+$rootModifierClass = ' dnk-sku-list--catalog-block';
 
 /** @var string $componentPath */
 $skuListPartial = $_SERVER['DOCUMENT_ROOT'] . $componentPath . '/partials/slider.php';
@@ -33,13 +33,26 @@ if (!is_file($skuListPartial)) {
     return;
 }
 
-?>
+if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'])) {
+    $GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_STYLES'] = true;
+    ?>
 <style>
 .dnk-sku-list {
     margin-top: 20px;
     min-width: 0;
     width: 100%;
     max-width: 100%;
+}
+
+.dnk-sku-list--catalog-block {
+    --dnk-sku-catalog-size: 35px;
+    --dnk-sku-catalog-gap: 5px;
+    margin-top: 12px;
+}
+
+.dnk-sku-list--catalog-block .dnk-sku-list__label {
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
 }
 
 .dnk-sku-list__label {
@@ -98,6 +111,11 @@ if (!is_file($skuListPartial)) {
     height: 14px;
 }
 
+.dnk-sku-list--catalog-block .dnk-sku-list__nav {
+    width: var(--dnk-sku-catalog-size);
+    height: var(--dnk-sku-catalog-size);
+}
+
 .dnk-sku-list__item {
     display: block;
     box-sizing: border-box;
@@ -112,6 +130,31 @@ if (!is_file($skuListPartial)) {
     text-decoration: none;
     color: inherit;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.catalog-block .dnk-sku-list--catalog-block .dnk-sku-list__item,
+.dnk-sku-list--catalog-block .dnk-sku-list__item {
+    width: var(--dnk-sku-catalog-size);
+    height: var(--dnk-sku-catalog-size);
+    max-width: var(--dnk-sku-catalog-size);
+}
+
+.catalog-block .dnk-sku-list--catalog-block .dnk-sku-list__slider .swiper-slide,
+.dnk-sku-list--catalog-block .dnk-sku-list__slider .swiper-slide {
+    width: var(--dnk-sku-catalog-size) !important;
+    max-width: var(--dnk-sku-catalog-size);
+    flex-shrink: 0;
+}
+
+.dnk-sku-list--catalog-block .dnk-sku-list__slider:not(.swiper-initialized) .swiper-wrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: var(--dnk-sku-catalog-gap);
+}
+
+.dnk-sku-list--catalog-block .dnk-sku-list__slider:not(.swiper-initialized) .swiper-slide {
+    width: var(--dnk-sku-catalog-size) !important;
+    max-width: var(--dnk-sku-catalog-size);
 }
 
 .dnk-sku-list__item:not(.dnk-sku-list__item--current):hover {
@@ -143,6 +186,15 @@ if (!is_file($skuListPartial)) {
     object-fit: contain;
 }
 
+.catalog-block .dnk-sku-list--catalog-block img.dnk-sku-list__image,
+.dnk-sku-list--catalog-block .dnk-sku-list__image {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
 .dnk-sku-list__placeholder {
     display: block;
     width: 100%;
@@ -153,12 +205,25 @@ if (!is_file($skuListPartial)) {
     background-position: center;
     background-size: 18px 18px;
 }
+
+.dnk-sku-list--catalog-block .dnk-sku-list__placeholder {
+    background-size: 12px 12px;
+}
 </style>
+    <?php
+}
+
+?>
 <div class="dnk-sku-list<?= $rootModifierClass ?>" data-dnk-sku-list>
 <?php
 include $skuListPartial;
 ?>
 </div>
+<?php
+
+if (empty($GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_SCRIPT'])) {
+    $GLOBALS['DNK_SKU_LIST_CATALOG_BLOCK_SCRIPT'] = true;
+    ?>
 <script>
 (function () {
     'use strict';
@@ -274,3 +339,5 @@ include $skuListPartial;
     }
 })();
 </script>
+    <?php
+}
