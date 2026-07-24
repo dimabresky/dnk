@@ -2128,4 +2128,223 @@ final class Utils
     {
         return htmlspecialcharsbx($text, ENT_QUOTES | ENT_SUBSTITUTE);
     }
+
+    private const SKU_GROUPING_PROPERTY_CODE = 'GRUPPIROVKATOVAROVNASAYTE';
+
+    private const SKU_SHADE_PROPERTY_CODE = 'OTTENOK';
+
+    /**
+     * Число «других» вариантов в группе (как dnk:sku.list): только с оттенком из $shadesIblockId.
+     *
+     * @param list<int|string> $elementIds
+     * @return array<int, int> elementId => extraCount (0 — плашку не показывать)
+     */
+    public static function getSkuGroupExtraCountMap(int $iblockId, int $shadesIblockId, array $elementIds): array
+    {
+        $result = [];
+        $elementIds = array_values(array_unique(array_filter(
+            array_map(static fn($id) => (int) $id, $elementIds),
+            static fn(int $id) => $id > 0
+        )));
+        foreach ($elementIds as $elementId) {
+            $result[$elementId] = 0;
+        }
+
+        if ($iblockId <= 0 || $elementIds === [] || !Loader::includeModule('iblock')) {
+            return $result;
+        }
+
+        $elementToGroup = [];
+        $rs = \CIBlockElement::GetList(
+            [],
+            [
+                'IBLOCK_ID' => $iblockId,
+                'ID' => $elementIds,
+                'ACTIVE' => 'Y',
+            ],
+            false,
+            false,
+            ['ID', 'PROPERTY_' . self::SKU_GROUPING_PROPERTY_CODE]
+        );
+        while ($ob = $rs->GetNext()) {
+            $groupingValue = self::normalizeSkuGroupingPropertyValue(
+                $ob['PROPERTY_' . self::SKU_GROUPING_PROPERTY_CODE . '_VALUE']
+                    ?? $ob['PROPERTY_' . self::SKU_GROUPING_PROPERTY_CODE]
+                    ?? null
+            );
+            if ($groupingValue === null) {
+                continue;
+            }
+            $elementToGroup[(int) $ob['ID']] = $groupingValue;
+        }
+
+        if ($elementToGroup === []) {
+            return $result;
+        }
+
+        $enumXmlIdMap = self::buildIblockListPropertyEnumXmlIdMap($iblockId, self::SKU_SHADE_PROPERTY_CODE);
+        $groupCache = [];
+
+        foreach ($elementToGroup as $elementId => $groupingValue) {
+            $cacheKey = self::buildSkuGroupingCacheKey($groupingValue);
+            if (!isset($groupCache[$cacheKey])) {
+                $groupCache[$cacheKey] = self::getVisibleSkuGroupElementIds(
+                    $iblockId,
+                    $groupingValue,
+                    $shadesIblockId,
+                    $enumXmlIdMap
+                );
+            }
+
+            $visibleIds = $groupCache[$cacheKey];
+            $visibleCount = count($visibleIds);
+            if ($visibleCount <= 1 || !isset($visibleIds[$elementId])) {
+                continue;
+            }
+
+            $result[$elementId] = $visibleCount - 1;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Склонение «вариант» для русского текста плашки (N уже в форме «ещё N»).
+     */
+    public static function formatSkuVariantsWordRu(int $count): string
+    {
+        $count = abs($count) % 100;
+        $mod10 = $count % 10;
+        if ($count > 10 && $count < 20) {
+            return 'вариантов';
+        }
+        if ($mod10 > 1 && $mod10 < 5) {
+            return 'варианта';
+        }
+        if ($mod10 === 1) {
+            return 'вариант';
+        }
+
+        return 'вариантов';
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private static function normalizeSkuGroupingPropertyValue($value): ?string
+    {
+        if ($value === null || $value === '' || $value === false) {
+            return null;
+        }
+        if (is_array($value)) {
+            $value = !empty($value) ? reset($value) : null;
+            if ($value === null || $value === '') {
+                return null;
+            }
+        }
+
+        return (string) $value;
+    }
+
+    private static function buildSkuGroupingCacheKey(string $groupingValue): string
+    {
+        return md5($groupingValue);
+    }
+
+    /**
+     * @param array<int, string> $enumXmlIdMap
+     * @return array<int, true> visible element IDs as keys
+     */
+    private static function getVisibleSkuGroupElementIds(
+        int $iblockId,
+        string $groupingValue,
+        int $shadesIblockId,
+        array $enumXmlIdMap
+    ): array {
+        $rawItems = [];
+        $rs = \CIBlockElement::GetList(
+            ['SORT' => 'ASC', 'NAME' => 'ASC'],
+            [
+                'IBLOCK_ID' => $iblockId,
+                'ACTIVE' => 'Y',
+                'PROPERTY_' . self::SKU_GROUPING_PROPERTY_CODE => $groupingValue,
+            ],
+            false,
+            false,
+            [
+                'ID',
+                'PROPERTY_' . self::SKU_SHADE_PROPERTY_CODE,
+            ]
+        );
+
+        while ($ob = $rs->GetNext()) {
+            $enumId = self::coerceIblockListEnumId(
+                $ob['PROPERTY_' . self::SKU_SHADE_PROPERTY_CODE . '_ENUM_ID'] ?? null
+            );
+            $ottenokXmlId = ($enumId !== null && isset($enumXmlIdMap[$enumId]))
+                ? $enumXmlIdMap[$enumId]
+                : '';
+
+            $rawItems[] = [
+                'ID' => (int) $ob['ID'],
+                'OTTENOK_XML_ID' => trim((string) $ottenokXmlId),
+            ];
+        }
+
+        $ottenokXmlIds = [];
+        foreach ($rawItems as $row) {
+            if ($row['OTTENOK_XML_ID'] !== '') {
+                $ottenokXmlIds[$row['OTTENOK_XML_ID']] = true;
+            }
+        }
+
+        $shadesMap = ($shadesIblockId > 0 && $ottenokXmlIds !== [])
+            ? self::loadActiveShadeXmlIds($shadesIblockId, array_keys($ottenokXmlIds))
+            : [];
+
+        $visible = [];
+        foreach ($rawItems as $row) {
+            $xmlId = $row['OTTENOK_XML_ID'];
+            if ($xmlId === '' || !isset($shadesMap[$xmlId])) {
+                continue;
+            }
+            $visible[$row['ID']] = true;
+        }
+
+        return $visible;
+    }
+
+    /**
+     * @param list<string> $xmlIds
+     * @return array<string, true>
+     */
+    private static function loadActiveShadeXmlIds(int $shadesIblockId, array $xmlIds): array
+    {
+        $xmlIds = array_values(array_filter(array_unique(array_map('strval', $xmlIds))));
+        if ($shadesIblockId <= 0 || $xmlIds === []) {
+            return [];
+        }
+
+        $map = [];
+        $rs = \CIBlockElement::GetList(
+            ['SORT' => 'ASC', 'NAME' => 'ASC'],
+            [
+                'IBLOCK_ID' => $shadesIblockId,
+                'ACTIVE' => 'Y',
+                'XML_ID' => $xmlIds,
+            ],
+            false,
+            false,
+            ['ID', 'XML_ID']
+        );
+
+        while ($ob = $rs->GetNext()) {
+            $xmlId = trim((string) ($ob['XML_ID'] ?? ''));
+            if ($xmlId !== '') {
+                $map[$xmlId] = true;
+            }
+        }
+
+        return $map;
+    }
 }

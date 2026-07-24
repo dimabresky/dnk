@@ -41,4 +41,5 @@
   $MESS['VOTES_RESULT'] = 'Rating #VALUE# out of 5';
   $MESS['VOTES_RESULT_NONE'] = 'No ratings';
   $MESS["CATALOG_SECTION_LIST"] = 'List of products in section ';
+  $MESS['CATALOG_BLOCK_SKU_MORE'] = '#COUNT# more variants';
 ?>
