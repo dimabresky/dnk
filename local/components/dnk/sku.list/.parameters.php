@@ -23,6 +23,12 @@ $arComponentParameters = [
             'TYPE' => 'STRING',
             'DEFAULT' => '',
         ],
+        'SHADES_IBLOCK_ID' => [
+            'PARENT' => 'BASE',
+            'NAME' => GetMessage('DNK_SKU_LIST_PARAM_SHADES_IBLOCK_ID'),
+            'TYPE' => 'STRING',
+            'DEFAULT' => '49',
+        ],
         'CACHE_TIME' => [
             'PARENT' => 'CACHE_SETTINGS',
             'NAME' => GetMessage('DNK_SKU_LIST_PARAM_CACHE_TIME'),

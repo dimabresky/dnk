@@ -4,16 +4,38 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
     die();
 }
 
+use Bitrix\Main\Web\Json;
+
 if (empty($arResult['ITEMS']) || empty($arResult['CURRENT_ITEM'])) {
     return;
 }
 
 $current = $arResult['CURRENT_ITEM'];
-$currentName = htmlspecialcharsbx($current['NAME']);
+$currentName = htmlspecialcharsbx($current['SHADE_NAME'] ?? $current['NAME']);
+
+$swiperOptions = Json::encode([
+    'slidesPerView' => 'auto',
+    'freeMode' => [
+        'enabled' => true,
+        'momentum' => true,
+    ],
+    'spaceBetween' => 8,
+    'pagination' => false,
+    'watchOverflow' => true,
+]);
+
+$rootModifierClass = '';
+
+/** @var string $componentPath */
+$skuListPartial = $_SERVER['DOCUMENT_ROOT'] . $componentPath . '/partials/slider.php';
+
+if (!is_file($skuListPartial)) {
+    return;
+}
 
 ?>
 <style>
-    .dnk-sku-list {
+.dnk-sku-list {
     margin-top: 20px;
     min-width: 0;
     width: 100%;
@@ -27,12 +49,53 @@ $currentName = htmlspecialcharsbx($current['NAME']);
     font-weight: 400;
 }
 
-.dnk-sku-list__items {
+.dnk-sku-list__slider-wrap {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
     min-width: 0;
     max-width: 100%;
+}
+
+.dnk-sku-list__slider {
+    flex: 1;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.dnk-sku-list__slider .swiper-slide {
+    width: auto;
+}
+
+.dnk-sku-list__nav {
+    box-sizing: border-box;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background-color: #fff;
+    color: var(--theme-base-color, #000);
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.dnk-sku-list__nav:hover {
+    border-color: rgba(0, 0, 0, 0.35);
+}
+
+.dnk-sku-list__nav[hidden] {
+    display: none;
+}
+
+.dnk-sku-list__nav-icon {
+    display: block;
+    width: 8px;
+    height: 14px;
 }
 
 .dnk-sku-list__item {
@@ -91,45 +154,70 @@ $currentName = htmlspecialcharsbx($current['NAME']);
     background-size: 18px 18px;
 }
 </style>
-<div class="dnk-sku-list" data-dnk-sku-list>
-    <div
-        class="dnk-sku-list__label"
-        data-dnk-sku-label
-        data-default-name="<?= $currentName ?>"
-    ><?= $currentName ?></div>
-    <div class="dnk-sku-list__items" role="list">
-        <?php foreach ($arResult['ITEMS'] as $item): ?>
-            <?php
-            $itemName = htmlspecialcharsbx($item['NAME']);
-            $isCurrent = !empty($item['IS_CURRENT']);
-            ?>
-            <a
-                href="<?= htmlspecialcharsbx($item['DETAIL_PAGE_URL']) ?>"
-                class="dnk-sku-list__item<?= $isCurrent ? ' dnk-sku-list__item--current' : '' ?>"
-                role="listitem"
-                data-sku-name="<?= $itemName ?>"
-                title="<?= $itemName ?>"
-                <?= $isCurrent ? 'aria-current="page"' : '' ?>
-            >
-                <span class="dnk-sku-list__image-wrap" aria-hidden="true">
-                    <?php if (!empty($item['PICTURE_SRC'])): ?>
-                        <img
-                            src="<?= htmlspecialcharsbx($item['PICTURE_SRC']) ?>"
-                            alt="<?= $itemName ?>"
-                            class="dnk-sku-list__image"
-                            loading="lazy"
-                        >
-                    <?php else: ?>
-                        <span class="dnk-sku-list__placeholder"></span>
-                    <?php endif; ?>
-                </span>
-            </a>
-        <?php endforeach; ?>
-    </div>
+<div class="dnk-sku-list<?= $rootModifierClass ?>" data-dnk-sku-list>
+<?php
+include $skuListPartial;
+?>
 </div>
 <script>
-    (function () {
+(function () {
     'use strict';
+
+    var navEvents = ['resize', 'fromEdge', 'toEdge', 'slideChange', 'update', 'setTranslate'];
+
+    function waitForSwiper(sliderEl, callback) {
+        if (sliderEl.swiper) {
+            callback(sliderEl.swiper);
+            return;
+        }
+
+        var observer = new MutationObserver(function () {
+            if (sliderEl.classList.contains('swiper-initialized') && sliderEl.swiper) {
+                observer.disconnect();
+                callback(sliderEl.swiper);
+            }
+        });
+
+        observer.observe(sliderEl, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+    }
+
+    function bindNavButtons(sliderEl, prevBtn, nextBtn) {
+        if (sliderEl.getAttribute('data-dnk-sku-nav-init') === '1') {
+            return;
+        }
+
+        waitForSwiper(sliderEl, function (swiper) {
+            if (sliderEl.getAttribute('data-dnk-sku-nav-init') === '1') {
+                return;
+            }
+
+            sliderEl.setAttribute('data-dnk-sku-nav-init', '1');
+
+            function updateNavVisibility() {
+                prevBtn.hidden = swiper.isLocked || swiper.isBeginning;
+                nextBtn.hidden = swiper.isLocked || swiper.isEnd;
+            }
+
+            prevBtn.addEventListener('click', function () {
+                swiper.slidePrev();
+            });
+
+            nextBtn.addEventListener('click', function () {
+                swiper.slideNext();
+            });
+
+            updateNavVisibility();
+
+            navEvents.forEach(function (eventName) {
+                swiper.on(eventName, updateNavVisibility);
+            });
+
+            window.addEventListener('resize', updateNavVisibility);
+        });
+    }
 
     function bindRoot(root) {
         if (root.getAttribute('data-dnk-sku-list-init') === '1') {
@@ -137,8 +225,10 @@ $currentName = htmlspecialcharsbx($current['NAME']);
         }
 
         var label = root.querySelector('[data-dnk-sku-label]');
-        var itemsWrap = root.querySelector('.dnk-sku-list__items');
-        if (!label || !itemsWrap) {
+        var itemsWrap = root.querySelector('.dnk-sku-list__slider');
+        var prevBtn = root.querySelector('[data-dnk-sku-prev]');
+        var nextBtn = root.querySelector('[data-dnk-sku-next]');
+        if (!label || !itemsWrap || !prevBtn || !nextBtn) {
             return;
         }
 
@@ -160,6 +250,7 @@ $currentName = htmlspecialcharsbx($current['NAME']);
         });
 
         itemsWrap.addEventListener('mouseleave', restoreLabel);
+        bindNavButtons(itemsWrap, prevBtn, nextBtn);
     }
 
     function scan() {
