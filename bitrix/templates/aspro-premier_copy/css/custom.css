@@ -171,5 +171,5 @@
 }
 
 #awz_cookies_sett__detail-form input:checked:disabled + .awz_cookies_sett__slider {
-	background: var(--grey_bg);
+	background: #ccc;
 }
