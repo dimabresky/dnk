@@ -101,6 +101,7 @@
 
 # GTM / metrics — per-environment, not in repo
 /include/header/google_metrics.php
+/include/header/google_metrics_includer.php
 
 # --- IDE / OS ---
 .idea/
