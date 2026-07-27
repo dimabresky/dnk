@@ -136,7 +136,23 @@
 }
 
 /* AWZ cookie settings popup */
-.awz_cookies_sett__container {
+#awz_cookies_sett__detail-form .awz_cookies_sett__container {
 	border: 2px solid var(--theme-base-color);
 	border-radius: 8px;
+}
+
+#awz_cookies_sett__detail-form .awz_cookies_sett__detail-alert {
+	color: var(--theme-base-color);
+}
+
+#awz_cookies_sett__detail-form input:checked + .awz_cookies_sett__slider {
+	background: var(--theme-base-color);
+}
+
+#awz_cookies_sett__detail-form input:checked:disabled + .awz_cookies_sett__slider {
+	background: #ccc;
+}
+
+#awz_cookies_sett__detail-form .awz_cookies_sett__save {
+	background: var(--theme-base-color);
 }
