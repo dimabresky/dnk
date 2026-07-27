@@ -10,13 +10,27 @@ $bIncludedModule = \Bitrix\Main\Loader::includeModule('aspro.premier');
 ?><!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="<?=LANGUAGE_ID?>" lang="<?=LANGUAGE_ID?>" class="<?=($_SESSION['SESS_INCLUDE_AREAS'] ? 'bx_editmode ' : '')?><?=strpos( $_SERVER['HTTP_USER_AGENT'], 'MSIE 7.0' ) ? 'ie ie7' : ''?> <?=strpos( $_SERVER['HTTP_USER_AGENT'], 'MSIE 8.0' ) ? 'ie ie8' : ''?> <?=strpos( $_SERVER['HTTP_USER_AGENT'], 'MSIE 9.0' ) ? 'ie ie9' : ''?>">
 	<head>
-                <!-- Google Tag Manager -->
-                <script data-skip-moving="true">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-                j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-                'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-                })(window,document,'script','dataLayer','GTM-TL3G6JF8');</script>
-                <!-- End Google Tag Manager -->
+                <?
+                use Awz\CookiesSett\App as CookieApp;
+
+                if (\Bitrix\Main\Loader::includeModule('awz.cookiessett')) {
+
+                    $app = CookieApp::getInstance();
+                    if ($app->isEmpty() || $app->check(CookieApp::MARKET_EXT)) {
+                        //разрешены маркетинговые
+                        ?>
+                        <!-- Google Tag Manager -->
+                        <script data-skip-moving="true">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                        })(window,document,'script','dataLayer','GTM-TL3G6JF8');</script>
+                        <!-- End Google Tag Manager -->
+                        <?
+                    }
+
+                }
+                ?>
 
 		<title><?$APPLICATION->ShowTitle()?></title>
 		<?$APPLICATION->ShowMeta("viewport");?>
