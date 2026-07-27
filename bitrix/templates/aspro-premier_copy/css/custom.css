@@ -161,3 +161,15 @@
 	border: 2px solid var(--theme-base-color);
 	border-radius: 8px;
 }
+
+.awz_cookies_sett__detail-alert {
+	color: var(--theme-base-color);
+}
+
+input:checked + .awz_cookies_sett__slider {
+	background: var(--theme-base-color);
+}
+
+input:checked:disabled + .awz_cookies_sett__slider {
+	background: var(--grey_bg);
+}
