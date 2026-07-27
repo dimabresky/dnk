@@ -309,7 +309,7 @@ if ($arParams['BORDERED'] !== 'N') {
                         if ($dnkSkuExtraCount > 0):
                             $dnkSkuVariantsWord = \Dnk\PhpInterface\Utils::formatSkuVariantsWordRu($dnkSkuExtraCount);
                             ?>
-                            <span class="catalog-block__sku-more-badge font_12">
+                            <span class="catalog-block__sku-more-badge font_14">
                                 <?=GetMessage('CATALOG_BLOCK_SKU_MORE', [
                                     '#COUNT#' => $dnkSkuExtraCount,
                                     '#WORD#' => $dnkSkuVariantsWord,
