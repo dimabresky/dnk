@@ -99,6 +99,9 @@
 !/include/blocks/consent/dnk/
 !/include/blocks/consent/dnk/**
 
+# GTM / metrics — per-environment, not in repo
+/include/header/google_metrics.php
+
 # --- IDE / OS ---
 .idea/
 .vscode/
