@@ -155,3 +155,9 @@
 .bx-soa .aspro-bonus-uses {
 	display: none !important;
 }
+
+/* AWZ cookie settings popup */
+.awz_cookies_sett__container {
+	border: 2px solid var(--theme-base-color);
+	border-radius: 8px;
+}
