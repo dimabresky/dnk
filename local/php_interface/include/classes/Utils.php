@@ -2377,6 +2377,15 @@ final class Utils
                 continue;
             }
 
+            $volumeLabel = trim((string) (
+                $ob['PROPERTY_' . self::SKU_VOLUME_PROPERTY_CODE . '_VALUE']
+                ?? $ob['PROPERTY_' . self::SKU_VOLUME_PROPERTY_CODE]
+                ?? ''
+            ));
+            if ($volumeLabel === '') {
+                continue;
+            }
+
             $visible[(int) $ob['ID']] = true;
         }
 
