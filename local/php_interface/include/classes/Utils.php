@@ -2133,8 +2133,44 @@ final class Utils
 
     private const SKU_SHADE_PROPERTY_CODE = 'OTTENOK';
 
+    private const SKU_VOLUME_PROPERTY_CODE = 'NOMINALNYY_OBEM';
+
+    public const SKU_VARIANT_MODE_SHADE = 'shade';
+
+    public const SKU_VARIANT_MODE_VOLUME = 'volume';
+
     /**
-     * Число «других» вариантов в группе (как dnk:sku.list): только с оттенком из $shadesIblockId.
+     * Видимые варианты группы: сначала OTTENOK + ИБ оттенков, при пустом результате — NOMINALNYY_OBEM.
+     *
+     * @return array{mode: string, visible: array<int, true>}
+     */
+    public static function resolveSkuGroupVariantElementIds(
+        int $iblockId,
+        string $groupingValue,
+        int $shadesIblockId
+    ): array {
+        $enumXmlIdMap = self::buildIblockListPropertyEnumXmlIdMap($iblockId, self::SKU_SHADE_PROPERTY_CODE);
+        $visible = self::getVisibleSkuGroupElementIds(
+            $iblockId,
+            $groupingValue,
+            $shadesIblockId,
+            $enumXmlIdMap
+        );
+        if ($visible !== []) {
+            return [
+                'mode' => self::SKU_VARIANT_MODE_SHADE,
+                'visible' => $visible,
+            ];
+        }
+
+        return [
+            'mode' => self::SKU_VARIANT_MODE_VOLUME,
+            'visible' => self::getVisibleSkuGroupElementIdsByVolume($iblockId, $groupingValue),
+        ];
+    }
+
+    /**
+     * Число «других» вариантов в группе (как dnk:sku.list): оттенок или номинальный объём.
      *
      * @param list<int|string> $elementIds
      * @return array<int, int> elementId => extraCount (0 — плашку не показывать)
@@ -2182,18 +2218,16 @@ final class Utils
             return $result;
         }
 
-        $enumXmlIdMap = self::buildIblockListPropertyEnumXmlIdMap($iblockId, self::SKU_SHADE_PROPERTY_CODE);
         $groupCache = [];
 
         foreach ($elementToGroup as $elementId => $groupingValue) {
             $cacheKey = self::buildSkuGroupingCacheKey($groupingValue);
             if (!isset($groupCache[$cacheKey])) {
-                $groupCache[$cacheKey] = self::getVisibleSkuGroupElementIds(
+                $groupCache[$cacheKey] = self::resolveSkuGroupVariantElementIds(
                     $iblockId,
                     $groupingValue,
-                    $shadesIblockId,
-                    $enumXmlIdMap
-                );
+                    $shadesIblockId
+                )['visible'];
             }
 
             $visibleIds = $groupCache[$cacheKey];
@@ -2309,6 +2343,50 @@ final class Utils
                 continue;
             }
             $visible[$row['ID']] = true;
+        }
+
+        return $visible;
+    }
+
+    /**
+     * @return array<int, true>
+     */
+    private static function getVisibleSkuGroupElementIdsByVolume(int $iblockId, string $groupingValue): array
+    {
+        $visible = [];
+        $rs = \CIBlockElement::GetList(
+            ['SORT' => 'ASC', 'NAME' => 'ASC'],
+            [
+                'IBLOCK_ID' => $iblockId,
+                'ACTIVE' => 'Y',
+                'PROPERTY_' . self::SKU_GROUPING_PROPERTY_CODE => $groupingValue,
+            ],
+            false,
+            false,
+            [
+                'ID',
+                'PROPERTY_' . self::SKU_VOLUME_PROPERTY_CODE,
+            ]
+        );
+
+        while ($ob = $rs->GetNext()) {
+            $enumId = self::coerceIblockListEnumId(
+                $ob['PROPERTY_' . self::SKU_VOLUME_PROPERTY_CODE . '_ENUM_ID'] ?? null
+            );
+            if ($enumId === null) {
+                continue;
+            }
+
+            $volumeLabel = trim((string) (
+                $ob['PROPERTY_' . self::SKU_VOLUME_PROPERTY_CODE . '_VALUE']
+                ?? $ob['PROPERTY_' . self::SKU_VOLUME_PROPERTY_CODE]
+                ?? ''
+            ));
+            if ($volumeLabel === '') {
+                continue;
+            }
+
+            $visible[(int) $ob['ID']] = true;
         }
 
         return $visible;
