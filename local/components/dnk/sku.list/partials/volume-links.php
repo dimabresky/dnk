@@ -9,25 +9,26 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
  */
 
 ?>
-    <div
-        class="dnk-sku-list__label"
-        data-dnk-sku-label
-        data-default-name="<?= $currentName ?>"
-    ><?= $currentName ?></div>
     <div class="dnk-sku-list__volume-list" role="list">
         <?php foreach ($arResult['ITEMS'] as $item): ?>
             <?php
-            if (!empty($item['IS_CURRENT'])) {
-                continue;
-            }
             $itemName = htmlspecialcharsbx($item['VARIANT_LABEL'] ?? $item['NAME']);
+            $isCurrent = !empty($item['IS_CURRENT']);
             ?>
-            <a
-                href="<?= htmlspecialcharsbx($item['DETAIL_PAGE_URL']) ?>"
-                class="dnk-sku-list__volume-item"
-                role="listitem"
-                data-sku-name="<?= $itemName ?>"
-                title="<?= $itemName ?>"
-            ><?= $itemName ?></a>
+            <?php if ($isCurrent): ?>
+                <span
+                    class="dnk-sku-list__volume-item dnk-sku-list__volume-item--current"
+                    role="listitem"
+                    aria-current="page"
+                ><?= $itemName ?></span>
+            <?php else: ?>
+                <a
+                    href="<?= htmlspecialcharsbx($item['DETAIL_PAGE_URL']) ?>"
+                    class="dnk-sku-list__volume-item"
+                    role="listitem"
+                    data-sku-name="<?= $itemName ?>"
+                    title="<?= $itemName ?>"
+                ><?= $itemName ?></a>
+            <?php endif; ?>
         <?php endforeach; ?>
     </div>

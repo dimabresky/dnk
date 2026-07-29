@@ -15,9 +15,7 @@ $variantMode = (string) ($arResult['VARIANT_MODE'] ?? Utils::SKU_VARIANT_MODE_SH
 $isVolumeMode = $variantMode === Utils::SKU_VARIANT_MODE_VOLUME;
 
 $current = $arResult['CURRENT_ITEM'];
-if ($isVolumeMode) {
-    $currentName = htmlspecialcharsbx($current['VARIANT_LABEL'] ?? $current['NAME']);
-} else {
+if (!$isVolumeMode) {
     $currentName = htmlspecialcharsbx($current['SHADE_NAME'] ?? $current['NAME']);
 }
 
@@ -185,6 +183,12 @@ if (!is_file($skuListPartial)) {
 .dnk-sku-list__volume-item:hover {
     color: var(--theme-base-color, #000);
 }
+
+.dnk-sku-list__volume-item--current {
+    font-weight: 600;
+    text-decoration: none;
+    cursor: default;
+}
 </style>
 <div class="dnk-sku-list<?= $rootModifierClass ?>" data-dnk-sku-list>
 <?php
@@ -261,28 +265,34 @@ include $skuListPartial;
             || root.querySelector('.dnk-sku-list__volume-list');
         var prevBtn = root.querySelector('[data-dnk-sku-prev]');
         var nextBtn = root.querySelector('[data-dnk-sku-next]');
-        if (!label || !itemsWrap) {
+        if (!itemsWrap) {
+            return;
+        }
+        if (!label && !itemsWrap.classList.contains('dnk-sku-list__volume-list')) {
             return;
         }
 
         root.setAttribute('data-dnk-sku-list-init', '1');
 
-        var defaultName = label.getAttribute('data-default-name') || label.textContent;
+        if (label) {
+            var defaultName = label.getAttribute('data-default-name') || label.textContent;
 
-        function restoreLabel() {
-            label.textContent = defaultName;
+            function restoreLabel() {
+                label.textContent = defaultName;
+            }
+
+            itemsWrap.querySelectorAll('[data-sku-name]').forEach(function (item) {
+                item.addEventListener('mouseenter', function () {
+                    var name = item.getAttribute('data-sku-name');
+                    if (name) {
+                        label.textContent = name;
+                    }
+                });
+            });
+
+            itemsWrap.addEventListener('mouseleave', restoreLabel);
         }
 
-        itemsWrap.querySelectorAll('[data-sku-name]').forEach(function (item) {
-            item.addEventListener('mouseenter', function () {
-                var name = item.getAttribute('data-sku-name');
-                if (name) {
-                    label.textContent = name;
-                }
-            });
-        });
-
-        itemsWrap.addEventListener('mouseleave', restoreLabel);
         if (prevBtn && nextBtn && itemsWrap.classList.contains('dnk-sku-list__slider')) {
             bindNavButtons(itemsWrap, prevBtn, nextBtn);
         }

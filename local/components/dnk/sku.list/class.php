@@ -37,7 +37,7 @@ class DnkSkuListComponent extends CBitrixComponent
         }
 
         $cacheTime = (int) ($this->arParams['CACHE_TIME'] ?? 3600);
-        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId . '_v3_vol';
+        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId . '_v4_vol';
         $cachePath = '/dnk/sku.list';
 
         if ($this->startResultCache($cacheTime, $cacheId, $cachePath)) {
@@ -64,7 +64,7 @@ class DnkSkuListComponent extends CBitrixComponent
                 );
                 $this->arResult['VARIANT_MODE'] = $bundle['mode'];
                 if ($bundle['mode'] === Utils::SKU_VARIANT_MODE_VOLUME) {
-                    $this->applyVolumeDisplayItems($bundle['items']);
+                    $this->finalizeVolumeResult($bundle['items']);
                 } else {
                     $this->arResult['ITEMS'] = $bundle['items'];
                     $this->arResult['CURRENT_ITEM'] = $this->resolveCurrentItem($this->arResult['ITEMS']);
@@ -304,29 +304,20 @@ class DnkSkuListComponent extends CBitrixComponent
     }
 
     /**
-     * На деталке в режиме объёма в списке только другие варианты; без альтернатив блок скрывается.
+     * Режим объёма: полный список вариантов; при менее чем двух — блок не показывается.
      *
      * @param array $items
      */
-    private function applyVolumeDisplayItems(array $items): void
+    private function finalizeVolumeResult(array $items): void
     {
-        $currentItem = $this->resolveCurrentItem($items);
-        $otherItems = [];
-        foreach ($items as $row) {
-            if (!empty($row['IS_CURRENT'])) {
-                continue;
-            }
-            $otherItems[] = $row;
-        }
-
-        if ($otherItems === [] || $currentItem === null) {
+        if (count($items) < 2) {
             $this->arResult['ITEMS'] = [];
             $this->arResult['CURRENT_ITEM'] = null;
 
             return;
         }
 
-        $this->arResult['ITEMS'] = $otherItems;
-        $this->arResult['CURRENT_ITEM'] = $currentItem;
+        $this->arResult['ITEMS'] = $items;
+        $this->arResult['CURRENT_ITEM'] = $this->resolveCurrentItem($items);
     }
 }
