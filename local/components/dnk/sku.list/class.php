@@ -37,7 +37,7 @@ class DnkSkuListComponent extends CBitrixComponent
         }
 
         $cacheTime = (int) ($this->arParams['CACHE_TIME'] ?? 3600);
-        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId . '_v4_vol';
+        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId . '_v5_vol';
         $cachePath = '/dnk/sku.list';
 
         if ($this->startResultCache($cacheTime, $cacheId, $cachePath)) {
@@ -208,6 +208,8 @@ class DnkSkuListComponent extends CBitrixComponent
                 ];
             }
 
+            $this->sortVolumeItemsByLabelAsc($items);
+
             return ['items' => $items, 'mode' => $mode];
         }
 
@@ -319,5 +321,45 @@ class DnkSkuListComponent extends CBitrixComponent
 
         $this->arResult['ITEMS'] = $items;
         $this->arResult['CURRENT_ITEM'] = $this->resolveCurrentItem($items);
+    }
+
+    /**
+     * @param list<array> $items
+     */
+    private function sortVolumeItemsByLabelAsc(array &$items): void
+    {
+        usort($items, static function (array $a, array $b): int {
+            $keyA = self::volumeLabelToSortKey((string) ($a['VARIANT_LABEL'] ?? ''));
+            $keyB = self::volumeLabelToSortKey((string) ($b['VARIANT_LABEL'] ?? ''));
+            if ($keyA !== $keyB) {
+                return $keyA <=> $keyB;
+            }
+
+            return strcmp((string) ($a['VARIANT_LABEL'] ?? ''), (string) ($b['VARIANT_LABEL'] ?? ''));
+        });
+    }
+
+    /**
+     * Числовой ключ для сортировки подписи объёма (мл/л) по возрастанию.
+     */
+    private static function volumeLabelToSortKey(string $label): float
+    {
+        $label = mb_strtolower(str_replace(',', '.', trim($label)));
+        if ($label === '') {
+            return PHP_FLOAT_MAX;
+        }
+
+        if (!preg_match('/(\d+(?:\.\d+)?)\s*(мл|ml|л|l)?/u', $label, $matches)) {
+            return PHP_FLOAT_MAX;
+        }
+
+        $value = (float) $matches[1];
+        $unit = $matches[2] ?? 'мл';
+
+        if ($unit === 'л' || $unit === 'l') {
+            return $value * 1000.0;
+        }
+
+        return $value;
     }
 }
