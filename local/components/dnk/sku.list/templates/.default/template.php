@@ -5,13 +5,21 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
 }
 
 use Bitrix\Main\Web\Json;
+use Dnk\PhpInterface\Utils;
 
 if (empty($arResult['ITEMS']) || empty($arResult['CURRENT_ITEM'])) {
     return;
 }
 
+$variantMode = (string) ($arResult['VARIANT_MODE'] ?? Utils::SKU_VARIANT_MODE_SHADE);
+$isVolumeMode = $variantMode === Utils::SKU_VARIANT_MODE_VOLUME;
+
 $current = $arResult['CURRENT_ITEM'];
-$currentName = htmlspecialcharsbx($current['SHADE_NAME'] ?? $current['NAME']);
+if ($isVolumeMode) {
+    $currentName = htmlspecialcharsbx($current['VARIANT_LABEL'] ?? $current['NAME']);
+} else {
+    $currentName = htmlspecialcharsbx($current['SHADE_NAME'] ?? $current['NAME']);
+}
 
 $swiperOptions = Json::encode([
     'slidesPerView' => 'auto',
@@ -24,10 +32,14 @@ $swiperOptions = Json::encode([
     'watchOverflow' => true,
 ]);
 
-$rootModifierClass = '';
+$rootModifierClass = $isVolumeMode ? ' dnk-sku-list--volume' : '';
 
 /** @var string $componentPath */
-$skuListPartial = $_SERVER['DOCUMENT_ROOT'] . $componentPath . '/partials/slider.php';
+if ($isVolumeMode) {
+    $skuListPartial = $_SERVER['DOCUMENT_ROOT'] . $componentPath . '/partials/volume-links.php';
+} else {
+    $skuListPartial = $_SERVER['DOCUMENT_ROOT'] . $componentPath . '/partials/slider.php';
+}
 
 if (!is_file($skuListPartial)) {
     return;
@@ -153,6 +165,33 @@ if (!is_file($skuListPartial)) {
     background-position: center;
     background-size: 18px 18px;
 }
+
+.dnk-sku-list__volume-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+}
+
+.dnk-sku-list__volume-item {
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    color: inherit;
+    transition: color 0.2s ease;
+}
+
+.dnk-sku-list__volume-item:hover {
+    color: var(--theme-base-color, #000);
+}
+
+.dnk-sku-list__volume-item--current {
+    font-weight: 600;
+    text-decoration: none;
+    cursor: default;
+    pointer-events: none;
+}
 </style>
 <div class="dnk-sku-list<?= $rootModifierClass ?>" data-dnk-sku-list>
 <?php
@@ -225,10 +264,11 @@ include $skuListPartial;
         }
 
         var label = root.querySelector('[data-dnk-sku-label]');
-        var itemsWrap = root.querySelector('.dnk-sku-list__slider');
+        var itemsWrap = root.querySelector('.dnk-sku-list__slider')
+            || root.querySelector('.dnk-sku-list__volume-list');
         var prevBtn = root.querySelector('[data-dnk-sku-prev]');
         var nextBtn = root.querySelector('[data-dnk-sku-next]');
-        if (!label || !itemsWrap || !prevBtn || !nextBtn) {
+        if (!label || !itemsWrap) {
             return;
         }
 
@@ -240,7 +280,7 @@ include $skuListPartial;
             label.textContent = defaultName;
         }
 
-        itemsWrap.querySelectorAll('.dnk-sku-list__item').forEach(function (item) {
+        itemsWrap.querySelectorAll('[data-sku-name]').forEach(function (item) {
             item.addEventListener('mouseenter', function () {
                 var name = item.getAttribute('data-sku-name');
                 if (name) {
@@ -250,7 +290,9 @@ include $skuListPartial;
         });
 
         itemsWrap.addEventListener('mouseleave', restoreLabel);
-        bindNavButtons(itemsWrap, prevBtn, nextBtn);
+        if (prevBtn && nextBtn && itemsWrap.classList.contains('dnk-sku-list__slider')) {
+            bindNavButtons(itemsWrap, prevBtn, nextBtn);
+        }
     }
 
     function scan() {

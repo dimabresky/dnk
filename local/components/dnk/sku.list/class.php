@@ -8,13 +8,15 @@ use Dnk\PhpInterface\Utils;
 
 /**
  * Component for displaying related products by GRUPPIROVKATOVAROVNASAYTE property.
- * Shows products with the same grouping value as a row of shade image links.
+ * Shows products with the same grouping value as a row of shade image links or volume text links.
  */
 class DnkSkuListComponent extends CBitrixComponent
 {
     private const PROPERTY_CODE = 'GRUPPIROVKATOVAROVNASAYTE';
 
     private const SHADE_PROPERTY_CODE = 'OTTENOK';
+
+    private const VOLUME_PROPERTY_CODE = 'NOMINALNYY_OBEM';
 
     public function executeComponent()
     {
@@ -29,12 +31,13 @@ class DnkSkuListComponent extends CBitrixComponent
 
         if ($iblockId <= 0 || $elementId <= 0) {
             $this->arResult['ITEMS'] = [];
+            $this->arResult['VARIANT_MODE'] = Utils::SKU_VARIANT_MODE_SHADE;
             $this->includeComponentTemplate();
             return;
         }
 
         $cacheTime = (int) ($this->arParams['CACHE_TIME'] ?? 3600);
-        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId;
+        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId . '_v2_vol';
         $cachePath = '/dnk/sku.list';
 
         if ($this->startResultCache($cacheTime, $cacheId, $cachePath)) {
@@ -51,13 +54,16 @@ class DnkSkuListComponent extends CBitrixComponent
             if ($groupingValue === null || $groupingValue === '') {
                 $this->arResult['ITEMS'] = [];
                 $this->arResult['CURRENT_ITEM'] = null;
+                $this->arResult['VARIANT_MODE'] = Utils::SKU_VARIANT_MODE_SHADE;
             } else {
-                $this->arResult['ITEMS'] = $this->getRelatedProducts(
+                $bundle = $this->getRelatedProducts(
                     $iblockId,
                     $elementId,
                     $groupingValue,
                     $shadesIblockId
                 );
+                $this->arResult['ITEMS'] = $bundle['items'];
+                $this->arResult['VARIANT_MODE'] = $bundle['mode'];
                 $this->arResult['CURRENT_ITEM'] = $this->resolveCurrentItem($this->arResult['ITEMS']);
             }
 
@@ -108,7 +114,7 @@ class DnkSkuListComponent extends CBitrixComponent
      * @param int $currentElementId
      * @param string|int $groupingValue
      * @param int $shadesIblockId
-     * @return array
+     * @return array{items: array, mode: string}
      */
     private function getRelatedProducts(
         int $iblockId,
@@ -116,7 +122,15 @@ class DnkSkuListComponent extends CBitrixComponent
         $groupingValue,
         int $shadesIblockId
     ): array {
-        $rawItems = [];
+        $groupingValue = (string) $groupingValue;
+        $resolution = Utils::resolveSkuGroupVariantElementIds($iblockId, $groupingValue, $shadesIblockId);
+        $visibleIds = $resolution['visible'];
+        $mode = $resolution['mode'];
+
+        if ($visibleIds === []) {
+            return ['items' => [], 'mode' => $mode];
+        }
+
         $ottenokEnumXmlIdMap = Utils::buildIblockListPropertyEnumXmlIdMap($iblockId, self::SHADE_PROPERTY_CODE);
 
         $rs = CIBlockElement::GetList(
@@ -137,10 +151,17 @@ class DnkSkuListComponent extends CBitrixComponent
                 'CODE',
                 'IBLOCK_SECTION_ID',
                 'PROPERTY_' . self::SHADE_PROPERTY_CODE,
+                'PROPERTY_' . self::VOLUME_PROPERTY_CODE,
             ]
         );
 
+        $rawItems = [];
         while ($ob = $rs->GetNext()) {
+            $id = (int) $ob['ID'];
+            if (!isset($visibleIds[$id])) {
+                continue;
+            }
+
             $pictureId = (int) ($ob['DETAIL_PICTURE'] ?: $ob['PREVIEW_PICTURE']);
             $pictureSrc = $pictureId > 0 ? CFile::GetPath($pictureId) : '';
 
@@ -151,14 +172,39 @@ class DnkSkuListComponent extends CBitrixComponent
                 ? $ottenokEnumXmlIdMap[$enumId]
                 : '';
 
+            $volumeLabel = trim((string) (
+                $ob['PROPERTY_' . self::VOLUME_PROPERTY_CODE . '_VALUE']
+                ?? $ob['PROPERTY_' . self::VOLUME_PROPERTY_CODE]
+                ?? ''
+            ));
+
             $rawItems[] = [
-                'ID' => (int) $ob['ID'],
+                'ID' => $id,
                 'NAME' => $ob['NAME'],
                 'DETAIL_PAGE_URL' => $ob['DETAIL_PAGE_URL'] ?? '',
                 'PICTURE_SRC' => $pictureSrc,
-                'IS_CURRENT' => (int) $ob['ID'] === $currentElementId,
+                'IS_CURRENT' => $id === $currentElementId,
                 'OTTENOK_XML_ID' => $ottenokXmlId,
+                'VARIANT_LABEL' => $volumeLabel,
             ];
+        }
+
+        if ($mode === Utils::SKU_VARIANT_MODE_VOLUME) {
+            $items = [];
+            foreach ($rawItems as $row) {
+                if ($row['VARIANT_LABEL'] === '') {
+                    continue;
+                }
+                $items[] = [
+                    'ID' => $row['ID'],
+                    'NAME' => $row['NAME'],
+                    'DETAIL_PAGE_URL' => $row['DETAIL_PAGE_URL'],
+                    'VARIANT_LABEL' => $row['VARIANT_LABEL'],
+                    'IS_CURRENT' => $row['IS_CURRENT'],
+                ];
+            }
+
+            return ['items' => $items, 'mode' => $mode];
         }
 
         $ottenokXmlIds = [];
@@ -194,7 +240,7 @@ class DnkSkuListComponent extends CBitrixComponent
             ];
         }
 
-        return $items;
+        return ['items' => $items, 'mode' => Utils::SKU_VARIANT_MODE_SHADE];
     }
 
     /**
