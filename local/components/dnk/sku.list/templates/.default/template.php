@@ -185,13 +185,6 @@ if (!is_file($skuListPartial)) {
 .dnk-sku-list__volume-item:hover {
     color: var(--theme-base-color, #000);
 }
-
-.dnk-sku-list__volume-item--current {
-    font-weight: 600;
-    text-decoration: none;
-    cursor: default;
-    pointer-events: none;
-}
 </style>
 <div class="dnk-sku-list<?= $rootModifierClass ?>" data-dnk-sku-list>
 <?php
