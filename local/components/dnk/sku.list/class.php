@@ -37,7 +37,7 @@ class DnkSkuListComponent extends CBitrixComponent
         }
 
         $cacheTime = (int) ($this->arParams['CACHE_TIME'] ?? 3600);
-        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId . '_v5_vol';
+        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId . '_v6_vol';
         $cachePath = '/dnk/sku.list';
 
         if ($this->startResultCache($cacheTime, $cacheId, $cachePath)) {
@@ -319,6 +319,8 @@ class DnkSkuListComponent extends CBitrixComponent
             return;
         }
 
+        $this->sortVolumeItemsByLabelAsc($items);
+
         $this->arResult['ITEMS'] = $items;
         $this->arResult['CURRENT_ITEM'] = $this->resolveCurrentItem($items);
     }
@@ -349,7 +351,8 @@ class DnkSkuListComponent extends CBitrixComponent
             return PHP_FLOAT_MAX;
         }
 
-        if (!preg_match('/(\d+(?:\.\d+)?)\s*(мл|ml|л|l)?/u', $label, $matches)) {
+        $compact = preg_replace('/\h/u', '', $label) ?? $label;
+        if (!preg_match('/(\d+(?:\.\d+)?)(мл|ml|л|l)?/u', $compact, $matches)) {
             return PHP_FLOAT_MAX;
         }
 
