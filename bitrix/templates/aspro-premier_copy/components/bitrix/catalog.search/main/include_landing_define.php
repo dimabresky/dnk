@@ -101,6 +101,11 @@ $arLanding = $oSearchQuery->getLandings(
 );
 
 if ($arLanding) {
+	$urlCondition = '';
+	$arCustomFilter = array();
+	$arCustomFilterTypeEnums = array();
+	$bReplaceElementsByCustomFilter = false;
+
 	// $bShowLeftBlock = ($arTheme["LEFT_BLOCK_CATALOG_SECTIONS"]["VALUE"] == "Y" && !defined("ERROR_404") && !$bHideLeftBlock);
 
 	if (!$arLanding['PROPERTY_IS_INDEX_VALUE']) {

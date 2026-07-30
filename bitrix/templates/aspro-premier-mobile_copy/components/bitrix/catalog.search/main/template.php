@@ -14,7 +14,10 @@ if (
 		isset($_GET["ajax_basket"]) &&
 		$_GET["ajax_basket"] == "Y"
 	) ||
-	isset($_GET["control_ajax"])
+	(
+		isset($_GET["control_ajax"]) &&
+		$_GET["control_ajax"] == "Y"
+	)
 ) {
 	$isAjax = "Y";
 }
@@ -130,6 +133,8 @@ include 'include_landing_define.php';
 
 		if (is_array($arElements) && !empty($arElements))
 		{
+			$htmlSort = '';
+			$arAdditionalData = array();
 			if($arSKU)
 			{
 				foreach($arElements as $key => $value)
