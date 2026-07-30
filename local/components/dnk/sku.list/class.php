@@ -37,7 +37,7 @@ class DnkSkuListComponent extends CBitrixComponent
         }
 
         $cacheTime = (int) ($this->arParams['CACHE_TIME'] ?? 3600);
-        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId . '_v6_vol';
+        $cacheId = $iblockId . '_' . $elementId . '_' . $shadesIblockId . '_v7_vol';
         $cachePath = '/dnk/sku.list';
 
         if ($this->startResultCache($cacheTime, $cacheId, $cachePath)) {
@@ -307,6 +307,8 @@ class DnkSkuListComponent extends CBitrixComponent
 
     /**
      * Режим объёма: полный список вариантов; при менее чем двух — блок не показывается.
+     * Если текущий товар не входит в список (нет NOMINALNYY_OBEM) — тоже скрываем,
+     * чтобы не подставлять первый вариант как «текущий» и не рисовать все строки ссылками.
      *
      * @param array $items
      */
@@ -321,8 +323,23 @@ class DnkSkuListComponent extends CBitrixComponent
 
         $this->sortVolumeItemsByLabelAsc($items);
 
+        $currentItem = null;
+        foreach ($items as $row) {
+            if (!empty($row['IS_CURRENT'])) {
+                $currentItem = $row;
+                break;
+            }
+        }
+
+        if ($currentItem === null) {
+            $this->arResult['ITEMS'] = [];
+            $this->arResult['CURRENT_ITEM'] = null;
+
+            return;
+        }
+
         $this->arResult['ITEMS'] = $items;
-        $this->arResult['CURRENT_ITEM'] = $this->resolveCurrentItem($items);
+        $this->arResult['CURRENT_ITEM'] = $currentItem;
     }
 
     /**
