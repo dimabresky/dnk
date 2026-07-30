@@ -86,7 +86,7 @@ $linerow = TSolution\Template\DisplayTypes::getInstance()->getElementsInRow($bSh
         'PAGER_DESC_NUMBERING_CACHE_TIME' => $arParams['PAGER_DESC_NUMBERING_CACHE_TIME'],
         'PAGER_SHOW_ALL' => $arParams['PAGER_SHOW_ALL'],
         'INCLUDE_SUBSECTIONS' => $arParams['INCLUDE_SUBSECTIONS'],
-        // "SHOW_ALL_WO_SECTION" => "Y", this param prevents execution of USE_MAIN_ELEMENT_SECTION
+        'SHOW_ALL_WO_SECTION' => !empty($bSearchPage) ? 'Y' : 'N',
         'HEADING_COUNT_ELEMENTS' => $arParams['HEADING_COUNT_ELEMENTS'],
         'IS_CATALOG_PAGE' => ('N' == $arParams['INCLUDE_SUBSECTIONS'] ? '' : 'Y'),
         'META_KEYWORDS' => $arParams['LIST_META_KEYWORDS'],
