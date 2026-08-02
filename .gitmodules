@@ -1,3 +1,6 @@
 [submodule "local/modules/sms.traffic"]
 	path = local/modules/sms.traffic
 	url = https://github.com/dimabresky/sms.traffic.git
+[submodule "local/modules/bx.imagewebp"]
+	path = local/modules/bx.imagewebp
+	url = https://github.com/dimabresky/bx.imagewebp.git
