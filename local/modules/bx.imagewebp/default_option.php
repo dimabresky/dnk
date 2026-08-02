@@ -15,5 +15,4 @@ return [
     'max_attempts' => '5',
     'agent_interval' => '60',
     'log_enabled' => 'Y',
-    'delete_original' => 'Y',
 ];

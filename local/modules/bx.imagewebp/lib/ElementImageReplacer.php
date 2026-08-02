@@ -66,10 +66,8 @@ final class ElementImageReplacer
             } else {
                 throw new \RuntimeException('Unknown TARGET_TYPE: ' . $targetType);
             }
-
-            if (Config::isDeleteOriginal() && $oldFileId > 0) {
-                self::safeDeleteOriginal($iblockId, $elementId, $oldFileId);
-            }
+            // Do not call CFile::Delete: FILE_ID may be shared across fields/elements.
+            // Field Update typically detaches the previous picture; orphaned files are left to Bitrix cleanup.
         } finally {
             EnqueueService::endInternalUpdate();
             @unlink($webp['path']);
@@ -180,46 +178,5 @@ final class ElementImageReplacer
         }
 
         CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [$propCode => $values]);
-    }
-
-    /**
-     * Delete old file only if it is no longer referenced by configured targets of the element.
-     */
-    private static function safeDeleteOriginal(int $iblockId, int $elementId, int $oldFileId): void
-    {
-        if (self::isFileStillReferenced($iblockId, $elementId, $oldFileId)) {
-            Logger::info(sprintf(
-                'Skip delete file #%d: still referenced on element #%d',
-                $oldFileId,
-                $elementId
-            ));
-
-            return;
-        }
-
-        $still = CFile::GetFileArray($oldFileId);
-        if (is_array($still)) {
-            CFile::Delete($oldFileId);
-        }
-    }
-
-    private static function isFileStillReferenced(int $iblockId, int $elementId, int $fileId): bool
-    {
-        foreach (Config::getElementFields() as $fieldCode) {
-            if (self::resolveCurrentFileId($iblockId, $elementId, Config::TARGET_FIELD, $fieldCode, null) === $fileId) {
-                return true;
-            }
-        }
-
-        foreach (Config::getPropertyCodes() as $propCode) {
-            $res = CIBlockElement::GetProperty($iblockId, $elementId, ['sort' => 'asc'], ['CODE' => $propCode]);
-            while ($row = $res->Fetch()) {
-                if ((int)($row['VALUE'] ?? 0) === $fileId) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 }

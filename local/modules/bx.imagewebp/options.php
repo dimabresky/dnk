@@ -35,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
 ) {
     $enabled = !empty($_REQUEST['enabled']) ? 'Y' : 'N';
     $logEnabled = !empty($_REQUEST['log_enabled']) ? 'Y' : 'N';
-    $deleteOriginal = !empty($_REQUEST['delete_original']) ? 'Y' : 'N';
 
     Option::set($mid, 'enabled', $enabled);
     Option::set($mid, 'iblock_ids', (string)($_REQUEST['iblock_ids'] ?? ''));
@@ -47,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     Option::set($mid, 'max_attempts', (string)max(1, (int)($_REQUEST['max_attempts'] ?? 5)));
     Option::set($mid, 'agent_interval', (string)max(10, (int)($_REQUEST['agent_interval'] ?? 60)));
     Option::set($mid, 'log_enabled', $logEnabled);
-    Option::set($mid, 'delete_original', $deleteOriginal);
 
     // Reschedule agent interval.
     \CAgent::RemoveModuleAgents($mid);
@@ -73,7 +71,6 @@ $batchSize = Option::get($mid, 'batch_size', '5');
 $maxAttempts = Option::get($mid, 'max_attempts', '5');
 $agentInterval = Option::get($mid, 'agent_interval', '60');
 $logEnabled = Option::get($mid, 'log_enabled', 'Y');
-$deleteOriginal = Option::get($mid, 'delete_original', 'Y');
 $capabilityOk = Capability::canConvertToWebp();
 $capabilityDesc = Capability::describe();
 
@@ -155,10 +152,6 @@ $tabControl->Begin();
     <tr>
         <td><?= Loc::getMessage('BX_IMAGEWEBP_OPT_LOG_ENABLED') ?>:</td>
         <td><input type="checkbox" name="log_enabled" value="Y"<?= $logEnabled === 'Y' ? ' checked' : '' ?>></td>
-    </tr>
-    <tr>
-        <td><?= Loc::getMessage('BX_IMAGEWEBP_OPT_DELETE_ORIGINAL') ?>:</td>
-        <td><input type="checkbox" name="delete_original" value="Y"<?= $deleteOriginal === 'Y' ? ' checked' : '' ?>></td>
     </tr>
     <?php $tabControl->Buttons(); ?>
     <input type="submit" name="Update" value="<?= Loc::getMessage('BX_IMAGEWEBP_OPT_SAVE') ?>" class="adm-btn-save">

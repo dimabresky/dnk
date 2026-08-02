@@ -17,7 +17,6 @@ $MESS['BX_IMAGEWEBP_OPT_BATCH_SIZE'] = 'Размер батча';
 $MESS['BX_IMAGEWEBP_OPT_MAX_ATTEMPTS'] = 'Макс. попыток';
 $MESS['BX_IMAGEWEBP_OPT_AGENT_INTERVAL'] = 'Интервал агента (сек)';
 $MESS['BX_IMAGEWEBP_OPT_LOG_ENABLED'] = 'Писать лог';
-$MESS['BX_IMAGEWEBP_OPT_DELETE_ORIGINAL'] = 'Удалять исходный файл после замены';
 $MESS['BX_IMAGEWEBP_OPT_CAPABILITY'] = 'Проверка окружения';
 $MESS['BX_IMAGEWEBP_OPT_CAPABILITY_OK'] = 'OK: доступна конвертация в WebP.';
 $MESS['BX_IMAGEWEBP_OPT_CAPABILITY_FAIL'] = 'FAIL: нет поддержки WebP (нужен Imagick с WebP или GD с imagewebp).';

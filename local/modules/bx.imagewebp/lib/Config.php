@@ -128,11 +128,6 @@ final class Config
         return Option::get(self::MODULE_ID, 'log_enabled', 'Y') === 'Y';
     }
 
-    public static function isDeleteOriginal(): bool
-    {
-        return Option::get(self::MODULE_ID, 'delete_original', 'Y') === 'Y';
-    }
-
     /**
      * Absolute path to module work dir under /upload/bx_imagewebp/.
      */
