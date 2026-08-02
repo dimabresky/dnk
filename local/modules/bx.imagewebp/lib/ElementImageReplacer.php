@@ -28,6 +28,21 @@ final class ElementImageReplacer
             throw new \RuntimeException('iblock module is not available');
         }
 
+        $currentFileId = self::resolveCurrentFileId(
+            $iblockId,
+            $elementId,
+            $targetType,
+            $targetCode,
+            $propertyValueId
+        );
+        if ($currentFileId !== $oldFileId) {
+            throw new StaleTargetException(sprintf(
+                'Target changed: expected file %d, current is %d',
+                $oldFileId,
+                $currentFileId
+            ));
+        }
+
         $fileArray = CFile::MakeFileArray($webp['path']);
         if (!is_array($fileArray) || empty($fileArray['tmp_name'])) {
             throw new \RuntimeException('MakeFileArray failed for ' . $webp['path']);
@@ -42,14 +57,18 @@ final class ElementImageReplacer
         EnqueueService::beginInternalUpdate();
         try {
             if ($targetType === Config::TARGET_FIELD) {
-                self::replaceField($elementId, $targetCode, $fileArray, $oldFileId);
+                self::replaceField($elementId, $targetCode, $fileArray);
             } elseif ($targetType === Config::TARGET_PROPERTY) {
                 if ($propertyValueId === null || $propertyValueId <= 0) {
                     throw new \RuntimeException('PROPERTY_VALUE_ID is required for property target');
                 }
-                self::replaceProperty($iblockId, $elementId, $targetCode, $propertyValueId, $fileArray, $oldFileId);
+                self::replaceProperty($iblockId, $elementId, $targetCode, $propertyValueId, $fileArray);
             } else {
                 throw new \RuntimeException('Unknown TARGET_TYPE: ' . $targetType);
+            }
+
+            if (Config::isDeleteOriginal() && $oldFileId > 0) {
+                self::safeDeleteOriginal($iblockId, $elementId, $oldFileId);
             }
         } finally {
             EnqueueService::endInternalUpdate();
@@ -58,9 +77,52 @@ final class ElementImageReplacer
     }
 
     /**
+     * Drop job without error when the element target no longer points at queued FILE_ID.
+     */
+    public static function resolveCurrentFileId(
+        int $iblockId,
+        int $elementId,
+        string $targetType,
+        string $targetCode,
+        ?int $propertyValueId
+    ): int {
+        if ($targetType === Config::TARGET_FIELD) {
+            $res = CIBlockElement::GetList(
+                [],
+                ['IBLOCK_ID' => $iblockId, 'ID' => $elementId],
+                false,
+                false,
+                ['ID', $targetCode]
+            );
+            $row = $res ? $res->Fetch() : false;
+
+            return is_array($row) ? (int)($row[$targetCode] ?? 0) : 0;
+        }
+
+        if ($targetType === Config::TARGET_PROPERTY) {
+            if ($propertyValueId === null || $propertyValueId <= 0) {
+                return 0;
+            }
+            $res = CIBlockElement::GetProperty(
+                $iblockId,
+                $elementId,
+                ['sort' => 'asc'],
+                ['CODE' => $targetCode]
+            );
+            while ($row = $res->Fetch()) {
+                if ((int)($row['PROPERTY_VALUE_ID'] ?? 0) === $propertyValueId) {
+                    return (int)($row['VALUE'] ?? 0);
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    /**
      * @param array<string,mixed> $fileArray
      */
-    private static function replaceField(int $elementId, string $fieldCode, array $fileArray, int $oldFileId): void
+    private static function replaceField(int $elementId, string $fieldCode, array $fileArray): void
     {
         if (!in_array($fieldCode, Config::ALLOWED_ELEMENT_FIELDS, true)) {
             throw new \RuntimeException('Field not allowed: ' . $fieldCode);
@@ -77,14 +139,6 @@ final class ElementImageReplacer
         if (!$ok) {
             throw new \RuntimeException('CIBlockElement::Update failed: ' . (string)$el->LAST_ERROR);
         }
-
-        if (Config::isDeleteOriginal() && $oldFileId > 0) {
-            // Bitrix usually removes the previous picture on Update; delete leftovers if still present.
-            $still = CFile::GetFileArray($oldFileId);
-            if (is_array($still)) {
-                CFile::Delete($oldFileId);
-            }
-        }
     }
 
     /**
@@ -95,8 +149,7 @@ final class ElementImageReplacer
         int $elementId,
         string $propCode,
         int $propertyValueId,
-        array $fileArray,
-        int $oldFileId
+        array $fileArray
     ): void {
         $values = [];
         $found = false;
@@ -127,12 +180,46 @@ final class ElementImageReplacer
         }
 
         CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [$propCode => $values]);
+    }
 
-        if (Config::isDeleteOriginal() && $oldFileId > 0) {
-            $still = CFile::GetFileArray($oldFileId);
-            if (is_array($still)) {
-                CFile::Delete($oldFileId);
+    /**
+     * Delete old file only if it is no longer referenced by configured targets of the element.
+     */
+    private static function safeDeleteOriginal(int $iblockId, int $elementId, int $oldFileId): void
+    {
+        if (self::isFileStillReferenced($iblockId, $elementId, $oldFileId)) {
+            Logger::info(sprintf(
+                'Skip delete file #%d: still referenced on element #%d',
+                $oldFileId,
+                $elementId
+            ));
+
+            return;
+        }
+
+        $still = CFile::GetFileArray($oldFileId);
+        if (is_array($still)) {
+            CFile::Delete($oldFileId);
+        }
+    }
+
+    private static function isFileStillReferenced(int $iblockId, int $elementId, int $fileId): bool
+    {
+        foreach (Config::getElementFields() as $fieldCode) {
+            if (self::resolveCurrentFileId($iblockId, $elementId, Config::TARGET_FIELD, $fieldCode, null) === $fileId) {
+                return true;
             }
         }
+
+        foreach (Config::getPropertyCodes() as $propCode) {
+            $res = CIBlockElement::GetProperty($iblockId, $elementId, ['sort' => 'asc'], ['CODE' => $propCode]);
+            while ($row = $res->Fetch()) {
+                if ((int)($row['VALUE'] ?? 0) === $fileId) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

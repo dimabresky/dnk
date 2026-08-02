@@ -4,8 +4,11 @@
  * Enqueue existing convertible images for configured iblocks.
  *
  * Usage:
- *   php local/modules/bx.imagewebp/tools/backfill.php
- *   php local/modules/bx.imagewebp/tools/backfill.php --iblock=12 --limit=500 --from-id=0
+ *   php local/modules/bx.imagewebp/tools/backfill.php -- --iblock=12
+ *   php local/modules/bx.imagewebp/tools/backfill.php -- --iblock=12 --limit=500 --from-id=0
+ *
+ * When several iblocks are configured, pass --iblock for paginated runs.
+ * Without --iblock, each configured iblock is scanned from ID 0 for --limit elements (one-shot).
  */
 
 use Bitrix\Main\Loader;
@@ -54,6 +57,9 @@ if ($iblockFilter > 0) {
         exit(1);
     }
     $iblockIds = [$iblockFilter];
+} elseif ($fromId > 0 && count($iblockIds) > 1) {
+    fwrite(STDERR, "Use --iblock=ID together with --from-id when multiple iblocks are configured\n");
+    exit(1);
 }
 
 if ($iblockIds === []) {
@@ -63,16 +69,19 @@ if ($iblockIds === []) {
 
 $totalElements = 0;
 $totalJobs = 0;
-$lastId = $fromId;
 
 foreach ($iblockIds as $iblockId) {
-    $filter = [
-        'IBLOCK_ID' => $iblockId,
-        '>ID' => $fromId,
-    ];
+    $cursor = ($iblockFilter > 0 || count($iblockIds) === 1) ? $fromId : 0;
+    $iblockElements = 0;
+    $iblockJobs = 0;
+    $lastId = $cursor;
+
     $res = CIBlockElement::GetList(
         ['ID' => 'ASC'],
-        $filter,
+        [
+            'IBLOCK_ID' => $iblockId,
+            '>ID' => $cursor,
+        ],
         false,
         ['nTopCount' => $limit],
         ['ID', 'IBLOCK_ID']
@@ -81,21 +90,26 @@ foreach ($iblockIds as $iblockId) {
     while ($row = $res->Fetch()) {
         $elementId = (int)$row['ID'];
         $lastId = $elementId;
-        $totalElements++;
-        $totalJobs += EnqueueService::enqueueElement($iblockId, $elementId);
+        $iblockElements++;
+        $iblockJobs += EnqueueService::enqueueElement($iblockId, $elementId);
     }
+
+    $totalElements += $iblockElements;
+    $totalJobs += $iblockJobs;
+
+    $line = sprintf(
+        'backfill iblock=%d elements=%d jobs_added=%d limit=%d from_id=%d last_id=%d',
+        $iblockId,
+        $iblockElements,
+        $iblockJobs,
+        $limit,
+        $cursor,
+        $lastId
+    );
+    Logger::info($line);
+    fwrite(STDOUT, $line . PHP_EOL);
 }
 
-$message = sprintf(
-    'backfill iblocks=%s elements=%d jobs_added=%d limit=%d from_id=%d last_id=%d',
-    implode(',', $iblockIds),
-    $totalElements,
-    $totalJobs,
-    $limit,
-    $fromId,
-    $lastId
-);
-Logger::info($message);
-fwrite(STDOUT, $message . PHP_EOL);
+fwrite(STDOUT, sprintf("total elements=%d jobs_added=%d\n", $totalElements, $totalJobs));
 
 exit(0);

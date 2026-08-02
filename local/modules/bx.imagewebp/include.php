@@ -14,6 +14,7 @@ use Bx\ImageWebp\EnqueueService;
 use Bx\ImageWebp\Handlers;
 use Bx\ImageWebp\Logger;
 use Bx\ImageWebp\QueueTable;
+use Bx\ImageWebp\StaleTargetException;
 use Bx\ImageWebp\Worker;
 
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
@@ -27,6 +28,7 @@ Loader::registerAutoLoadClasses(
         Capability::class => 'lib/Capability.php',
         Logger::class => 'lib/Logger.php',
         QueueTable::class => 'lib/QueueTable.php',
+        StaleTargetException::class => 'lib/StaleTargetException.php',
         EnqueueService::class => 'lib/EnqueueService.php',
         Handlers::class => 'lib/Handlers.php',
         Converter::class => 'lib/Converter.php',

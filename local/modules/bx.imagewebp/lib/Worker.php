@@ -99,6 +99,14 @@ final class Worker
                 self::processJob($row);
                 QueueTable::delete($id);
                 $stats['success']++;
+            } catch (StaleTargetException $e) {
+                Logger::info(sprintf(
+                    'job #%d obsolete: %s',
+                    $id,
+                    $e->getMessage()
+                ));
+                QueueTable::delete($id);
+                $stats['success']++;
             } catch (\Throwable $e) {
                 $attempts++;
                 $error = $e->getMessage();

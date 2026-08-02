@@ -123,12 +123,27 @@ final class EnqueueService
             return false;
         }
 
+        // Deduplicate per target slot (same FILE_ID may be linked from DETAIL + PREVIEW).
+        $filter = [
+            '=ELEMENT_ID' => $elementId,
+            '=TARGET_TYPE' => $targetType,
+            '=TARGET_CODE' => $targetCode,
+            '=FILE_ID' => $fileId,
+            '@STATUS' => [QueueTable::STATUS_PENDING, QueueTable::STATUS_WORKING],
+        ];
+        if ($propertyValueId !== null && $propertyValueId > 0) {
+            $filter['=PROPERTY_VALUE_ID'] = $propertyValueId;
+        } else {
+            $filter[] = [
+                'LOGIC' => 'OR',
+                ['=PROPERTY_VALUE_ID' => null],
+                ['=PROPERTY_VALUE_ID' => 0],
+            ];
+        }
+
         $existing = QueueTable::getList([
             'select' => ['ID'],
-            'filter' => [
-                '=FILE_ID' => $fileId,
-                '@STATUS' => [QueueTable::STATUS_PENDING, QueueTable::STATUS_WORKING],
-            ],
+            'filter' => $filter,
             'limit' => 1,
         ])->fetch();
 
