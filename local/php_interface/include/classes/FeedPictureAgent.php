@@ -50,6 +50,8 @@ final class FeedPictureAgent
             $maxAttempts = 5;
         }
 
+        self::reclaimStaleWorkingJobs();
+
         $result = FeedPictureQueueTable::getList([
             'select' => [
                 'ID',
@@ -106,6 +108,31 @@ final class FeedPictureAgent
         }
 
         return $stats;
+    }
+
+    /**
+     * Return stuck WORKING rows to PENDING after a timeout (crashed worker).
+     */
+    private static function reclaimStaleWorkingJobs(): void
+    {
+        $timeoutSeconds = 900;
+        $threshold = DateTime::createFromTimestamp(time() - $timeoutSeconds);
+
+        $stale = FeedPictureQueueTable::getList([
+            'select' => ['ID'],
+            'filter' => [
+                '=STATUS' => FeedPictureQueueTable::STATUS_WORKING,
+                '<=DATE_UPDATE' => $threshold,
+            ],
+            'limit' => 100,
+        ]);
+
+        while ($row = $stale->fetch()) {
+            FeedPictureQueueTable::update((int)$row['ID'], [
+                'STATUS' => FeedPictureQueueTable::STATUS_PENDING,
+                'DATE_UPDATE' => new DateTime(),
+            ]);
+        }
     }
 
     /**
