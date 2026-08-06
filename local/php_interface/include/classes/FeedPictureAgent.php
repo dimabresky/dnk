@@ -41,12 +41,19 @@ final class FeedPictureAgent
             return $stats;
         }
 
-        $lockFh = self::acquireWorkerLock();
-        if ($lockFh === null) {
+        $lock = self::acquireWorkerLock();
+        if ($lock['handle'] === null) {
             $stats['skipped_lock'] = true;
+            if ($lock['reason'] !== 'busy') {
+                AddMessage2Log(
+                    'FeedPictureAgent lock unavailable: ' . $lock['reason'],
+                    'dnk.feed_picture'
+                );
+            }
 
             return $stats;
         }
+        $lockFh = $lock['handle'];
 
         try {
             $batch = defined('DNK_FEED_PICTURE_QUEUE_BATCH') ? (int)DNK_FEED_PICTURE_QUEUE_BATCH : 5;
@@ -124,33 +131,33 @@ final class FeedPictureAgent
     }
 
     /**
-     * @return resource|null
+     * @return array{handle:resource|null,reason:string}
      */
-    private static function acquireWorkerLock()
+    private static function acquireWorkerLock(): array
     {
         $docRoot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/\\');
         if ($docRoot === '') {
-            return null;
+            return ['handle' => null, 'reason' => 'empty DOCUMENT_ROOT'];
         }
 
         $dir = $docRoot . '/upload/dnk_feed_picture';
         if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
-            return null;
+            return ['handle' => null, 'reason' => 'cannot create ' . $dir];
         }
 
         $lockPath = $dir . '/worker.lock';
         $lockFh = fopen($lockPath, 'c+');
         if ($lockFh === false) {
-            return null;
+            return ['handle' => null, 'reason' => 'cannot open ' . $lockPath];
         }
 
         if (!flock($lockFh, LOCK_EX | LOCK_NB)) {
             fclose($lockFh);
 
-            return null;
+            return ['handle' => null, 'reason' => 'busy'];
         }
 
-        return $lockFh;
+        return ['handle' => $lockFh, 'reason' => ''];
     }
 
     /**
