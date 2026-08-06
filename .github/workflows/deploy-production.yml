@@ -32,6 +32,8 @@ jobs:
           git -C "$REPO_DIR" fetch origin master
           git -C "$REPO_DIR" checkout master
           git -C "$REPO_DIR" pull --ff-only origin master
+          git -C "$REPO_DIR" submodule sync --recursive
+          git -C "$REPO_DIR" submodule update --init --recursive
 
       - name: Copy files to production web root
         shell: bash
