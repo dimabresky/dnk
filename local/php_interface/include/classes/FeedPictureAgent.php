@@ -25,7 +25,7 @@ final class FeedPictureAgent
     }
 
     /**
-     * @return array{processed:int,success:int,failed:int,stale:int}
+     * @return array{processed:int,success:int,failed:int,stale:int,skipped_lock:bool}
      */
     public static function processQueue(): array
     {
@@ -34,80 +34,123 @@ final class FeedPictureAgent
             'success' => 0,
             'failed' => 0,
             'stale' => 0,
+            'skipped_lock' => false,
         ];
 
         if (!\CModule::IncludeModule('iblock')) {
             return $stats;
         }
 
-        $batch = defined('DNK_FEED_PICTURE_QUEUE_BATCH') ? (int)DNK_FEED_PICTURE_QUEUE_BATCH : 5;
-        if ($batch < 1) {
-            $batch = 5;
+        $lockFh = self::acquireWorkerLock();
+        if ($lockFh === null) {
+            $stats['skipped_lock'] = true;
+
+            return $stats;
         }
 
-        $maxAttempts = defined('DNK_FEED_PICTURE_MAX_ATTEMPTS') ? (int)DNK_FEED_PICTURE_MAX_ATTEMPTS : 5;
-        if ($maxAttempts < 1) {
-            $maxAttempts = 5;
-        }
+        try {
+            $batch = defined('DNK_FEED_PICTURE_QUEUE_BATCH') ? (int)DNK_FEED_PICTURE_QUEUE_BATCH : 5;
+            if ($batch < 1) {
+                $batch = 5;
+            }
 
-        self::reclaimStaleWorkingJobs();
+            $maxAttempts = defined('DNK_FEED_PICTURE_MAX_ATTEMPTS') ? (int)DNK_FEED_PICTURE_MAX_ATTEMPTS : 5;
+            if ($maxAttempts < 1) {
+                $maxAttempts = 5;
+            }
 
-        $result = FeedPictureQueueTable::getList([
-            'select' => [
-                'ID',
-                'ELEMENT_ID',
-                'IBLOCK_ID',
-                'DETAIL_FILE_ID',
-                'ATTEMPTS',
-            ],
-            'filter' => ['=STATUS' => FeedPictureQueueTable::STATUS_PENDING],
-            'order' => ['ID' => 'ASC'],
-            'limit' => $batch,
-        ]);
+            self::reclaimStaleWorkingJobs();
 
-        while ($row = $result->fetch()) {
-            $stats['processed']++;
-            $id = (int)$row['ID'];
-            $attempts = (int)$row['ATTEMPTS'];
-
-            FeedPictureQueueTable::update($id, [
-                'STATUS' => FeedPictureQueueTable::STATUS_WORKING,
-                'DATE_UPDATE' => new DateTime(),
+            $result = FeedPictureQueueTable::getList([
+                'select' => [
+                    'ID',
+                    'ELEMENT_ID',
+                    'IBLOCK_ID',
+                    'DETAIL_FILE_ID',
+                    'ATTEMPTS',
+                ],
+                'filter' => ['=STATUS' => FeedPictureQueueTable::STATUS_PENDING],
+                'order' => ['ID' => 'ASC'],
+                'limit' => $batch,
             ]);
 
-            try {
-                $outcome = self::processJob($row);
-                FeedPictureQueueTable::delete($id);
-                if ($outcome === 'stale') {
-                    $stats['stale']++;
-                } else {
-                    $stats['success']++;
-                }
-            } catch (\Throwable $e) {
-                $attempts++;
+            while ($row = $result->fetch()) {
+                $stats['processed']++;
+                $id = (int)$row['ID'];
+                $attempts = (int)$row['ATTEMPTS'];
+
                 FeedPictureQueueTable::update($id, [
-                    'STATUS' => $attempts >= $maxAttempts
-                        ? FeedPictureQueueTable::STATUS_ERROR
-                        : FeedPictureQueueTable::STATUS_PENDING,
-                    'ATTEMPTS' => $attempts,
-                    'LAST_ERROR' => $e->getMessage(),
+                    'STATUS' => FeedPictureQueueTable::STATUS_WORKING,
                     'DATE_UPDATE' => new DateTime(),
                 ]);
-                $stats['failed']++;
-                AddMessage2Log(
-                    sprintf(
-                        'FeedPictureAgent job #%d element=%d file=%d: %s',
-                        $id,
-                        (int)$row['ELEMENT_ID'],
-                        (int)$row['DETAIL_FILE_ID'],
-                        $e->getMessage()
-                    ),
-                    'dnk.feed_picture'
-                );
+
+                try {
+                    $outcome = self::processJob($row);
+                    FeedPictureQueueTable::delete($id);
+                    if ($outcome === 'stale') {
+                        $stats['stale']++;
+                    } else {
+                        $stats['success']++;
+                    }
+                } catch (\Throwable $e) {
+                    $attempts++;
+                    FeedPictureQueueTable::update($id, [
+                        'STATUS' => $attempts >= $maxAttempts
+                            ? FeedPictureQueueTable::STATUS_ERROR
+                            : FeedPictureQueueTable::STATUS_PENDING,
+                        'ATTEMPTS' => $attempts,
+                        'LAST_ERROR' => $e->getMessage(),
+                        'DATE_UPDATE' => new DateTime(),
+                    ]);
+                    $stats['failed']++;
+                    AddMessage2Log(
+                        sprintf(
+                            'FeedPictureAgent job #%d element=%d file=%d: %s',
+                            $id,
+                            (int)$row['ELEMENT_ID'],
+                            (int)$row['DETAIL_FILE_ID'],
+                            $e->getMessage()
+                        ),
+                        'dnk.feed_picture'
+                    );
+                }
             }
+        } finally {
+            flock($lockFh, LOCK_UN);
+            fclose($lockFh);
         }
 
         return $stats;
+    }
+
+    /**
+     * @return resource|null
+     */
+    private static function acquireWorkerLock()
+    {
+        $docRoot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/\\');
+        if ($docRoot === '') {
+            return null;
+        }
+
+        $dir = $docRoot . '/upload/dnk_feed_picture';
+        if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
+            return null;
+        }
+
+        $lockPath = $dir . '/worker.lock';
+        $lockFh = fopen($lockPath, 'c+');
+        if ($lockFh === false) {
+            return null;
+        }
+
+        if (!flock($lockFh, LOCK_EX | LOCK_NB)) {
+            fclose($lockFh);
+
+            return null;
+        }
+
+        return $lockFh;
     }
 
     /**

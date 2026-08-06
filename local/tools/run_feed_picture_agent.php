@@ -22,6 +22,11 @@ require $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.
 
 $stats = FeedPictureAgent::processQueue();
 
+if (!empty($stats['skipped_lock'])) {
+    fwrite(STDOUT, "skipped_lock=1 (another worker holds the lock)\n");
+    exit(0);
+}
+
 fwrite(STDOUT, sprintf(
     "processed=%d success=%d failed=%d stale=%d\n",
     $stats['processed'],
