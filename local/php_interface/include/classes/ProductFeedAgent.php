@@ -316,7 +316,7 @@ final class ProductFeedAgent
         $title = trim((string) ($fields['NAME'] ?? ''));
         $detailUrl = (string) ($fields['DETAIL_PAGE_URL'] ?? '');
         $description = self::resolveDescription($fields);
-        $imageLink = self::resolveImageUrl($fields, $siteUrl);
+        $imageLink = self::resolveImageUrl($fields, $props, $siteUrl);
 
         $lines = [
             '    <entry>',
@@ -372,10 +372,14 @@ final class ProductFeedAgent
 
     /**
      * @param array<string, mixed> $fields
+     * @param array<string, mixed> $props
      */
-    private static function resolveImageUrl(array $fields, string $siteUrl): string
+    private static function resolveImageUrl(array $fields, array $props, string $siteUrl): string
     {
-        $pictureId = (int) ($fields['DETAIL_PICTURE'] ?? 0);
+        $pictureId = self::resolveFeedPictureFileId($props);
+        if ($pictureId <= 0) {
+            $pictureId = (int) ($fields['DETAIL_PICTURE'] ?? 0);
+        }
         if ($pictureId <= 0) {
             $pictureId = (int) ($fields['PREVIEW_PICTURE'] ?? 0);
         }
@@ -386,6 +390,19 @@ final class ProductFeedAgent
         $path = (string) CFile::GetPath($pictureId);
 
         return $path !== '' ? $siteUrl . $path : '';
+    }
+
+    /**
+     * @param array<string, mixed> $props
+     */
+    private static function resolveFeedPictureFileId(array $props): int
+    {
+        $value = $props['FEED_PICTURE']['VALUE'] ?? null;
+        if (is_array($value)) {
+            $value = $value['ID'] ?? $value[0] ?? reset($value);
+        }
+
+        return (int) $value;
     }
 
     /**
