@@ -5,8 +5,8 @@ namespace Dnk\PhpInterface;
 use CFile;
 
 /**
- * Builds an opaque WebP from DETAIL_PICTURE (jpg/jpeg/png/webp/gif)
- * with solid background #F8F8FC.
+ * Builds an opaque JPEG from DETAIL_PICTURE (jpg/jpeg/png/webp/gif)
+ * with solid background #F8F8FC. WebP conversion is done by bx.imagewebp.
  */
 final class FeedPictureComposer
 {
@@ -14,7 +14,7 @@ final class FeedPictureComposer
     public const BACKGROUND_R = 248;
     public const BACKGROUND_G = 248;
     public const BACKGROUND_B = 252;
-    public const WEBP_QUALITY = 82;
+    public const JPEG_QUALITY = 90;
 
     private const ALLOWED_MIME = [
         'image/jpeg',
@@ -69,7 +69,7 @@ final class FeedPictureComposer
 
         $baseName = pathinfo((string)($file['ORIGINAL_NAME'] ?? $file['FILE_NAME'] ?? 'image'), PATHINFO_FILENAME);
         $baseName = preg_replace('/[^a-zA-Z0-9_\-]+/u', '_', (string)$baseName) ?: 'image';
-        $destName = $baseName . '_feed_' . $fileId . '.webp';
+        $destName = $baseName . '_feed_' . $fileId . '.jpg';
         $destPath = $workDir . '/' . $destName;
 
         if (extension_loaded('imagick') && class_exists(\Imagick::class)) {
@@ -120,12 +120,13 @@ final class FeedPictureComposer
 
             $canvas = new \Imagick();
             $canvas->newImage($width, $height, new \ImagickPixel(self::BACKGROUND_HEX));
+            $canvas->setImageFormat('jpeg');
             $canvas->compositeImage($image, \Imagick::COMPOSITE_DEFAULT, 0, 0);
-            $canvas->setImageFormat('webp');
-            $canvas->setImageCompressionQuality(self::WEBP_QUALITY);
+            $canvas->setImageCompression(\Imagick::COMPRESSION_JPEG);
+            $canvas->setImageCompressionQuality(self::JPEG_QUALITY);
 
             if (!$canvas->writeImage($destPath)) {
-                throw new \RuntimeException('Imagick writeImage WebP failed');
+                throw new \RuntimeException('Imagick writeImage failed');
             }
         } finally {
             if ($canvas instanceof \Imagick) {
@@ -137,8 +138,8 @@ final class FeedPictureComposer
 
     private static function composeWithGd(string $srcPath, string $destPath): void
     {
-        if (!function_exists('imagecreatetruecolor') || !function_exists('imagewebp')) {
-            throw new \RuntimeException('GD with imagewebp support is required');
+        if (!function_exists('imagecreatetruecolor') || !function_exists('imagejpeg')) {
+            throw new \RuntimeException('GD with JPEG support is required');
         }
 
         $src = self::gdLoadImage($srcPath);
@@ -167,11 +168,11 @@ final class FeedPictureComposer
         imagecopy($dst, $src, 0, 0, 0, 0, $width, $height);
         imagedestroy($src);
 
-        $ok = imagewebp($dst, $destPath, self::WEBP_QUALITY);
+        $ok = imagejpeg($dst, $destPath, self::JPEG_QUALITY);
         imagedestroy($dst);
 
         if (!$ok) {
-            throw new \RuntimeException('imagewebp failed');
+            throw new \RuntimeException('imagejpeg failed');
         }
     }
 
