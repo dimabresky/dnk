@@ -17,6 +17,11 @@ use Dnk\PhpInterface\BonusFetchAgent;
 use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\OrderExportQueueAgent;
 use Dnk\PhpInterface\OrderExportQueueTable;
+use Dnk\PhpInterface\FeedPictureAgent;
+use Dnk\PhpInterface\FeedPictureEvents;
+use Dnk\PhpInterface\FeedPictureQueueTable;
+use Dnk\PhpInterface\FeedPictureComposer;
+use Dnk\PhpInterface\FeedPictureService;
 use Dnk\PhpInterface\ProductExtendedReviewsAgent;
 use Dnk\PhpInterface\ProductFeedAgent;
 use Dnk\PhpInterface\ProfileBirthdayEvents;
@@ -54,6 +59,11 @@ Loader::registerAutoLoadClasses(null, [
     OrderExportEvents::class => $classesPath . '/OrderExportEvents.php',
     ProductExtendedReviewsAgent::class => $classesPath . '/ProductExtendedReviewsAgent.php',
     ProductFeedAgent::class => $classesPath . '/ProductFeedAgent.php',
+    FeedPictureQueueTable::class => $classesPath . '/FeedPictureQueueTable.php',
+    FeedPictureComposer::class => $classesPath . '/FeedPictureComposer.php',
+    FeedPictureService::class => $classesPath . '/FeedPictureService.php',
+    FeedPictureEvents::class => $classesPath . '/FeedPictureEvents.php',
+    FeedPictureAgent::class => $classesPath . '/FeedPictureAgent.php',
     UserAddEvents::class => $classesPath . '/UserAddEvents.php',
     ProfileBirthdayEvents::class => $classesPath . '/ProfileBirthdayEvents.php',
     IblockProductBrandEvents::class => $classesPath . '/IblockProductBrandEvents.php',

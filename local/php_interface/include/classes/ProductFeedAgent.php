@@ -316,7 +316,7 @@ final class ProductFeedAgent
         $title = trim((string) ($fields['NAME'] ?? ''));
         $detailUrl = (string) ($fields['DETAIL_PAGE_URL'] ?? '');
         $description = self::resolveDescription($fields);
-        $imageLink = self::resolveImageUrl($fields, $siteUrl);
+        $imageLink = self::resolveImageUrl($fields, $props, $siteUrl);
 
         $lines = [
             '    <entry>',
@@ -372,10 +372,15 @@ final class ProductFeedAgent
 
     /**
      * @param array<string, mixed> $fields
+     * @param array<string, mixed> $props
      */
-    private static function resolveImageUrl(array $fields, string $siteUrl): string
+    private static function resolveImageUrl(array $fields, array $props, string $siteUrl): string
     {
-        $pictureId = (int) ($fields['DETAIL_PICTURE'] ?? 0);
+        $detailPictureId = (int) ($fields['DETAIL_PICTURE'] ?? 0);
+        $pictureId = self::resolveFreshFeedPictureFileId($props, $detailPictureId);
+        if ($pictureId <= 0) {
+            $pictureId = $detailPictureId;
+        }
         if ($pictureId <= 0) {
             $pictureId = (int) ($fields['PREVIEW_PICTURE'] ?? 0);
         }
@@ -386,6 +391,40 @@ final class ProductFeedAgent
         $path = (string) CFile::GetPath($pictureId);
 
         return $path !== '' ? $siteUrl . $path : '';
+    }
+
+    /**
+     * Use FEED_PICTURE only when it was generated from the current DETAIL_PICTURE
+     * (source file id is stored in property DESCRIPTION by FeedPictureAgent).
+     *
+     * @param array<string, mixed> $props
+     */
+    private static function resolveFreshFeedPictureFileId(array $props, int $detailPictureId): int
+    {
+        if ($detailPictureId <= 0) {
+            return 0;
+        }
+
+        $feed = $props['FEED_PICTURE'] ?? null;
+        if (!is_array($feed)) {
+            return 0;
+        }
+
+        $value = $feed['VALUE'] ?? null;
+        if (is_array($value)) {
+            $value = $value['ID'] ?? $value[0] ?? reset($value);
+        }
+        $feedFileId = (int) $value;
+        if ($feedFileId <= 0) {
+            return 0;
+        }
+
+        $sourceFileId = (int) ($feed['DESCRIPTION'] ?? 0);
+        if ($sourceFileId !== $detailPictureId) {
+            return 0;
+        }
+
+        return $feedFileId;
     }
 
     /**
