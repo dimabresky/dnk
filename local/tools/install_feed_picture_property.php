@@ -116,7 +116,7 @@ if (is_array($existing)) {
         'SORT' => 900,
         'CODE' => $propertyCode,
         'PROPERTY_TYPE' => 'F',
-        'FILE_TYPE' => 'jpg, jpeg, png, webp, gif',
+        'FILE_TYPE' => 'webp, jpg, jpeg, png, gif',
         'MULTIPLE' => 'N',
         'FILTRABLE' => 'N',
         'SEARCHABLE' => 'N',
