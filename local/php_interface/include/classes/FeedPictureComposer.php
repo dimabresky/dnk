@@ -16,16 +16,6 @@ final class FeedPictureComposer
     public const BACKGROUND_B = 252;
     public const JPEG_QUALITY = 90;
 
-    private const ALLOWED_MIME = [
-        'image/jpeg',
-        'image/jpg',
-        'image/png',
-        'image/webp',
-        'image/gif',
-    ];
-
-    private const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-
     /**
      * @return array{path:string,name:string}
      *
@@ -40,15 +30,6 @@ final class FeedPictureComposer
         $file = CFile::GetFileArray($fileId);
         if (!is_array($file)) {
             throw new \RuntimeException('File not found: ' . $fileId);
-        }
-
-        if (!self::isSupportedSource($file)) {
-            throw new \RuntimeException(
-                'Unsupported DETAIL_PICTURE type for FEED_PICTURE: '
-                . (string)($file['CONTENT_TYPE'] ?? '')
-                . ' / '
-                . (string)($file['ORIGINAL_NAME'] ?? $file['FILE_NAME'] ?? '')
-            );
         }
 
         $docRoot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/\\');
@@ -72,35 +53,39 @@ final class FeedPictureComposer
         $destName = $baseName . '_feed_' . $fileId . '.jpg';
         $destPath = $workDir . '/' . $destName;
 
+        $errors = [];
+        $written = false;
         if (extension_loaded('imagick') && class_exists(\Imagick::class)) {
-            self::composeWithImagick($srcPath, $destPath);
-        } else {
-            self::composeWithGd($srcPath, $destPath);
+            try {
+                self::composeWithImagick($srcPath, $destPath);
+                $written = true;
+            } catch (\Throwable $e) {
+                $errors[] = 'Imagick: ' . $e->getMessage();
+                @unlink($destPath);
+            }
         }
 
-        if (!is_file($destPath) || filesize($destPath) <= 0) {
-            throw new \RuntimeException('Feed picture output is empty: ' . $destPath);
+        if (!$written) {
+            try {
+                self::composeWithGd($srcPath, $destPath);
+                $written = true;
+            } catch (\Throwable $e) {
+                $errors[] = 'GD: ' . $e->getMessage();
+                @unlink($destPath);
+            }
+        }
+
+        if (!$written || !is_file($destPath) || filesize($destPath) <= 0) {
+            throw new \RuntimeException(
+                'Feed picture compose failed for file ' . $fileId
+                . ($errors !== [] ? ' (' . implode('; ', $errors) . ')' : '')
+            );
         }
 
         return [
             'path' => $destPath,
             'name' => $destName,
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $file
-     */
-    private static function isSupportedSource(array $file): bool
-    {
-        $contentType = strtolower((string)($file['CONTENT_TYPE'] ?? ''));
-        if (in_array($contentType, self::ALLOWED_MIME, true)) {
-            return true;
-        }
-
-        $ext = strtolower((string)GetFileExtension((string)($file['ORIGINAL_NAME'] ?? $file['FILE_NAME'] ?? '')));
-
-        return in_array($ext, self::ALLOWED_EXT, true);
     }
 
     private static function composeWithImagick(string $srcPath, string $destPath): void
