@@ -187,6 +187,24 @@ define('DNK_PRODUCT_FEED_CHANNEL_TITLE', $dnkEnvDefault('DNK_PRODUCT_FEED_CHANNE
 /** Интервал агента product feed (секунды, для регистрации в админке). */
 define('DNK_PRODUCT_FEED_AGENT_INTERVAL', $dnkEnvInt('DNK_PRODUCT_FEED_AGENT_INTERVAL'));
 
+/** Интервал агента Facebook product feed (секунды, для регистрации в админке). */
+define(
+    'DNK_FACEBOOK_PRODUCT_FEED_AGENT_INTERVAL',
+    (int) $dnkEnvDefault(
+        'DNK_FACEBOOK_PRODUCT_FEED_AGENT_INTERVAL',
+        (string) DNK_PRODUCT_FEED_AGENT_INTERVAL
+    )
+);
+
+/** Интервал агента генерации FEED_PICTURE (секунды, для регистрации в админке). */
+define('DNK_FEED_PICTURE_AGENT_INTERVAL', (int)$dnkEnvDefault('DNK_FEED_PICTURE_AGENT_INTERVAL', '60'));
+
+/** Сколько задач FEED_PICTURE обрабатывать за один запуск агента. */
+define('DNK_FEED_PICTURE_QUEUE_BATCH', (int)$dnkEnvDefault('DNK_FEED_PICTURE_QUEUE_BATCH', '5'));
+
+/** После стольких неудачных попыток статус E. */
+define('DNK_FEED_PICTURE_MAX_ATTEMPTS', (int)$dnkEnvDefault('DNK_FEED_PICTURE_MAX_ATTEMPTS', '5'));
+
 unset(
     $dnkEnvPath,
     $dnkEnvValues,

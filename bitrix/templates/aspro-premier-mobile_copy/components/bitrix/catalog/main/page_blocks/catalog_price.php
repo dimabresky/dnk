@@ -1,6 +1,11 @@
 <?
-
-$APPLICATION->IncludeComponent(
+$sectionDetailUrl = !empty($bSearchPage)
+    ? ($arParams['DETAIL_URL'] ?? '')
+    : ($arResult['FOLDER'].$arResult['URL_TEMPLATES']['element']);
+$sectionId = !empty($bSearchPage) ? '' : ($arResult['VARIABLES']['SECTION_ID'] ?? '');
+$sectionCode = !empty($bSearchPage) ? '' : ($arResult['VARIABLES']['SECTION_CODE'] ?? '');
+?>
+<?$APPLICATION->IncludeComponent(
     'bitrix:catalog.section',
     'catalog_table',
     [
@@ -8,7 +13,7 @@ $APPLICATION->IncludeComponent(
         'CACHE_TIME' => $arParams['CACHE_TIME'],
         'CACHE_FILTER' => $arParams['CACHE_FILTER'],
         'CACHE_GROUPS' => $arParams['CACHE_GROUPS'],
-        'DETAIL_URL' => $arResult['FOLDER'].$arResult['URL_TEMPLATES']['element'],
+        'DETAIL_URL' => $sectionDetailUrl,
         'FILTER_NAME' => $arParams['FILTER_NAME'],
         'HIT_PROP' => 'HIT',
         'IBLOCK_TYPE' => $arParams['IBLOCK_TYPE'],
@@ -48,8 +53,8 @@ $APPLICATION->IncludeComponent(
         'ELEMENT_SORT_ORDER' => $sectionSortOrder ?? strtoupper($order),
         'ELEMENT_SORT_FIELD2' => $arParams['ELEMENT_SORT_FIELD2'],
         'ELEMENT_SORT_ORDER2' => $arParams['ELEMENT_SORT_ORDER2'],
-        'SECTION_ID' => $arResult['VARIABLES']['SECTION_ID'],
-        'SECTION_CODE' => $arResult['VARIABLES']['SECTION_CODE'],
+        'SECTION_ID' => $sectionId,
+        'SECTION_CODE' => $sectionCode,
         'FIELD_CODE' => $arParams['LIST_FIELD_CODE'],
         'ELEMENTS_TABLE_TYPE_VIEW' => 'FROM_MODULE',
         'SHOW_SECTION' => 'Y',

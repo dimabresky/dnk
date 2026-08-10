@@ -6,26 +6,31 @@ use Bitrix\Main\Context;
 use Bitrix\Main\Loader;
 use CFile;
 use CIBlockElement;
-use CIBlockPropertyEnum;
 use CIBlockSection;
 
 /**
- * Агент: генерация Google Merchant RSS feed upload/dnk_products_feed.xml.
+ * Агент: генерация Facebook/Meta Commerce RSS feed upload/dnk_facebook_products_feed.xml.
  *
  * Зарегистрировать в админке: Настройки → Инструменты → Агенты — PHP-строка:
- * \Dnk\PhpInterface\ProductFeedAgent::runProductFeedAgent();
- * Интервал — DNK_PRODUCT_FEED_AGENT_INTERVAL (сек).
+ * \Dnk\PhpInterface\FacebookProductFeedAgent::runFacebookProductFeedAgent();
+ * Интервал — DNK_FACEBOOK_PRODUCT_FEED_AGENT_INTERVAL (сек).
+ *
+ * @see https://www.facebook.com/business/help/120325381656392?id=725943027795860
  */
-final class ProductFeedAgent
+final class FacebookProductFeedAgent
 {
-    private const FEED_FILENAME = 'dnk_products_feed.xml';
+    private const FEED_FILENAME = 'dnk_facebook_products_feed.xml';
     private const FEED_OUTPUT_DIR = 'upload';
     private const GOOGLE_NS = 'http://base.google.com/ns/1.0';
     private const DEFAULT_CURRENCY = 'BYN';
+    private const DEFAULT_CONDITION = 'new';
+    private const TITLE_MAX_LENGTH = 200;
+    private const DESCRIPTION_MAX_LENGTH = 9999;
+    private const BRAND_MAX_LENGTH = 100;
 
-    public static function runProductFeedAgent(): string
+    public static function runFacebookProductFeedAgent(): string
     {
-        $return = "\\Dnk\\PhpInterface\\ProductFeedAgent::runProductFeedAgent();";
+        $return = "\\Dnk\\PhpInterface\\FacebookProductFeedAgent::runFacebookProductFeedAgent();";
 
         self::generateFeed();
 
@@ -33,7 +38,7 @@ final class ProductFeedAgent
     }
 
     /**
-     * Генерирует feed и возвращает количество записей <entry>.
+     * Генерирует Facebook feed и возвращает количество записей <item>.
      */
     public static function generateFeed(): int
     {
@@ -49,11 +54,14 @@ final class ProductFeedAgent
         $channelTitle = defined('DNK_PRODUCT_FEED_CHANNEL_TITLE')
             ? (string) DNK_PRODUCT_FEED_CHANNEL_TITLE
             : 'DNK.BY';
+        if ($channelTitle === '') {
+            $channelTitle = 'DNK.BY';
+        }
         $siteId = self::resolveSiteId();
-        $hitEnumXmlById = self::buildHitEnumXmlIdMap($catalogIblockId);
+        $defaultBrand = self::truncate($channelTitle, self::BRAND_MAX_LENGTH);
         $sectionPathCache = [];
 
-        $entries = [];
+        $items = [];
         $res = CIBlockElement::GetList(
             ['ID' => 'ASC'],
             [
@@ -91,33 +99,61 @@ final class ProductFeedAgent
                 continue;
             }
 
+            $title = self::truncate(trim((string) ($fields['NAME'] ?? '')), self::TITLE_MAX_LENGTH);
+            if ($title === '') {
+                continue;
+            }
+
+            $description = self::resolvePlainDescription($fields);
+            if ($description === '') {
+                continue;
+            }
+
+            $imageLink = self::resolveImageUrl($fields, $props, $siteUrl);
+            if ($imageLink === '') {
+                continue;
+            }
+
+            $detailUrl = (string) ($fields['DETAIL_PAGE_URL'] ?? '');
+            if ($detailUrl === '') {
+                continue;
+            }
+
             $sectionId = (int) ($fields['IBLOCK_SECTION_ID'] ?? 0);
             if (!array_key_exists($sectionId, $sectionPathCache)) {
                 $sectionPathCache[$sectionId] = self::buildSectionPath($catalogIblockId, $sectionId);
             }
 
-            $entries[] = self::buildEntryXml(
-                $fields,
-                $props,
-                $siteUrl,
+            $brand = self::resolveBrandName($props['BRAND'] ?? null);
+            if ($brand === '') {
+                $brand = $defaultBrand;
+            } else {
+                $brand = self::truncate($brand, self::BRAND_MAX_LENGTH);
+            }
+
+            $items[] = self::buildItemXml(
+                $productId,
+                $title,
+                $description,
+                $siteUrl . $detailUrl,
+                $imageLink,
                 $sectionPathCache[$sectionId],
                 $priceData,
                 self::resolveAvailability($productId),
-                self::resolveBrandName($props['BRAND'] ?? null),
-                self::resolveConditionFromHit($props['HIT'] ?? null, $hitEnumXmlById)
+                $brand
             );
         }
 
-        $xml = self::buildFeedXml($channelTitle, $siteUrl, $entries);
+        $xml = self::buildFeedXml($channelTitle, $siteUrl, $items);
         self::writeFeedFile($xml);
 
-        return count($entries);
+        return count($items);
     }
 
     private static function resolveSiteId(): string
     {
         $siteId = Context::getCurrent()->getSite();
-        
+
         if (!is_null($siteId) && $siteId !== '') {
             return $siteId;
         }
@@ -128,36 +164,6 @@ final class ProductFeedAgent
         }
 
         return 's1';
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private static function buildHitEnumXmlIdMap(int $iblockId): array
-    {
-        $map = [];
-        $propHit = Utils::getIblockPropertyByCode($iblockId, 'HIT');
-        if ($propHit === null) {
-            return $map;
-        }
-
-        $propertyId = (int) ($propHit['ID'] ?? 0);
-        if ($propertyId <= 0) {
-            return $map;
-        }
-
-        $enumRes = CIBlockPropertyEnum::GetList(
-            ['SORT' => 'ASC', 'ID' => 'ASC'],
-            ['PROPERTY_ID' => $propertyId]
-        );
-        while ($enum = $enumRes->Fetch()) {
-            $enumId = (int) ($enum['ID'] ?? 0);
-            if ($enumId > 0) {
-                $map[$enumId] = (string) ($enum['XML_ID'] ?? '');
-            }
-        }
-
-        return $map;
     }
 
     /**
@@ -202,13 +208,13 @@ final class ProductFeedAgent
     {
         $catalogProduct = \CCatalogProduct::GetByID($productId);
         if (!is_array($catalogProduct)) {
-            return 'out_of_stock';
+            return 'out of stock';
         }
 
         $quantity = (float) ($catalogProduct['QUANTITY'] ?? 0);
         $canBuyZero = (string) ($catalogProduct['CAN_BUY_ZERO'] ?? 'N');
 
-        return ($quantity > 0 || $canBuyZero === 'Y') ? 'in_stock' : 'out_of_stock';
+        return ($quantity > 0 || $canBuyZero === 'Y') ? 'in stock' : 'out of stock';
     }
 
     private static function buildSectionPath(int $iblockId, int $sectionId): string
@@ -264,80 +270,30 @@ final class ProductFeedAgent
     }
 
     /**
-     * @param array<string, mixed>|null $hitProperty
-     * @param array<int, string> $hitEnumXmlById
-     */
-    private static function resolveConditionFromHit(?array $hitProperty, array $hitEnumXmlById): string
-    {
-        if ($hitProperty === null || $hitEnumXmlById === []) {
-            return '';
-        }
-
-        $values = $hitProperty['VALUE'] ?? null;
-        if ($values === null || $values === '' || $values === false) {
-            return '';
-        }
-
-        if (!is_array($values)) {
-            $values = [$values];
-        }
-
-        foreach ($values as $value) {
-            $enumId = Utils::coerceIblockListEnumId($value);
-            if ($enumId === null) {
-                continue;
-            }
-
-            $xmlId = trim((string) ($hitEnumXmlById[$enumId] ?? ''));
-            if ($xmlId !== '') {
-                return mb_strtolower($xmlId, 'UTF-8');
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * @param array<string, mixed> $fields
-     * @param array<string, mixed> $props
      * @param array{base: float, discount: float, currency: string} $priceData
      */
-    private static function buildEntryXml(
-        array $fields,
-        array $props,
-        string $siteUrl,
+    private static function buildItemXml(
+        int $productId,
+        string $title,
+        string $description,
+        string $link,
+        string $imageLink,
         string $productType,
         array $priceData,
         string $availability,
-        string $brand,
-        string $condition
+        string $brand
     ): string {
-        $productId = (int) ($fields['ID'] ?? 0);
-        $title = trim((string) ($fields['NAME'] ?? ''));
-        $detailUrl = (string) ($fields['DETAIL_PAGE_URL'] ?? '');
-        $description = self::resolveDescription($fields);
-        $imageLink = self::resolveImageUrl($fields, $props, $siteUrl);
-
         $lines = [
-            '    <entry>',
+            '    <item>',
             '      <g:id>' . self::escapeXml((string) $productId) . '</g:id>',
             '      <g:title>' . self::escapeXml($title) . '</g:title>',
-            '      <g:description><![CDATA[' . self::sanitizeCdata($description) . ']]></g:description>',
-            '      <g:product_type>' . self::escapeXml($productType) . '</g:product_type>',
-            '      <g:link>' . self::escapeXml($siteUrl . $detailUrl) . '</g:link>',
-            '      <g:image_link>' . self::escapeXml($imageLink) . '</g:image_link>',
-            '      <g:identifier_exists>no</g:identifier_exists>',
+            '      <g:description>' . self::escapeXml($description) . '</g:description>',
+            '      <g:availability>' . self::escapeXml($availability) . '</g:availability>',
+            '      <g:condition>' . self::escapeXml(self::DEFAULT_CONDITION) . '</g:condition>',
+            '      <g:price>' . self::escapeXml(
+                self::formatPrice($priceData['base'], $priceData['currency'])
+            ) . '</g:price>',
         ];
-
-        if ($condition !== '') {
-            $lines[] = '      <g:condition>' . self::escapeXml($condition) . '</g:condition>';
-        } else {
-            $lines[] = '      <g:condition/>';
-        }
-
-        $lines[] = '      <g:price>' . self::escapeXml(
-            self::formatPrice($priceData['base'], $priceData['currency'])
-        ) . '</g:price>';
 
         if ($priceData['discount'] < $priceData['base']) {
             $lines[] = '      <g:sale_price>' . self::escapeXml(
@@ -345,14 +301,15 @@ final class ProductFeedAgent
             ) . '</g:sale_price>';
         }
 
-        if ($brand !== '') {
-            $lines[] = '      <g:brand>' . self::escapeXml($brand) . '</g:brand>';
-        } else {
-            $lines[] = '      <g:brand/>';
+        $lines[] = '      <g:link>' . self::escapeXml($link) . '</g:link>';
+        $lines[] = '      <g:image_link>' . self::escapeXml($imageLink) . '</g:image_link>';
+        $lines[] = '      <g:brand>' . self::escapeXml($brand) . '</g:brand>';
+
+        if ($productType !== '') {
+            $lines[] = '      <g:product_type>' . self::escapeXml($productType) . '</g:product_type>';
         }
 
-        $lines[] = '      <g:availability>' . self::escapeXml($availability) . '</g:availability>';
-        $lines[] = '    </entry>';
+        $lines[] = '    </item>';
 
         return implode("\n", $lines);
     }
@@ -360,17 +317,26 @@ final class ProductFeedAgent
     /**
      * @param array<string, mixed> $fields
      */
-    private static function resolveDescription(array $fields): string
+    private static function resolvePlainDescription(array $fields): string
     {
         $detailText = trim((string) ($fields['DETAIL_TEXT'] ?? ''));
-        if ($detailText !== '') {
-            return $detailText;
+        $raw = $detailText !== '' ? $detailText : trim((string) ($fields['PREVIEW_TEXT'] ?? ''));
+        if ($raw === '') {
+            return '';
         }
 
-        return trim((string) ($fields['PREVIEW_TEXT'] ?? ''));
+        $plain = html_entity_decode(strip_tags($raw), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $plain = preg_replace('/[ \t]+/u', ' ', $plain) ?? $plain;
+        $plain = preg_replace('/\R{3,}/u', "\n\n", $plain) ?? $plain;
+        $plain = trim($plain);
+
+        return self::truncate($plain, self::DESCRIPTION_MAX_LENGTH);
     }
 
     /**
+     * Meta accepts JPEG/PNG only. Prefer fresh FEED_PICTURE (opaque PNG with background),
+     * then DETAIL_PICTURE / PREVIEW_PICTURE.
+     *
      * @param array<string, mixed> $fields
      * @param array<string, mixed> $props
      */
@@ -389,8 +355,16 @@ final class ProductFeedAgent
         }
 
         $path = (string) CFile::GetPath($pictureId);
+        if ($path === '') {
+            return '';
+        }
 
-        return $path !== '' ? $siteUrl . $path : '';
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (!in_array($extension, ['jpg', 'jpeg', 'png'], true)) {
+            return '';
+        }
+
+        return $siteUrl . $path;
     }
 
     /**
@@ -428,9 +402,9 @@ final class ProductFeedAgent
     }
 
     /**
-     * @param list<string> $entries
+     * @param list<string> $items
      */
-    private static function buildFeedXml(string $channelTitle, string $siteUrl, array $entries): string
+    private static function buildFeedXml(string $channelTitle, string $siteUrl, array $items): string
     {
         $lines = [
             '<?xml version="1.0" encoding="UTF-8"?>',
@@ -441,8 +415,8 @@ final class ProductFeedAgent
             '    <description>' . self::escapeXml($channelTitle) . '</description>',
         ];
 
-        foreach ($entries as $entry) {
-            $lines[] = $entry;
+        foreach ($items as $item) {
+            $lines[] = $item;
         }
 
         $lines[] = '  </channel>';
@@ -480,12 +454,16 @@ final class ProductFeedAgent
         return htmlspecialchars($value, ENT_XML1 | ENT_COMPAT, 'UTF-8');
     }
 
-    private static function sanitizeCdata(string $value): string
+    private static function truncate(string $value, int $maxLength): string
     {
-        if ($value === '') {
+        if ($value === '' || $maxLength <= 0) {
             return '';
         }
 
-        return str_replace(']]>', ']]]]><![CDATA[>', $value);
+        if (mb_strlen($value, 'UTF-8') <= $maxLength) {
+            return $value;
+        }
+
+        return rtrim(mb_substr($value, 0, $maxLength, 'UTF-8'));
     }
 }

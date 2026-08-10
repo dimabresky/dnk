@@ -5,6 +5,7 @@ use Dnk\PhpInterface\BasketBonusEvents;
 use Dnk\PhpInterface\BonusAccrualEvents;
 use Dnk\PhpInterface\BonusDisplayEvents;
 use Dnk\PhpInterface\HeaderPromoEvents;
+use Dnk\PhpInterface\FeedPictureEvents;
 use Dnk\PhpInterface\IblockProductBrandEvents;
 use Dnk\PhpInterface\IblockProductMarkerHitEvents;
 use Dnk\PhpInterface\IblockProductMarkerIsNewEvents;
@@ -119,6 +120,18 @@ EventManager::getInstance()->addEventHandlerCompatible(
     'iblock',
     'OnAfterIBlockElementUpdate',
     [IblockProductMarkerIsNewEvents::class, 'onAfterIBlockElementUpdate']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'iblock',
+    'OnAfterIBlockElementAdd',
+    [FeedPictureEvents::class, 'onAfterIBlockElementAdd']
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'iblock',
+    'OnAfterIBlockElementUpdate',
+    [FeedPictureEvents::class, 'onAfterIBlockElementUpdate']
 );
 
 EventManager::getInstance()->addEventHandler(
