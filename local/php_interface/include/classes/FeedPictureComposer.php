@@ -5,8 +5,8 @@ namespace Dnk\PhpInterface;
 use CFile;
 
 /**
- * Builds an opaque JPEG from DETAIL_PICTURE (jpg/jpeg/png/webp/gif)
- * with solid background #F8F8FC. WebP conversion is done by bx.imagewebp.
+ * Builds an opaque PNG from DETAIL_PICTURE (jpg/jpeg/png/webp/gif)
+ * with solid background #F8F8FC.
  */
 final class FeedPictureComposer
 {
@@ -14,7 +14,7 @@ final class FeedPictureComposer
     public const BACKGROUND_R = 248;
     public const BACKGROUND_G = 248;
     public const BACKGROUND_B = 252;
-    public const JPEG_QUALITY = 90;
+    public const PNG_COMPRESSION = 6;
 
     /**
      * @return array{path:string,name:string}
@@ -50,7 +50,7 @@ final class FeedPictureComposer
 
         $baseName = pathinfo((string)($file['ORIGINAL_NAME'] ?? $file['FILE_NAME'] ?? 'image'), PATHINFO_FILENAME);
         $baseName = preg_replace('/[^a-zA-Z0-9_\-]+/u', '_', (string)$baseName) ?: 'image';
-        $destName = $baseName . '_feed_' . $fileId . '.jpg';
+        $destName = $baseName . '_feed_' . $fileId . '.png';
         $destPath = $workDir . '/' . $destName;
 
         $errors = [];
@@ -105,10 +105,9 @@ final class FeedPictureComposer
 
             $canvas = new \Imagick();
             $canvas->newImage($width, $height, new \ImagickPixel(self::BACKGROUND_HEX));
-            $canvas->setImageFormat('jpeg');
+            $canvas->setImageFormat('png');
             $canvas->compositeImage($image, \Imagick::COMPOSITE_DEFAULT, 0, 0);
-            $canvas->setImageCompression(\Imagick::COMPRESSION_JPEG);
-            $canvas->setImageCompressionQuality(self::JPEG_QUALITY);
+            $canvas->setImageCompressionQuality(self::PNG_COMPRESSION);
 
             if (!$canvas->writeImage($destPath)) {
                 throw new \RuntimeException('Imagick writeImage failed');
@@ -123,8 +122,8 @@ final class FeedPictureComposer
 
     private static function composeWithGd(string $srcPath, string $destPath): void
     {
-        if (!function_exists('imagecreatetruecolor') || !function_exists('imagejpeg')) {
-            throw new \RuntimeException('GD with JPEG support is required');
+        if (!function_exists('imagecreatetruecolor') || !function_exists('imagepng')) {
+            throw new \RuntimeException('GD with PNG support is required');
         }
 
         $src = self::gdLoadImage($srcPath);
@@ -153,11 +152,11 @@ final class FeedPictureComposer
         imagecopy($dst, $src, 0, 0, 0, 0, $width, $height);
         imagedestroy($src);
 
-        $ok = imagejpeg($dst, $destPath, self::JPEG_QUALITY);
+        $ok = imagepng($dst, $destPath, self::PNG_COMPRESSION);
         imagedestroy($dst);
 
         if (!$ok) {
-            throw new \RuntimeException('imagejpeg failed');
+            throw new \RuntimeException('imagepng failed');
         }
     }
 

@@ -2,18 +2,12 @@
 
 namespace Dnk\PhpInterface;
 
-use Bitrix\Main\Loader;
 use Bitrix\Main\Type\DateTime;
-use Bx\ImageWebp\Config as ImageWebpConfig;
-use Bx\ImageWebp\Converter as ImageWebpConverter;
-use Bx\ImageWebp\ElementImageReplacer as ImageWebpReplacer;
-use Bx\ImageWebp\StaleTargetException as ImageWebpStaleTargetException;
 use CFile;
 use CIBlockElement;
 
 /**
- * Агент: генерация FEED_PICTURE из DETAIL_PICTURE с фоном #F8F8FC,
- * затем конвертация в WebP через модуль bx.imagewebp.
+ * Агент: генерация FEED_PICTURE (PNG) из DETAIL_PICTURE с фоном #F8F8FC.
  *
  * Зарегистрировать в админке: Настройки → Инструменты → Агенты — PHP-строка:
  * \Dnk\PhpInterface\FeedPictureAgent::runFeedPictureAgent();
@@ -216,7 +210,7 @@ final class FeedPictureAgent
 
         $fileArray['name'] = $composed['name'];
         $fileArray['MODULE_ID'] = 'iblock';
-        $fileArray['type'] = 'image/jpeg';
+        $fileArray['type'] = 'image/png';
 
         $prop = Utils::getIblockPropertyByCode($iblockId, FeedPictureService::PROPERTY_CODE);
         if ($prop === null || (string)($prop['PROPERTY_TYPE'] ?? '') !== 'F') {
@@ -236,64 +230,11 @@ final class FeedPictureAgent
                     ],
                 ]
             );
-            self::convertFeedPictureToWebp($iblockId, $elementId);
         } finally {
             FeedPictureService::endInternalUpdate();
             @unlink($composed['path']);
         }
 
         return 'ok';
-    }
-
-    /**
-     * Convert saved FEED_PICTURE JPEG to WebP via bx.imagewebp Converter/Replacer.
-     *
-     * @throws \RuntimeException
-     */
-    private static function convertFeedPictureToWebp(int $iblockId, int $elementId): void
-    {
-        if (!Loader::includeModule('bx.imagewebp')) {
-            throw new \RuntimeException('Module bx.imagewebp is required for FEED_PICTURE WebP conversion');
-        }
-
-        $propRow = null;
-        $res = CIBlockElement::GetProperty(
-            $iblockId,
-            $elementId,
-            ['sort' => 'asc'],
-            ['CODE' => FeedPictureService::PROPERTY_CODE]
-        );
-        while ($row = $res->Fetch()) {
-            if ((int)($row['VALUE'] ?? 0) > 0) {
-                $propRow = $row;
-                break;
-            }
-        }
-
-        if ($propRow === null) {
-            throw new \RuntimeException('FEED_PICTURE file was not saved for element ' . $elementId);
-        }
-
-        $fileId = (int)$propRow['VALUE'];
-        $propertyValueId = (int)($propRow['PROPERTY_VALUE_ID'] ?? 0);
-        if ($fileId <= 0 || $propertyValueId <= 0) {
-            throw new \RuntimeException('Invalid FEED_PICTURE value for element ' . $elementId);
-        }
-
-        $webp = ImageWebpConverter::convertFileId($fileId);
-        try {
-            ImageWebpReplacer::replace(
-                $iblockId,
-                $elementId,
-                ImageWebpConfig::TARGET_PROPERTY,
-                FeedPictureService::PROPERTY_CODE,
-                $propertyValueId,
-                $fileId,
-                $webp
-            );
-        } catch (ImageWebpStaleTargetException $e) {
-            @unlink($webp['path'] ?? '');
-            throw new \RuntimeException('FEED_PICTURE changed during WebP conversion: ' . $e->getMessage(), 0, $e);
-        }
     }
 }
