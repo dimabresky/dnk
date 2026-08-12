@@ -334,7 +334,7 @@ final class FacebookProductFeedAgent
     }
 
     /**
-     * Meta accepts JPEG/PNG only. Prefer fresh FEED_PICTURE (opaque PNG with background),
+     * Meta accepts JPEG/PNG only. Prefer fresh FEED_PICTURE (opaque JPEG with background),
      * then DETAIL_PICTURE / PREVIEW_PICTURE.
      *
      * @param array<string, mixed> $fields
