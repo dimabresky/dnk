@@ -275,6 +275,27 @@ include 'include_landing_define.php';
 							$linerow = ($arParams['LINE_ELEMENT_COUNT'] == '5' ? 5 : 4);
 							?>
 							<?if($arItems):?>
+								<?php
+								// Restore search element IDs after smart filter init in include_sort/include_filter.
+								$searchFilterName = $arParams['FILTER_NAME'];
+								$searchElementIds = array_values(array_unique(array_filter(array_map('intval', $arElements))));
+								if ($searchFilterName && $searchElementIds) {
+									$appliedFilter = (array)($GLOBALS[$searchFilterName] ?? []);
+									unset(
+										$appliedFilter['ID'],
+										$appliedFilter['=ID'],
+										$appliedFilter['IBLOCK_ID'],
+										$appliedFilter['FACET_OPTIONS']
+									);
+									$GLOBALS[$searchFilterName] = [
+										'IBLOCK_ID' => (int)$catalogIBlockID,
+										'=ID' => $searchElementIds,
+									];
+									if ($appliedFilter && (!empty($_REQUEST['set_filter']) || !empty($_REQUEST['del_filter']))) {
+										$GLOBALS[$searchFilterName] += $appliedFilter;
+									}
+								}
+								?>
 								<?// section elements?>
 								<?$display4ParamsName = TSolution\Template\DisplayTypes::getInstance()->getCurrent4ParamsName();?>
 								<?$sViewElementsTemplate = ($arParams["ELEMENTS_".$display4ParamsName."_TYPE_VIEW"] == "FROM_MODULE" ? $arTheme["ELEMENTS_".$display4ParamsName."_TYPE_VIEW"]["VALUE"] : $arParams["ELEMENTS_".$display4ParamsName."_TYPE_VIEW"]);?>

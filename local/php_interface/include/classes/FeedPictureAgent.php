@@ -7,7 +7,7 @@ use CFile;
 use CIBlockElement;
 
 /**
- * Агент: генерация FEED_PICTURE (PNG) из DETAIL_PICTURE с фоном #F8F8FC.
+ * Агент: генерация FEED_PICTURE (JPEG) из DETAIL_PICTURE с фоном #F8F8FC.
  *
  * Зарегистрировать в админке: Настройки → Инструменты → Агенты — PHP-строка:
  * \Dnk\PhpInterface\FeedPictureAgent::runFeedPictureAgent();
@@ -210,7 +210,7 @@ final class FeedPictureAgent
 
         $fileArray['name'] = $composed['name'];
         $fileArray['MODULE_ID'] = 'iblock';
-        $fileArray['type'] = 'image/png';
+        $fileArray['type'] = 'image/jpeg';
 
         $prop = Utils::getIblockPropertyByCode($iblockId, FeedPictureService::PROPERTY_CODE);
         if ($prop === null || (string)($prop['PROPERTY_TYPE'] ?? '') !== 'F') {
