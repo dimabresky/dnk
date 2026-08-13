@@ -177,3 +177,14 @@
 #awz_cookies_sett__detail-form .awz_cookies_sett__save {
 	background: var(--theme-base-color);
 }
+
+.banners-big__item--cover, .main-slider .main-slider__item {
+    background-size: contain;
+}
+
+@media (min-width: 992px) {
+	.banners-big,
+	.banners-big--high {
+		--big-banner-height: 560px;
+	}
+}
