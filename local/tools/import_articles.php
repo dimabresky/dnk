@@ -448,6 +448,63 @@ $buildPropertyValues = static function (
     return ['values' => $values, 'skipped' => $skipped];
 };
 
+/**
+ * Patch property VALUES without clearing omitted properties.
+ * For file properties on update, delete previous files then attach pack files.
+ *
+ * @param array<string, mixed> $values
+ */
+$saveElementProperties = static function (
+    int $elementId,
+    int $iblockId,
+    array $values,
+    bool $replaceExistingFiles
+) use ($targetProps): void {
+    if ($values === []) {
+        return;
+    }
+
+    $toSet = $values;
+    if ($replaceExistingFiles) {
+        foreach ($toSet as $code => $val) {
+            $code = (string) $code;
+            if (($targetProps[$code]['PROPERTY_TYPE'] ?? '') !== 'F') {
+                continue;
+            }
+
+            $merged = [];
+            $res = CIBlockElement::GetProperty($iblockId, $elementId, 'sort', 'asc', ['CODE' => $code]);
+            while ($p = $res->Fetch()) {
+                $valueId = (int) ($p['PROPERTY_VALUE_ID'] ?? 0);
+                if ($valueId > 0) {
+                    $merged[$valueId] = ['del' => 'Y'];
+                }
+            }
+
+            $files = [];
+            if (is_array($val) && isset($val['tmp_name'])) {
+                $files[] = $val;
+            } elseif (is_array($val)) {
+                foreach ($val as $item) {
+                    if (is_array($item) && isset($item['tmp_name'])) {
+                        $files[] = $item;
+                    }
+                }
+            }
+
+            $i = 0;
+            foreach ($files as $fileArray) {
+                $merged['n' . $i] = $fileArray;
+                ++$i;
+            }
+
+            $toSet[$code] = $merged;
+        }
+    }
+
+    CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, $toSet);
+};
+
 $applySeo = static function (string $className, int $iblockId, int $entityId, array $templates): void {
     if ($templates === [] || !class_exists($className)) {
         return;
@@ -770,7 +827,7 @@ foreach ($sourceElements as $element) {
         is_array($element['PROPERTIES'] ?? null) ? $element['PROPERTIES'] : [],
         true
     );
-    $fields['PROPERTY_VALUES'] = $built['values'];
+    $propertyValues = $built['values'];
 
     if ($existingId !== null) {
         unset($fields['IBLOCK_ID']);
@@ -779,8 +836,10 @@ foreach ($sourceElements as $element) {
             continue;
         }
         $newId = $existingId;
+        $saveElementProperties($newId, $args['iblock'], $propertyValues, true);
         $elementUpdated++;
     } else {
+        $fields['PROPERTY_VALUES'] = $propertyValues;
         $newId = (int) $elementApi->Add($fields, false, true, true);
         if ($newId <= 0) {
             $elementErrors[] = "{$code}: " . $elementApi->LAST_ERROR;
