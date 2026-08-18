@@ -45,7 +45,11 @@
             aria-expanded="false"
             aria-controls="dnk-seo-text-more"
             aria-label="Развернуть">
-        <span class="dnk-seo-text__toggle-icon" aria-hidden="true">&#10148;</span>
+        <span class="dnk-seo-text__toggle-icon" aria-hidden="true">
+            <svg viewBox="0 0 12 16" width="12" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 14V2M6 2L2 6M6 2L10 6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </span>
     </button>
 </div>
 
@@ -63,9 +67,9 @@
         width: 2.5rem;
         height: 2.5rem;
         padding: 0;
-        border: 1px solid var(--theme-base-color);
+        border: 0;
         border-radius: 50%;
-        background: transparent;
+        background: var(--theme-base-color);
         cursor: pointer;
         transition: opacity 0.2s ease;
     }
@@ -80,16 +84,14 @@
     }
 
     .dnk-seo-text__toggle-icon {
-        display: inline-block;
-        color: var(--theme-base-color);
-        font-size: 1rem;
-        line-height: 1;
-        transform: rotate(90deg);
+        display: inline-flex;
+        line-height: 0;
+        transform: rotate(180deg);
         transition: transform 0.2s ease;
     }
 
     .dnk-seo-text__toggle.is-expanded .dnk-seo-text__toggle-icon {
-        transform: rotate(-90deg);
+        transform: rotate(0);
     }
 </style>
 
