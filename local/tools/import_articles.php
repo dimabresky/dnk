@@ -477,7 +477,7 @@ $saveElementProperties = static function (
             while ($p = $res->Fetch()) {
                 $valueId = (int) ($p['PROPERTY_VALUE_ID'] ?? 0);
                 if ($valueId > 0) {
-                    $merged[$valueId] = ['del' => 'Y'];
+                    $merged[$valueId] = ['VALUE' => ['del' => 'Y']];
                 }
             }
 
@@ -492,9 +492,17 @@ $saveElementProperties = static function (
                 }
             }
 
+            $isMultiple = ($targetProps[$code]['MULTIPLE'] ?? 'N') === 'Y';
+            if (!$isMultiple) {
+                $toSet[$code] = isset($files[0])
+                    ? ['VALUE' => $files[0], 'DESCRIPTION' => '']
+                    : ['VALUE' => ['del' => 'Y']];
+                continue;
+            }
+
             $i = 0;
             foreach ($files as $fileArray) {
-                $merged['n' . $i] = $fileArray;
+                $merged['n' . $i] = ['VALUE' => $fileArray, 'DESCRIPTION' => ''];
                 ++$i;
             }
 
