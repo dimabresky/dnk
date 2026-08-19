@@ -16,7 +16,7 @@ $bIncludedModule = \Bitrix\Main\Loader::includeModule('aspro.premier');
                 <link rel="preconnect" href="https://cdn.diginetica.net/">
                 <link rel="preconnect" href="https://tracking.diginetica.net/">
                 <link rel="preconnect" href="https://tracking-app.diginetica.net/">
-                <script type="text/javascript">
+                <script data-skip-moving="true" type="text/javascript">
                     var digiScript = document.createElement('script');
                     digiScript.src = '//cdn.diginetica.net/8995/client.js';
                     digiScript.defer = true;
