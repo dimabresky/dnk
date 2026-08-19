@@ -223,14 +223,6 @@ if (!$birthdayLocked) {
 							<?endif;?>
 						</div>
 
-						<div class="form-group form-group--phone <?=(strlen($arResult['arUser']['PERSONAL_PHONE']) ? 'input-filed' : '');?>">
-							<label for="PERSONAL_PHONE" class="font_13 color_dark"><span><?=Loc::getMessage('PERSONAL_PHONE')?>&nbsp;<span class="required-star">*</span></span></label>
-							<div class="input">
-								<input required type="text" name="PERSONAL_PHONE" id="PERSONAL_PHONE" class="form-control phone" maxlength="255" value="<?=$arResult['arUser']['PERSONAL_PHONE']?>" />
-							</div>
-							<div class="secondary-color font_13 mt mt--4"><?=Loc::getMessage('PERSONAL_PHONE_DESCRIPTION')?></div>
-						</div>
-
 						<div class="form-group form-group--birthday<?=($birthdayLocked ? ' form-group--birthday-locked' : ($birthdayDisplay ? ' input-filed' : ''));?>">
 							<label for="PERSONAL_BIRTHDAY" class="font_13 color_dark"><span><?=Loc::getMessage('USER_BIRTHDAY_DT')?></span></label>
 							<?if ($birthdayLocked):?>
