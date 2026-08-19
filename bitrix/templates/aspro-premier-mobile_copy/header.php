@@ -13,16 +13,7 @@ $bIncludedModule = \Bitrix\Main\Loader::includeModule('aspro.premier');
                 
 		<title><?$APPLICATION->ShowTitle()?></title>
 		<?if($bIncludedModule):?><?MSolution::start();?><?endif;?>
-                <link rel="preconnect" href="https://cdn.diginetica.net/">
-                <link rel="preconnect" href="https://tracking.diginetica.net/">
-                <link rel="preconnect" href="https://tracking-app.diginetica.net/">
-                <script data-skip-moving="true" type="text/javascript">
-                    var digiScript = document.createElement('script');
-                    digiScript.src = '//cdn.diginetica.net/8995/client.js';
-                    digiScript.defer = true;
-                    digiScript.async = true;
-                    document.head.appendChild(digiScript);
-                </script>
+                <?include $_SERVER['DOCUMENT_ROOT'] . '/include/header/diginetica_inc.php'?>
 	</head>
 	<body id="main" class="site_<?=SITE_ID?> <?=($bIncludedModule ? MSolution::getConditionClass() : '')?>">
                 
