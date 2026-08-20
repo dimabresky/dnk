@@ -156,14 +156,20 @@ final class StickerService
         }
 
         $baseFilter = Config::normalizeAssignFilter($filter);
-        $baseFilter['IBLOCK_ID'] = $iblockId;
-
         $batchSize = Config::getBatchSize();
         $lastId = 0;
 
         while (true) {
-            $listFilter = $baseFilter;
-            $listFilter['>ID'] = $lastId;
+            // Always AND catalog scope + pagination with the user filter
+            // so top-level LOGIC=OR cannot OR away IBLOCK_ID / >ID.
+            $listFilter = [
+                'LOGIC' => 'AND',
+                [
+                    'IBLOCK_ID' => $iblockId,
+                    '>ID' => $lastId,
+                ],
+                $baseFilter,
+            ];
 
             $rs = CIBlockElement::GetList(
                 ['ID' => 'ASC'],

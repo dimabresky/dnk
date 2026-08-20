@@ -16,7 +16,7 @@ $MESS['DNK_STICKERS_OPT_LIFETIME_HINT'] = 'Отсчёт от даты назна
 $MESS['DNK_STICKERS_OPT_AUTO_ON_CREATE'] = 'Ставить при создании товара';
 $MESS['DNK_STICKERS_OPT_TRACK_MANUAL'] = 'Отслеживать ручную установку/снятие';
 $MESS['DNK_STICKERS_OPT_ASSIGN_FILTER'] = 'JSON-фильтр GetList';
-$MESS['DNK_STICKERS_OPT_ASSIGN_FILTER_HINT'] = 'Ассоциативный JSON для CIBlockElement::GetList, например {"ACTIVE":"Y","SECTION_ID":691}. IBLOCK_ID подставляется модулем. Пустой фильтр — кнопка «Установить по фильтру» ничего не делает. При невалидном JSON предыдущий фильтр сохраняется.';
+$MESS['DNK_STICKERS_OPT_ASSIGN_FILTER_HINT'] = 'JSON для CIBlockElement::GetList (ассоциативный объект). Пример: {"ACTIVE":"Y","SECTION_ID":691}. Допускаются группы LOGIC OR/AND. IBLOCK_ID и постраничный обход всегда добавляются через AND. Пустой фильтр — кнопка «Установить по фильтру» ничего не делает. При невалидном JSON предыдущий фильтр сохраняется.';
 $MESS['DNK_STICKERS_OPT_FILTER_JSON_ERROR'] = 'Невалидный JSON фильтра. Остальные настройки сохранены, предыдущий assign_filter не изменён.';
 $MESS['DNK_STICKERS_OPT_REMEMBER'] = 'Запомнить текущие';
 $MESS['DNK_STICKERS_OPT_REMEMBER_HINT'] = 'Найти товары, у которых уже стоит стикер правила, и записать ASSIGNED_AT = сейчас (HIT не меняется). Существующие строки учёта не перезаписываются.';

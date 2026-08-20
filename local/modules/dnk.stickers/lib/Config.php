@@ -185,19 +185,23 @@ final class Config
     }
 
     /**
-     * Keep only associative GetList-style keys (string keys).
+     * Keep GetList-compatible keys: string keys and numeric keys with nested groups.
      *
      * @param array<mixed, mixed> $filter
-     * @return array<string, mixed>
+     * @return array<string|int, mixed>
      */
     public static function normalizeAssignFilter(array $filter): array
     {
         $result = [];
         foreach ($filter as $key => $value) {
-            if (!is_string($key) || $key === '') {
+            if (is_string($key) && $key !== '') {
+                $result[$key] = is_array($value) ? self::normalizeAssignFilter($value) : $value;
                 continue;
             }
-            $result[$key] = $value;
+            // Bitrix OR/AND subgroups: [ 'LOGIC' => 'OR', [ ... ], [ ... ] ]
+            if (is_int($key) && is_array($value)) {
+                $result[$key] = self::normalizeAssignFilter($value);
+            }
         }
 
         return $result;
