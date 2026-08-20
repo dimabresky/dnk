@@ -30,6 +30,9 @@ final class Handlers
                 StickerService::assignOnCreate($elementId, $rule);
             }
         }
+
+        // Track stickers already present on create (e.g. set in the form when auto_on_create is off).
+        StickerService::syncManualTracking($iblockId, $elementId);
     }
 
     /**
