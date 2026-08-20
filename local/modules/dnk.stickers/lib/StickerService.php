@@ -111,6 +111,120 @@ final class StickerService
     }
 
     /**
+     * Assign sticker to elements matching rule assign_filter (admin button).
+     * Does not remove stickers from elements outside the filter.
+     *
+     * @return array{scanned: int, assigned: int, tracked: int, skipped: int, error: string}
+     */
+    public static function assignByFilter(string $xmlId): array
+    {
+        $stats = [
+            'scanned' => 0,
+            'assigned' => 0,
+            'tracked' => 0,
+            'skipped' => 0,
+            'error' => '',
+        ];
+
+        if (!Config::isEnabled() || !Loader::includeModule('iblock')) {
+            $stats['error'] = 'disabled';
+
+            return $stats;
+        }
+
+        $rule = Config::getRuleByXmlId($xmlId);
+        if ($rule === null || !$rule['enabled']) {
+            $stats['error'] = 'rule_disabled';
+
+            return $stats;
+        }
+
+        $filter = $rule['assign_filter'] ?? [];
+        if (!is_array($filter) || $filter === []) {
+            $stats['error'] = 'empty_filter';
+
+            return $stats;
+        }
+
+        $iblockId = Config::getIblockId();
+        $propertyCode = Config::getHitPropertyCode();
+        $xmlId = $rule['xml_id'];
+        if ($iblockId <= 0 || HitProperty::getEnumIdByXmlId($iblockId, $propertyCode, $xmlId) === null) {
+            $stats['error'] = 'invalid_config';
+
+            return $stats;
+        }
+
+        $baseFilter = Config::normalizeAssignFilter($filter);
+        $baseFilter['IBLOCK_ID'] = $iblockId;
+
+        $batchSize = Config::getBatchSize();
+        $lastId = 0;
+
+        while (true) {
+            $listFilter = $baseFilter;
+            $listFilter['>ID'] = $lastId;
+
+            $rs = CIBlockElement::GetList(
+                ['ID' => 'ASC'],
+                $listFilter,
+                false,
+                ['nTopCount' => $batchSize],
+                ['ID', 'IBLOCK_ID']
+            );
+
+            $countInBatch = 0;
+            while ($item = $rs->Fetch()) {
+                ++$countInBatch;
+                $elementId = (int) ($item['ID'] ?? 0);
+                $lastId = $elementId;
+                if ($elementId <= 0) {
+                    continue;
+                }
+                ++$stats['scanned'];
+
+                if (HitProperty::addSticker($iblockId, $elementId, $propertyCode, $xmlId)) {
+                    ++$stats['assigned'];
+                }
+
+                if (AssignmentTracker::trackIfMissing(
+                    $iblockId,
+                    $elementId,
+                    $xmlId,
+                    Config::SOURCE_FILTER
+                )) {
+                    ++$stats['tracked'];
+                } else {
+                    ++$stats['skipped'];
+                }
+            }
+
+            if ($countInBatch < $batchSize) {
+                break;
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * @return array<string, array{scanned: int, assigned: int, tracked: int, skipped: int, error: string}>
+     */
+    public static function assignByFilterAllEnabled(): array
+    {
+        $result = [];
+        foreach (Config::getEnabledRules() as $rule) {
+            $filter = $rule['assign_filter'] ?? [];
+            if (!is_array($filter) || $filter === []) {
+                continue;
+            }
+            $result[$rule['xml_id']] = self::assignByFilter($rule['xml_id']);
+        }
+
+        return $result;
+    }
+
+    /**
      * Assign sticker on element create according to rule.
      */
     public static function assignOnCreate(int $elementId, array $rule): bool
