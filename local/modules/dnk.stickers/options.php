@@ -31,7 +31,6 @@ if (!Loader::includeModule($mid)) {
 }
 
 $actionMessage = '';
-$errorMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
     && $MODULE_RIGHT >= 'W'
@@ -53,16 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
             $lifetimeDays = 0.0;
         }
 
-        $existingNew = Config::getRuleByXmlId('NEW') ?? Config::defaultNewRule();
-        $assignFilter = $existingNew['assign_filter'] ?? [];
-        $filterJson = (string) ($_REQUEST['rule_new_assign_filter'] ?? '');
-        $parsedFilter = Config::parseAssignFilterJson($filterJson);
-        if ($parsedFilter === null) {
-            $errorMessage = Loc::getMessage('DNK_STICKERS_OPT_FILTER_JSON_ERROR');
-        } else {
-            $assignFilter = $parsedFilter;
-        }
-
         Config::setRules([
             [
                 'xml_id' => 'NEW',
@@ -70,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
                 'lifetime_days' => $lifetimeDays,
                 'auto_on_create' => $autoOnCreate,
                 'track_manual' => $trackManual,
-                'assign_filter' => $assignFilter,
             ],
         ]);
 
@@ -120,39 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
             '#PROCESSED#' => (string) $processed,
         ]);
     }
-
-    if (!empty($_REQUEST['assign_by_filter'])) {
-        $results = StickerService::assignByFilterAllEnabled();
-        if ($results === []) {
-            $errorMessage = Loc::getMessage('DNK_STICKERS_OPT_RESULT_FILTER_EMPTY');
-        } else {
-            $scanned = 0;
-            $assigned = 0;
-            $tracked = 0;
-            $skipped = 0;
-            $errors = [];
-            foreach ($results as $xmlId => $stats) {
-                $scanned += (int) ($stats['scanned'] ?? 0);
-                $assigned += (int) ($stats['assigned'] ?? 0);
-                $tracked += (int) ($stats['tracked'] ?? 0);
-                $skipped += (int) ($stats['skipped'] ?? 0);
-                if (!empty($stats['error'])) {
-                    $errors[] = $xmlId . ':' . $stats['error'];
-                }
-            }
-            $actionMessage = Loc::getMessage('DNK_STICKERS_OPT_RESULT_FILTER', [
-                '#ASSIGNED#' => (string) $assigned,
-                '#TRACKED#' => (string) $tracked,
-                '#SKIPPED#' => (string) $skipped,
-                '#SCANNED#' => (string) $scanned,
-            ]);
-            if ($errors !== []) {
-                $errorMessage = Loc::getMessage('DNK_STICKERS_OPT_RESULT_FILTER_ERRORS', [
-                    '#ERRORS#' => implode(', ', $errors),
-                ]);
-            }
-        }
-    }
 }
 
 $enabled = Option::get($mid, 'enabled', 'Y');
@@ -162,21 +117,10 @@ $batchSize = Option::get($mid, 'batch_size', '100');
 $agentInterval = Option::get($mid, 'agent_interval', '3600');
 
 $newRule = Config::getRuleByXmlId('NEW') ?? Config::defaultNewRule();
-$assignFilterJson = '';
-$filterForDisplay = $newRule['assign_filter'] ?? [];
-if (is_array($filterForDisplay) && $filterForDisplay !== []) {
-    $assignFilterJson = (string) json_encode(
-        $filterForDisplay,
-        JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
-    );
-}
 
 $APPLICATION->SetTitle(Loc::getMessage('DNK_STICKERS_OPT_TITLE'));
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_admin_after.php';
 
-if ($errorMessage !== '' && $errorMessage !== null) {
-    CAdminMessage::ShowMessage(['TYPE' => 'ERROR', 'MESSAGE' => $errorMessage]);
-}
 if ($actionMessage !== '' && $actionMessage !== null) {
     CAdminMessage::ShowNote($actionMessage);
 }
@@ -246,26 +190,12 @@ $tabControl->Begin();
         <td><?= Loc::getMessage('DNK_STICKERS_OPT_TRACK_MANUAL') ?>:</td>
         <td><input type="checkbox" name="rule_new_track_manual" value="Y"<?= !empty($newRule['track_manual']) ? ' checked' : '' ?>></td>
     </tr>
-    <tr>
-        <td class="adm-detail-valign-top"><?= Loc::getMessage('DNK_STICKERS_OPT_ASSIGN_FILTER') ?>:</td>
-        <td>
-            <textarea name="rule_new_assign_filter" rows="10" cols="60"><?= htmlspecialcharsbx($assignFilterJson) ?></textarea>
-            <div class="adm-info-message-wrap"><div class="adm-info-message"><?= Loc::getMessage('DNK_STICKERS_OPT_ASSIGN_FILTER_HINT') ?></div></div>
-        </td>
-    </tr>
     <?php $tabControl->BeginNextTab(); ?>
     <tr>
         <td class="adm-detail-valign-top" width="40%"><?= Loc::getMessage('DNK_STICKERS_OPT_REMEMBER') ?>:</td>
         <td>
             <input type="submit" name="remember_stickers" value="<?= Loc::getMessage('DNK_STICKERS_OPT_REMEMBER') ?>"<?= $MODULE_RIGHT < 'W' ? ' disabled' : '' ?>>
             <div class="adm-info-message-wrap"><div class="adm-info-message"><?= Loc::getMessage('DNK_STICKERS_OPT_REMEMBER_HINT') ?></div></div>
-        </td>
-    </tr>
-    <tr>
-        <td class="adm-detail-valign-top"><?= Loc::getMessage('DNK_STICKERS_OPT_ASSIGN_BY_FILTER') ?>:</td>
-        <td>
-            <input type="submit" name="assign_by_filter" value="<?= Loc::getMessage('DNK_STICKERS_OPT_ASSIGN_BY_FILTER') ?>"<?= $MODULE_RIGHT < 'W' ? ' disabled' : '' ?>>
-            <div class="adm-info-message-wrap"><div class="adm-info-message"><?= Loc::getMessage('DNK_STICKERS_OPT_ASSIGN_BY_FILTER_HINT') ?></div></div>
         </td>
     </tr>
     <tr>

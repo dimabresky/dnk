@@ -14,12 +14,11 @@ final class Config
     public const SOURCE_REMEMBER = 'remember';
     public const SOURCE_CREATE = 'create';
     public const SOURCE_MANUAL = 'manual';
-    public const SOURCE_FILTER = 'filter';
 
     /**
      * Default v1 rule for NEW sticker.
      *
-     * @return array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool, assign_filter: array<string, mixed>}
+     * @return array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool}
      */
     public static function defaultNewRule(): array
     {
@@ -29,7 +28,6 @@ final class Config
             'lifetime_days' => 30.0,
             'auto_on_create' => true,
             'track_manual' => true,
-            'assign_filter' => [],
         ];
     }
 
@@ -61,7 +59,7 @@ final class Config
     }
 
     /**
-     * @return list<array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool, assign_filter: array<string, mixed>}>
+     * @return list<array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool}>
      */
     public static function getRules(): array
     {
@@ -113,7 +111,7 @@ final class Config
     }
 
     /**
-     * @return array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool, assign_filter: array<string, mixed>}|null
+     * @return array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool}|null
      */
     public static function getRuleByXmlId(string $xmlId): ?array
     {
@@ -128,7 +126,7 @@ final class Config
     }
 
     /**
-     * @return list<array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool, assign_filter: array<string, mixed>}>
+     * @return list<array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool}>
      */
     public static function getEnabledRules(): array
     {
@@ -155,7 +153,7 @@ final class Config
 
     /**
      * @param array<string, mixed> $row
-     * @return array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool, assign_filter: array<string, mixed>}|null
+     * @return array{xml_id: string, enabled: bool, lifetime_days: float, auto_on_create: bool, track_manual: bool}|null
      */
     private static function normalizeRule(array $row): ?array
     {
@@ -169,83 +167,13 @@ final class Config
             $lifetime = 0.0;
         }
 
-        $assignFilter = [];
-        if (isset($row['assign_filter']) && is_array($row['assign_filter'])) {
-            $assignFilter = self::normalizeAssignFilter($row['assign_filter']);
-        }
-
         return [
             'xml_id' => $xmlId,
             'enabled' => self::toBool($row['enabled'] ?? true),
             'lifetime_days' => $lifetime,
             'auto_on_create' => self::toBool($row['auto_on_create'] ?? true),
             'track_manual' => self::toBool($row['track_manual'] ?? true),
-            'assign_filter' => $assignFilter,
         ];
-    }
-
-    /**
-     * Keep GetList-compatible keys: string keys and numeric keys with nested groups.
-     *
-     * @param array<mixed, mixed> $filter
-     * @return array<string|int, mixed>
-     */
-    public static function normalizeAssignFilter(array $filter): array
-    {
-        $result = [];
-        foreach ($filter as $key => $value) {
-            if (is_string($key) && $key !== '') {
-                $result[$key] = is_array($value) ? self::normalizeAssignFilter($value) : $value;
-                continue;
-            }
-            // Bitrix OR/AND subgroups: [ 'LOGIC' => 'OR', [ ... ], [ ... ] ]
-            if (is_int($key) && is_array($value)) {
-                $result[$key] = self::normalizeAssignFilter($value);
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Parse JSON filter from admin textarea. Returns null on invalid JSON.
-     *
-     * @return array<string, mixed>|null
-     */
-    public static function parseAssignFilterJson(string $json): ?array
-    {
-        $json = trim($json);
-        if ($json === '') {
-            return [];
-        }
-
-        $decoded = json_decode($json, true);
-        if (!is_array($decoded) || json_last_error() !== JSON_ERROR_NONE) {
-            return null;
-        }
-
-        // Reject list arrays like [1,2] — GetList filter must be associative.
-        if ($decoded !== [] && self::isListArray($decoded)) {
-            return null;
-        }
-
-        return self::normalizeAssignFilter($decoded);
-    }
-
-    /**
-     * @param array<mixed, mixed> $arr
-     */
-    private static function isListArray(array $arr): bool
-    {
-        $i = 0;
-        foreach ($arr as $key => $_) {
-            if ($key !== $i) {
-                return false;
-            }
-            ++$i;
-        }
-
-        return true;
     }
 
     /**

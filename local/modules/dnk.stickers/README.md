@@ -8,7 +8,6 @@ Extensible Bitrix module for catalog HIT sticker assignment tracking.
 - **Remember**: scan products that already have the sticker and store `ASSIGNED_AT = now` (HIT unchanged; existing rows are not overwritten).
 - **Auto on create**: merge-add configured stickers when a catalog element is created.
 - **Manual**: detect manager add/remove of tracked stickers on element update.
-- **Assign by filter**: admin button runs `CIBlockElement::GetList` with rule `assign_filter` JSON, merge-adds the sticker and tracks assignments (does not remove stickers outside the filter).
 - **Expire** (agent / admin button): remove only the expired sticker enum from HIT; other HIT values stay.
 
 v1 ships one rule: `xml_id = NEW` (Новинка). More stickers can be added later via the same `rules` config without new tables.
@@ -28,25 +27,13 @@ v1 ships one rule: `xml_id = NEW` (Новинка). More stickers can be added l
 | enabled | Y | Global switch |
 | iblock_id | 42 | Catalog iblock |
 | hit_property_code | HIT | Multiple list property |
-| batch_size | 100 | Remember / expire / filter batches |
+| batch_size | 100 | Remember / expire batches |
 | agent_interval | 3600 | Seconds |
-| rules (JSON) | NEW rule | lifetime_days, auto_on_create, track_manual, assign_filter |
-
-### assign_filter example
-
-```json
-{
-  "ACTIVE": "Y",
-  "SECTION_ID": 691
-}
-```
-
-`IBLOCK_ID` is always forced from module settings. Empty filter → «Установить по фильтру» does nothing.
+| rules (JSON) | NEW rule | lifetime_days (float), auto_on_create, track_manual |
 
 ## PHP API
 
 - `Dnk\Stickers\StickerService::rememberExisting('NEW')`
 - `Dnk\Stickers\StickerService::rememberAllEnabled()`
-- `Dnk\Stickers\StickerService::assignByFilter('NEW')` / `assignByFilterAllEnabled()`
 - `Dnk\Stickers\StickerService::expire('NEW')` / `expireAll()`
 - `Dnk\Stickers\Agent::run()` — Bitrix agent
