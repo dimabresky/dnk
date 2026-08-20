@@ -20,13 +20,15 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
     die();
 }
 
-$mid = Config::MODULE_ID;
+$mid = 'dnk.stickers';
 $MODULE_RIGHT = $APPLICATION->GetGroupRight($mid);
 if ($MODULE_RIGHT < 'R') {
     $APPLICATION->AuthForm(Loc::getMessage('ACCESS_DENIED'));
 }
 
-Loader::includeModule($mid);
+if (!Loader::includeModule($mid)) {
+    $APPLICATION->AuthForm(Loc::getMessage('ACCESS_DENIED'));
+}
 
 $actionMessage = '';
 
