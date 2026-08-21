@@ -7,16 +7,19 @@ use CIBlockPropertyEnum;
 
 /**
  * Синхронизация свойства HIT со списком MARKER_DLYA_SAYTA (VALUE → XML_ID варианта HIT).
+ * NEW не выставляется отсюда (модуль dnk.stickers). Запись HIT — merge без wipe.
  */
 final class IblockProductMarkerHitEvents
 {
-    /** Маркер VALUE (после trim) → XML_ID варианта свойства HIT */
+    /** Маркер VALUE (после trim) → XML_ID варианта свойства HIT (без NEW). */
     private const MARKER_VALUE_TO_HIT_XML_ID = [
         'СПЕЦИАЛЬНОЕ ПРЕДЛОЖЕНИЕ' => 'RECOMMEND',
         'Хит' => 'HIT',
-        'Новинка' => 'NEW',
         'Скидка' => 'STOCK',
     ];
+
+    /** Стикеры, которыми управляет sync из маркера (не трогаем NEW и прочие). */
+    private const MANAGED_HIT_XML_IDS = ['RECOMMEND', 'HIT', 'STOCK'];
 
     public static function onAfterIBlockElementAdd(array &$arFields): void
     {
@@ -35,7 +38,7 @@ final class IblockProductMarkerHitEvents
     }
 
     /**
-     * Заполняет HIT из MARKER_DLYA_SAYTA. Для массового прогона и событий.
+     * Синхронизирует HIT из MARKER_DLYA_SAYTA (merge). Для массового прогона и событий.
      *
      * @return bool true, если выполнено сохранение свойства HIT
      */
@@ -76,25 +79,55 @@ final class IblockProductMarkerHitEvents
             $hitXmlId = self::resolveHitXmlIdFromMarker(is_array($markerEnumRow) ? $markerEnumRow : null);
         }
 
-        if ($hitXmlId === null || $hitXmlId === '') {
-            CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [
-                'HIT' => false,
-            ]);
-
-            return true;
+        // Пустой / «Новинка» / несмапленный маркер — HIT не трогаем (не wipe).
+        if ($hitXmlId === null || $hitXmlId === '' || strcasecmp($hitXmlId, 'NEW') === 0) {
+            return false;
         }
 
-        $hitEnumId = Utils::getIblockListPropertyEnumIdByXmlId($iblockId, 'HIT', $hitXmlId);
-        if ($hitEnumId === null) {
-            CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [
-                'HIT' => false,
-            ]);
+        $targetEnumId = Utils::getIblockListPropertyEnumIdByXmlId($iblockId, 'HIT', $hitXmlId);
+        if ($targetEnumId === null) {
+            return false;
+        }
 
-            return true;
+        $managedEnumIds = [];
+        foreach (self::MANAGED_HIT_XML_IDS as $managedXmlId) {
+            $managedId = Utils::getIblockListPropertyEnumIdByXmlId($iblockId, 'HIT', $managedXmlId);
+            if ($managedId !== null) {
+                $managedEnumIds[$managedId] = true;
+            }
+        }
+
+        $current = [];
+        $res = CIBlockElement::GetProperty($iblockId, $elementId, 'sort', 'asc', ['CODE' => 'HIT']);
+        while ($row = $res->Fetch()) {
+            $v = $row['VALUE'] ?? null;
+            $id = Utils::coerceIblockListEnumId(is_array($v) ? ($v[0] ?? null) : $v);
+            if ($id !== null) {
+                $current[] = $id;
+            }
+        }
+        $current = array_values(array_unique($current));
+
+        $next = [];
+        foreach ($current as $enumId) {
+            if (!isset($managedEnumIds[$enumId])) {
+                $next[] = $enumId;
+            }
+        }
+        if (!in_array($targetEnumId, $next, true)) {
+            $next[] = $targetEnumId;
+        }
+        $next = array_values($next);
+
+        sort($current);
+        $sortedNext = $next;
+        sort($sortedNext);
+        if ($current === $sortedNext) {
+            return false;
         }
 
         CIBlockElement::SetPropertyValuesEx($elementId, $iblockId, [
-            'HIT' => [$hitEnumId],
+            'HIT' => $next !== [] ? $next : false,
         ]);
 
         return true;
@@ -145,6 +178,10 @@ final class IblockProductMarkerHitEvents
         }
 
         $xmlId = trim((string) ($markerEnumRow['XML_ID'] ?? ''));
+        if (strcasecmp($xmlId, 'NEW') === 0) {
+            return null;
+        }
+
         $allowed = array_unique(array_values(self::MARKER_VALUE_TO_HIT_XML_ID));
         foreach ($allowed as $one) {
             if (strcasecmp($xmlId, $one) === 0) {
