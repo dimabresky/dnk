@@ -34,6 +34,8 @@ class AssignmentTable extends DataManager
                 ->addValidator(new LengthValidator(1, 50)),
             (new DatetimeField('ASSIGNED_AT'))
                 ->configureRequired(true),
+            (new DatetimeField('EXPIRES_AT'))
+                ->configureRequired(true),
             (new StringField('SOURCE'))
                 ->configureRequired(true)
                 ->configureSize(20)

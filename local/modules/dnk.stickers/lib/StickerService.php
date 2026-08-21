@@ -31,6 +31,7 @@ final class StickerService
 
     /**
      * Remember products that already have the sticker in HIT (ASSIGNED_AT = now, no HIT change).
+     * EXPIRES_AT is stored from current rule lifetime_days.
      *
      * @return array{scanned: int, tracked: int, skipped: int}
      */
@@ -42,6 +43,11 @@ final class StickerService
         }
 
         $xmlId = strtoupper(trim($xmlId));
+        $rule = Config::getRuleByXmlId($xmlId);
+        if ($rule === null || !$rule['enabled']) {
+            return $stats;
+        }
+
         $iblockId = Config::getIblockId();
         $propertyCode = Config::getHitPropertyCode();
         $enumId = HitProperty::getEnumIdByXmlId($iblockId, $propertyCode, $xmlId);
@@ -49,6 +55,7 @@ final class StickerService
             return $stats;
         }
 
+        $lifetimeDays = (float) $rule['lifetime_days'];
         $batchSize = Config::getBatchSize();
         $lastId = 0;
 
@@ -79,7 +86,8 @@ final class StickerService
                     $iblockId,
                     $elementId,
                     $xmlId,
-                    Config::SOURCE_REMEMBER
+                    Config::SOURCE_REMEMBER,
+                    $lifetimeDays
                 )) {
                     ++$stats['tracked'];
                 } else {
@@ -127,7 +135,13 @@ final class StickerService
         }
 
         HitProperty::addSticker($iblockId, $elementId, $propertyCode, $xmlId);
-        AssignmentTracker::trackIfMissing($iblockId, $elementId, $xmlId, Config::SOURCE_CREATE);
+        AssignmentTracker::trackIfMissing(
+            $iblockId,
+            $elementId,
+            $xmlId,
+            Config::SOURCE_CREATE,
+            (float) ($rule['lifetime_days'] ?? 30.0)
+        );
 
         return true;
     }
@@ -160,7 +174,8 @@ final class StickerService
                     $iblockId,
                     $elementId,
                     $xmlId,
-                    Config::SOURCE_MANUAL
+                    Config::SOURCE_MANUAL,
+                    (float) ($rule['lifetime_days'] ?? 30.0)
                 );
             } elseif (!$hasSticker && $tracked) {
                 AssignmentTracker::untrack($elementId, $xmlId);
@@ -169,7 +184,7 @@ final class StickerService
     }
 
     /**
-     * Expire overdue assignments for one sticker XML_ID.
+     * Expire overdue assignments for one sticker XML_ID (by stored EXPIRES_AT).
      *
      * @return array{processed: int, removed: int, cleaned: int}
      */
@@ -190,7 +205,7 @@ final class StickerService
         $batchSize = Config::getBatchSize();
 
         while (true) {
-            $rows = AssignmentTracker::findExpired($xmlId, $rule['lifetime_days'], $batchSize);
+            $rows = AssignmentTracker::findExpired($xmlId, $batchSize);
             if ($rows === []) {
                 break;
             }

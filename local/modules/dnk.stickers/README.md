@@ -5,10 +5,11 @@ Extensible Bitrix module for catalog HIT sticker assignment tracking.
 ## What it does (v1)
 
 - Tracks when a sticker (by HIT enum `XML_ID`) was assigned to a product in table `b_dnk_stickers_assignment`.
-- **Remember**: scan products that already have the sticker and store `ASSIGNED_AT = now` (HIT unchanged; existing rows are not overwritten).
+- Stores **`ASSIGNED_AT`** and **`EXPIRES_AT`**. Expiry is computed at assignment time as `ASSIGNED_AT + lifetime_days` from the then-current rule setting. Changing `lifetime_days` later does not rewrite existing rows.
+- **Remember**: scan products that already have the sticker and store `ASSIGNED_AT = now` + `EXPIRES_AT` (HIT unchanged; existing rows are not overwritten).
 - **Auto on create**: merge-add configured stickers when a catalog element is created.
 - **Manual**: detect manager add/remove of tracked stickers on element update.
-- **Expire** (agent / admin button): remove only the expired sticker enum from HIT; other HIT values stay.
+- **Expire** (agent / admin button): remove only stickers with `EXPIRES_AT <= now`; other HIT values stay.
 
 v1 ships one rule: `xml_id = NEW` (Новинка). More stickers can be added later via the same `rules` config without new tables.
 
@@ -19,6 +20,8 @@ v1 ships one rule: `xml_id = NEW` (Новинка). More stickers can be added l
 3. Configure: Settings → Module settings → dnk.stickers.
 4. Run **Запомнить текущие** once after install if products already have NEW.
 5. **Manually disable** Aspro Premier agents `Aspro\Premier\Agents\Stickers\Novinka::run` / `runOne` if they are still active (this module does not remove them).
+
+On module load, `SchemaUpgrade` adds `EXPIRES_AT` for installs that still have the 1.0.0 schema and backfills from `ASSIGNED_AT` + current NEW `lifetime_days` (default 30 days).
 
 ## Options
 

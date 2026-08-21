@@ -11,6 +11,7 @@ use Dnk\Stickers\AssignmentTracker;
 use Dnk\Stickers\Config;
 use Dnk\Stickers\Handlers;
 use Dnk\Stickers\HitProperty;
+use Dnk\Stickers\SchemaUpgrade;
 use Dnk\Stickers\StickerService;
 
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
@@ -27,5 +28,8 @@ Loader::registerAutoLoadClasses(
         StickerService::class => 'lib/StickerService.php',
         Agent::class => 'lib/Agent.php',
         Handlers::class => 'lib/Handlers.php',
+        SchemaUpgrade::class => 'lib/SchemaUpgrade.php',
     ]
 );
+
+SchemaUpgrade::ensureExpiresAtColumn();
