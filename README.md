@@ -2,6 +2,8 @@
 
 Проект интернет-магазина на базе **1С-Битрикс: Управление сайтом** (редакция «Интернет-магазин», версия ядра 26.150.0 и выше). В качестве готового решения используется шаблон Аспро «Премьер» и его экосистема.
 
+Инструкции для ИИ-агентов: [`AGENTS.md`](AGENTS.md).
+
 ## Назначение
 
 Сайт предназначен для продажи косметики: каталог, корзина, оформление заказов, интеграция с внешними сервисами (в том числе бонусная программа и обмен данными с учётными системами).
@@ -9,26 +11,71 @@
 ## Стек и особенности
 
 - **Bitrix Framework** — стандартные модули, события, хуки и компоненты.
-- **Кастомная логика** — в основном в каталоге `local/`: PHP-интерфейс, классы, миграции.
+- **Кастомная логика** — в основном в каталоге `local/`: PHP-интерфейс, классы, миграции, модули, компоненты.
 - **Вспомогательные методы** — централизованы в `local/php_interface/include/classes/Utils.php`.
 - **Бонусы** — при доработках учитывать модуль `bitrix/modules/aspro.bonus`. Массовый импорт остатков — из JSON в `upload/clientbonus` (агент `BonusFetchAgent`); подробности в [`local/BONUSES.md`](local/BONUSES.md).
+- **Стикеры HIT (NEW)** — модуль [`local/modules/dnk.stickers`](local/modules/dnk.stickers/README.md).
 
 ## Структура (кратко)
 
 | Путь | Назначение |
 |------|------------|
 | `local/php_interface/` | Подключение классов, события, константы, миграции |
-| `local/php_interface/include/classes/` | Пользовательские классы и сервисы |
-| `bitrix/templates/` | Шаблоны сайта (в т.ч. копии Aspro) |
+| `local/php_interface/include/classes/` | Пользовательские классы и сервисы (`Utils.php` и др.) |
+| `local/modules/` | Кастомные модули Bitrix (`dnk.stickers`, сабмодули) |
+| `local/components/dnk/` | Компоненты `dnk:*` |
+| `local/tools/` | CLI / install / migrate / ручной запуск агентов |
+| `local/ajax/` | Точечные AJAX-эндпоинты |
+| `bitrix/templates/aspro-premier_copy/` | Десктопный шаблон (копия Aspro) |
+| `bitrix/templates/aspro-premier-mobile_copy/` | Мобильный шаблон (копия Aspro) |
+
+## Модули и сабмодули
+
+| Модуль | Описание |
+|--------|----------|
+| `dnk.stickers` | Учёт назначения HIT-стикеров (NEW), агенты remember/expire — [README](local/modules/dnk.stickers/README.md) |
+| `sms.traffic` | SMS через SmartDelivery (`messageservice`) — **git submodule** |
+| `bx.imagewebp` | Асинхронная конвертация изображений инфоблока в WebP — **git submodule** |
+
+После клонирования:
+
+```bash
+git submodule update --init --recursive
+```
+
+## Компоненты `dnk:*`
+
+| Компонент | Назначение |
+|-----------|------------|
+| `dnk:certificate.buy` | Покупка сертификатов (подробнее ниже) |
+| `dnk:certificate.request.list` | Список заявок в ЛК |
+| `dnk:basket.bonus.apply` | Применение бонусов в корзине |
+| `dnk:user.bonus.background.sync` | Фоновая синхронизация бонусов пользователя |
+| `dnk:user.consent.manage` | Управление согласиями |
+| `dnk:header.promo.bar` | Промо-полоса в шапке |
+| `dnk:payment.logos` | Логотипы способов оплаты |
+| `dnk:sku.list` | Список SKU / оттенков |
+
+## Git и CI/CD
+
+**Разработка (feature-pr-flow):**
+
+1. Ветка от актуального `dev` (`feat/…` / `fix/…`).
+2. Conventional Commits (английский язык).
+3. Pull request в **`dev`** (не коммитить напрямую в `dev` или `master`).
+4. Merge PR после зелёных проверок; remote feature-ветку удалять после merge.
+
+**Продакшен:** merge PR в **`master`** запускает [`.github/workflows/deploy-production.yml`](.github/workflows/deploy-production.yml) на self-hosted runner: обновление репозитория `/home/bitrix/dnk` (включая submodule) и `rsync` в web root `/home/bitrix/www`.
 
 ## Развёртывание
 
 1. Установить Битрикс в соответствии с [документацией](https://dev.1c-bitrix.ru/).
 2. Восстановить конфигурацию подключения к БД: `bitrix/php_interface/dbconn.php`, `bitrix/.settings.php` (не коммитить секреты в публичный репозиторий).
 3. Настроить константы и интеграции в `local/php_interface/include/constants.php` и окружении под целевой сервер.
-4. **Сертификаты:** в `.env` указывается `DNK_CERTIFICATE_CATALOG_IBLOCK_ID` — ID инфоблока номинальных сертификатов (`NOMINAL`, `DETAIL_PICTURE`). Инфоблок заявок: из CLI — `php local/tools/install_certificate_requests_iblock.php` (ID из `.env`) или с аргументом `<ID>`; из браузера под администратором — `/local/tools/install_certificate_requests_iblock.php?run=Y[&cert_iblock_id=<ID>]` (`$GLOBALS['USER']->IsAdmin()`). Добавьте `DNK_CERTIFICATE_REQUEST_IBLOCK_ID` по выводу скрипта. Для создания заявок от гостей выдайте нужной группе право добавления элементов в ИБ заявок. Уведомление менеджера по почте: тип события `CUSTOM_MAIL`, в `.env` задайте `DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID` — ID строки нужного почтового шаблона (параметры письма `#IBLOCK_ID#`, `#ID#`, `#DETAIL_INFO#`).
-5. Каталог `upload/` и кэши ядра обычно не хранятся в репозитории — см. `.gitignore`.
-6. **Импорт бонусов:** в `.env` задайте `DNK_BONUS_CLIENT_IMPORT_DIR` (по умолчанию `upload/clientbonus`) и `DNK_BONUS_CLIENT_IMPORT_LOG_DIR` (`upload/clientbonus_logs`). Внешняя система кладёт JSON-массив объектов с полями `НачисленоОстаток`, `ПартнерНомерТелефона`, `УровеньКлиента`, `СуммаДляПерехода`, `ДатаСписание`, `БлижайшееСписание` (ключи — `DNK_BONUS_JSON_KEY_BALANCE`, `DNK_BONUS_JSON_KEY_PARTNER_PHONE`, `DNK_BONUS_JSON_KEY_CLIENT_LEVEL`, `DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST`, `DNK_BONUS_JSON_KEY_EXPIRE_DATE`, `DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT`; для двух последних есть дефолты по названию поля). Агент `\Dnk\PhpInterface\BonusFetchAgent::runBonusAgent()` сортирует файлы по имени, сопоставляет пользователей по телефону, синхронизирует баланс Aspro Bonus, профиль уровня (`UF_LEVEL`, `UF_NEXT_LEVEL_COST`) и ближайшее списание (`UF_BONUS_EXPIRE_DATE`, `UF_BONUS_EXPIRE_AMOUNT`); при смене уровня — очередь переавторизации и смена группы. User fields для списания создаются через `php local/tools/install_bonus_user_fields.php`. После успешного разбора файл удаляется, ошибки — в логах каталога `clientbonus_logs`. Подробнее: [`local/BONUSES.md`](local/BONUSES.md).
+4. Инициализировать git submodules (см. выше).
+5. **Сертификаты:** в `.env` указывается `DNK_CERTIFICATE_CATALOG_IBLOCK_ID` — ID инфоблока номинальных сертификатов (`NOMINAL`, `DETAIL_PICTURE`). Инфоблок заявок: из CLI — `php local/tools/install_certificate_requests_iblock.php` (ID из `.env`) или с аргументом `<ID>`; из браузера под администратором — `/local/tools/install_certificate_requests_iblock.php?run=Y[&cert_iblock_id=<ID>]` (`$GLOBALS['USER']->IsAdmin()`). Добавьте `DNK_CERTIFICATE_REQUEST_IBLOCK_ID` по выводу скрипта. Для создания заявок от гостей выдайте нужной группе право добавления элементов в ИБ заявок. Уведомление менеджера по почте: тип события `CUSTOM_MAIL`, в `.env` задайте `DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID` — ID строки нужного почтового шаблона (параметры письма `#IBLOCK_ID#`, `#ID#`, `#DETAIL_INFO#`).
+6. Каталог `upload/` и кэши ядра обычно не хранятся в репозитории — см. `.gitignore`.
+7. **Импорт бонусов:** в `.env` задайте `DNK_BONUS_CLIENT_IMPORT_DIR` (по умолчанию `upload/clientbonus`) и `DNK_BONUS_CLIENT_IMPORT_LOG_DIR` (`upload/clientbonus_logs`). Внешняя система кладёт JSON-массив объектов с полями `НачисленоОстаток`, `ПартнерНомерТелефона`, `УровеньКлиента`, `СуммаДляПерехода`, `ДатаСписание`, `БлижайшееСписание` (ключи — `DNK_BONUS_JSON_KEY_BALANCE`, `DNK_BONUS_JSON_KEY_PARTNER_PHONE`, `DNK_BONUS_JSON_KEY_CLIENT_LEVEL`, `DNK_BONUS_JSON_KEY_NEXT_LEVEL_COST`, `DNK_BONUS_JSON_KEY_EXPIRE_DATE`, `DNK_BONUS_JSON_KEY_EXPIRE_AMOUNT`; для двух последних есть дефолты по названию поля). Агент `\Dnk\PhpInterface\BonusFetchAgent::runBonusAgent()` сортирует файлы по имени, сопоставляет пользователей по телефону, синхронизирует баланс Aspro Bonus, профиль уровня (`UF_LEVEL`, `UF_NEXT_LEVEL_COST`) и ближайшее списание (`UF_BONUS_EXPIRE_DATE`, `UF_BONUS_EXPIRE_AMOUNT`); при смене уровня — очередь переавторизации и смена группы. User fields для списания создаются через `php local/tools/install_bonus_user_fields.php`. После успешного разбора файл удаляется, ошибки — в логах каталога `clientbonus_logs`. Подробнее: [`local/BONUSES.md`](local/BONUSES.md).
 
 ## Компонент покупки сертификатов
 
@@ -55,6 +102,7 @@ $APPLICATION->IncludeComponent('dnk:certificate.buy', '', [], false);
 
 - [API Битрикс](https://dev.1c-bitrix.ru/api_help/)
 - Курсы разработчика и Vue в экосистеме 1С-Битрикс — по ссылкам из внутренней документации проекта.
+- Агенты: [`AGENTS.md`](AGENTS.md).
 
 ---
 

@@ -14,8 +14,10 @@ This repository powers **DNK.BY**, a cosmetics e-commerce site on **1C-Bitrix: S
 |--------|----------|
 | Custom PHP logic, services, events | `local/php_interface/` and related paths under `local/` |
 | **Shared helpers** | `local/php_interface/include/classes/Utils.php` — centralize reusable helpers here instead of scattering one-off utilities |
+| Install / migrate / agent runners | `local/tools/` — one-off or CLI helpers, not production request path |
+| Point AJAX endpoints | `local/ajax/` |
+| Custom components (`dnk:*`) | `local/components/dnk/` |
 | Site templates (including Aspro copies) | `bitrix/templates/` (e.g. `aspro-premier_copy`, `aspro-premier-mobile_copy`) |
-| Custom components | `local/components/` |
 | **Custom Bitrix modules** | `local/modules/<vendor>.<name>/` — структура `install/`, `lib/`, `include.php`, см. раздел ниже |
 
 Project-specific layout details are summarized in [`README.md`](README.md).
@@ -30,12 +32,23 @@ Project-specific layout details are summarized in [`README.md`](README.md).
 - Точки расширения: **`RegisterModuleDependences`**, `\Bitrix\Main\EventManager`, штатные события ядра и модулей — не подключайте произвольные `require` из чужих мест вместо официальных extension points.
 - Секреты (ключи API, пароли) не храните в репозитории: только опции модуля на стенде, `.settings.php` / окружение по практике команды.
 
-**Git** для изменений в `local/modules/` — те же правила, что в разделе [Git and delivery](#git-and-delivery): ветка фичи, Conventional Commits, PR в `dev`, без коммита в `dev` напрямую.
+**Modules in this repo:**
+
+| Module | Notes |
+|--------|--------|
+| `dnk.stickers` | HIT sticker assignment tracking (NEW / «Новинка»), remember/expire agents — see [`local/modules/dnk.stickers/README.md`](local/modules/dnk.stickers/README.md) |
+| `sms.traffic` | SMS via SmartDelivery as Bitrix `messageservice` sender — **git submodule** |
+| `bx.imagewebp` | Async iblock image → WebP — **git submodule** |
+
+After clone: `git submodule update --init --recursive`.
+
+**Git** for changes under `local/modules/` — same rules as [Git and delivery](#git-and-delivery): feature branch, Conventional Commits, PR into `dev`, no direct commits to `dev`.
 
 ## Bitrix and Aspro conventions
 
 - Use **event handlers** and **standard Bitrix hooks** instead of ad-hoc hooks when an official extension point exists; do not duplicate core behaviour when a supported API exists.
-- **Bonuses / loyalty**: before changing related behaviour, review `bitrix/modules/aspro.bonus`.
+- **Bonuses / loyalty**: before changing related behaviour, review `bitrix/modules/aspro.bonus` and [`local/BONUSES.md`](local/BONUSES.md).
+- **Catalog HIT stickers (NEW)**: use `local/modules/dnk.stickers`. After install, manually disable Aspro Premier agents `Aspro\Premier\Agents\Stickers\Novinka::run` / `runOne` if they are still active (the module does not remove them).
 - **Component templates**:
   - Do **not** manually include `./script.js` or `./style.css` — they are loaded automatically.
   - Do **not** manually include lang files — they are loaded automatically.
@@ -57,10 +70,18 @@ Public API reference: [Bitrix dev docs](https://dev.1c-bitrix.ru/api_help/).
 
 ## Git and delivery
 
-- **Commits:** English messages; [**Conventional Commits**](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`, `fix:`, `chore:`, `refactor:`, etc.).
-- **Workflow:** use feature branches; keep changes **focused** on the requested task — avoid unrelated refactors or broad formatting-only edits unless the task requires them.
-- **Branching:** commit changes only to a dedicated feature branch and open a PR into `dev`; do not commit directly to `dev`.
-- Do not commit secrets (e.g. `bitrix/php_interface/dbconn.php`, `bitrix/.settings.php`); follow `.gitignore` and team practice from `README.md`.
+Follow **feature-pr-flow**:
+
+1. Branch from the latest **`dev`** (`feat/…` or `fix/…`).
+2. Implement only the scoped task.
+3. Commit with English [**Conventional Commits**](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, etc.).
+4. Open a pull request into **`dev`** — do **not** commit directly to `dev` or `master`.
+5. Resolve CI / review feedback on the PR.
+6. Merge the PR (and delete the remote feature branch) only when the PR is green/mergeable and after explicit confirmation when working with an agent.
+
+**Production deploy:** merged pull request into **`master`** triggers [`.github/workflows/deploy-production.yml`](.github/workflows/deploy-production.yml) on a self-hosted runner: update `/home/bitrix/dnk` (`git pull` + submodule sync/update), then `rsync` into web root `/home/bitrix/www` (excludes `.git/`, `.github/`).
+
+Do not commit secrets (e.g. `bitrix/php_interface/dbconn.php`, `bitrix/.settings.php`); follow `.gitignore` and team practice from `README.md`.
 
 ## Out of scope for agents unless explicitly requested
 
