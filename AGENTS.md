@@ -56,10 +56,6 @@ After clone: `git submodule update --init --recursive`.
   `bitrix/templates/aspro-premier_copy/css/custom.css` or  
   `bitrix/templates/aspro-premier-mobile_copy/css/custom.css`, depending on context (desktop vs mobile template).
 
-## Dev tooling
-
-- MCP server for infoblocks / highload blocks lives under `local/bitrix-mcp-server/` (local/dev tooling). Do not confuse this project with Mile Elasticsearch stacks.
-
 ## Documentation and references
 
 When implementing or debugging, align with internal documentation (paths may be exposed as `@docs` in the workspace):
