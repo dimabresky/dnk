@@ -120,7 +120,7 @@
 }
 
 .detail-gallery-big__item a.detail-gallery-big__link.popup_link.fancy.fancy-thumbs {
-    background: #F8F8FC;
+    background: #FAF6ED;
 }
 
 @media screen and (max-width: 600px) {
@@ -155,4 +155,9 @@
 
 #awz_cookies_sett__detail-form .awz_cookies_sett__save {
 	background: var(--theme-base-color);
+}
+
+/* Product image grey background override */
+.grey-bg-goods-y .toggle-white-grey-bg {
+	--toggle-bg: #FAF6ED;
 }
