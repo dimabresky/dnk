@@ -3,6 +3,7 @@
 namespace Dnk\Stickers;
 
 use Bitrix\Main\Config\Option;
+use Bitrix\Main\Type\DateTime;
 
 /**
  * Module options and sticker rules.
@@ -139,21 +140,21 @@ final class Config
     /**
      * Compute EXPIRES_AT from assignment moment and lifetime in days (fractional allowed).
      */
-    public static function computeExpiresAt(\DateTimeInterface $assignedAt, float $lifetimeDays): \Bitrix\Main\Type\DateTime
+    public static function computeExpiresAt(DateTime $assignedAt, float $lifetimeDays): DateTime
     {
         $seconds = (int) round($lifetimeDays * 86400);
         if ($seconds < 0) {
             $seconds = 0;
         }
 
-        return \Bitrix\Main\Type\DateTime::createFromTimestamp($assignedAt->getTimestamp() + $seconds);
+        return DateTime::createFromTimestamp($assignedAt->getTimestamp() + $seconds);
     }
 
     /**
      * @deprecated Kept for compatibility; expire now uses stored EXPIRES_AT.
      * Lifetime threshold as DateTime for SQL compare (assigned_at <= now - lifetime).
      */
-    public static function lifetimeThreshold(\DateTimeInterface $now, float $lifetimeDays): \Bitrix\Main\Type\DateTime
+    public static function lifetimeThreshold(DateTime $now, float $lifetimeDays): DateTime
     {
         $seconds = (int) round($lifetimeDays * 86400);
         if ($seconds < 0) {
@@ -162,7 +163,7 @@ final class Config
 
         $ts = $now->getTimestamp() - $seconds;
 
-        return \Bitrix\Main\Type\DateTime::createFromTimestamp($ts);
+        return DateTime::createFromTimestamp($ts);
     }
 
     /**
