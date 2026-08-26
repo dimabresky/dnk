@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Import product reviews pack (upload/reviews_migrate) into catalog blog comments.
+ * Import product reviews pack into catalog blog comments as unpublished (READY),
+ * so managers can publish them from Сервисы → Блоги.
  *
  * Default pack path is outside the web root (../reviews_migrate).
  *
@@ -621,7 +622,7 @@ while ($pending !== [] && $progress) {
             'POST_ID' => $postId,
             'POST_TEXT' => $postText,
             'DATE_CREATE' => $formatDateCreate((string) ($comment['date_create'] ?? '')),
-            'PUBLISH_STATUS' => defined('BLOG_PUBLISH_STATUS_PUBLISH') ? BLOG_PUBLISH_STATUS_PUBLISH : 'P',
+            'PUBLISH_STATUS' => defined('BLOG_PUBLISH_STATUS_READY') ? BLOG_PUBLISH_STATUS_READY : 'K',
             DNK_REVIEWS_IMPORT_OLD_ID_UF => $oldId,
         ];
 
