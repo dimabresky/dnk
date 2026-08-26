@@ -1,12 +1,14 @@
 <?php
 
 /**
- * Export catalog product reviews (blog comments) to upload/reviews_migrate/.
- * Run on the OLD site (catalog iblock 26). Copy the pack to the new site.
+ * Export catalog product reviews (blog comments).
+ * Run on the OLD site (catalog iblock 26). Copy the pack to the new site via SCP, then delete it.
+ *
+ * Default pack path is outside the web root (../reviews_migrate) so phones/emails are not HTTP-public.
  *
  * CLI (from site root):
  *   php local/tools/export_product_reviews.php
- *   php local/tools/export_product_reviews.php --iblock=26 --out=upload/reviews_migrate
+ *   php local/tools/export_product_reviews.php --iblock=26 --out=../reviews_migrate
  *
  * Browser (admin only):
  *   /local/tools/export_product_reviews.php?run=Y
@@ -103,7 +105,7 @@ if (!CModule::IncludeModule('iblock') || !CModule::IncludeModule('blog')) {
  */
 $parseArgs = static function (array $argvList, bool $cli): array {
     $iblock = 26;
-    $out = 'upload/reviews_migrate';
+    $out = '../reviews_migrate';
 
     if ($cli) {
         foreach (array_slice($argvList, 1) as $arg) {
@@ -127,9 +129,11 @@ $parseArgs = static function (array $argvList, bool $cli): array {
 
 $args = $parseArgs(isset($argv) && is_array($argv) ? $argv : [], $isCli);
 $iblockId = $args['iblock'];
-$outRel = str_replace('\\', '/', ltrim($args['out'], '/'));
+$outRel = str_replace('\\', '/', $args['out']);
 $docRoot = rtrim((string) $_SERVER['DOCUMENT_ROOT'], '/\\');
-$packRoot = $docRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $outRel);
+$packRoot = str_starts_with($outRel, '/')
+    ? $outRel
+    : $docRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $outRel);
 $filesDir = $packRoot . DIRECTORY_SEPARATOR . 'files';
 
 if ($iblockId <= 0) {
@@ -145,11 +149,35 @@ if (!is_array($iblock)) {
     exit(1);
 }
 
-if (!is_dir($filesDir) && !mkdir($filesDir, 0775, true) && !is_dir($filesDir)) {
+if (!is_dir($filesDir) && !mkdir($filesDir, 0770, true) && !is_dir($filesDir)) {
     $dnkErr("Cannot create pack directory: {$filesDir}\n");
     $dnkFinish();
     exit(1);
 }
+
+$protectPackFromHttp = static function (string $directory): void {
+    if ($directory === '' || !is_dir($directory)) {
+        return;
+    }
+
+    @file_put_contents(
+        $directory . DIRECTORY_SEPARATOR . '.htaccess',
+        "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n"
+        . "<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n"
+    );
+    @file_put_contents(
+        $directory . DIRECTORY_SEPARATOR . 'web.config',
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration><system.webServer>"
+        . "<security><authorization><remove users=\"*\" roles=\"\" verbs=\"\" />"
+        . "<add accessType=\"Deny\" users=\"*\" /></authorization></security>"
+        . "</system.webServer></configuration>\n"
+    );
+};
+
+$protectPackFromHttp($packRoot);
+$protectPackFromHttp($filesDir);
+@chmod($packRoot, 0770);
+@chmod($filesDir, 0770);
 
 $copiedBySrc = [];
 $copiedByFileId = [];
@@ -454,7 +482,14 @@ $dnkOut('Products with blog posts: ' . count($productsByPostId) . "\n");
 $dnkOut('Comments: ' . count($comments) . "\n");
 $dnkOut("Comments with ML_ONLINER: {$withOnliner}\n");
 $dnkOut('Files: ' . count($fileIndex) . "\n");
-$dnkOut("Pack: /{$outRel}/\n");
+$resolvedPack = realpath($packRoot) ?: $packRoot;
+$dnkOut("Pack: {$resolvedPack}\n");
+$dnkOut("Contains personal data (names, emails, phones, photos). Copy via SCP/SFTP, then delete this directory.\n");
+$normalizedDoc = rtrim(str_replace('\\', '/', $docRoot), '/') . '/';
+$normalizedPack = rtrim(str_replace('\\', '/', $resolvedPack), '/') . '/';
+if (str_starts_with($normalizedPack, $normalizedDoc)) {
+    $dnkOut("WARNING: pack is inside the web root. HTTP deny files were written; delete the pack after copy.\n");
+}
 if ($warnings !== []) {
     $dnkOut('Warnings: ' . count($warnings) . "\n");
     foreach ($warnings as $warning) {

@@ -3,10 +3,12 @@
 /**
  * Import product reviews pack (upload/reviews_migrate) into catalog blog comments.
  *
+ * Default pack path is outside the web root (../reviews_migrate).
+ *
  * CLI (from site root):
  *   php local/tools/import_product_reviews.php --dry-run
  *   php local/tools/import_product_reviews.php --apply
- *   php local/tools/import_product_reviews.php --dry-run --pack=upload/reviews_migrate
+ *   php local/tools/import_product_reviews.php --dry-run --pack=../reviews_migrate
  *
  * Browser (admin only):
  *   /local/tools/import_product_reviews.php?run=Y&mode=dry-run
@@ -110,7 +112,7 @@ if (!Loader::includeModule('iblock') || !Loader::includeModule('blog')) {
 $parseArgs = static function (array $argvList, bool $cli): array {
     $mode = 'dry-run';
     $iblock = defined('DNK_CATALOG_IBLOCK_ID') ? (int) DNK_CATALOG_IBLOCK_ID : 42;
-    $pack = 'upload/reviews_migrate';
+    $pack = '../reviews_migrate';
     $blogUrl = 'catalog_comments';
 
     if ($cli) {
@@ -165,16 +167,40 @@ if (!is_array($iblock)) {
 }
 
 $docRoot = rtrim((string) $_SERVER['DOCUMENT_ROOT'], '/\\');
-$packRel = str_replace('\\', '/', ltrim($args['pack'], '/'));
-$packRoot = $docRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $packRel);
+$packRel = str_replace('\\', '/', $args['pack']);
+$packRoot = str_starts_with($packRel, '/')
+    ? $packRel
+    : $docRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $packRel);
 $manifestPath = $packRoot . DIRECTORY_SEPARATOR . 'manifest.json';
 
 if (!is_file($manifestPath)) {
     $dnkErr("manifest.json not found: {$manifestPath}\n");
-    $dnkErr("Copy the export pack from the old site to /{$packRel}/\n");
+    $dnkErr("Copy the export pack from the old site to {$packRoot}\n");
     $dnkFinish();
     exit(1);
 }
+
+$protectPackFromHttp = static function (string $directory): void {
+    if ($directory === '' || !is_dir($directory)) {
+        return;
+    }
+
+    @file_put_contents(
+        $directory . DIRECTORY_SEPARATOR . '.htaccess',
+        "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n"
+        . "<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n"
+    );
+    @file_put_contents(
+        $directory . DIRECTORY_SEPARATOR . 'web.config',
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration><system.webServer>"
+        . "<security><authorization><remove users=\"*\" roles=\"\" verbs=\"\" />"
+        . "<add accessType=\"Deny\" users=\"*\" /></authorization></security>"
+        . "</system.webServer></configuration>\n"
+    );
+};
+
+$protectPackFromHttp($packRoot);
+$protectPackFromHttp($packRoot . DIRECTORY_SEPARATOR . 'files');
 
 $manifestRaw = file_get_contents($manifestPath);
 $manifest = is_string($manifestRaw) ? json_decode($manifestRaw, true) : null;
@@ -697,5 +723,7 @@ if ($warnings !== []) {
         ++$shown;
     }
 }
+
+$dnkOut("Delete the pack after import; it contains personal data.\n");
 
 $dnkFinish();
