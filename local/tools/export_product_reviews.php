@@ -4,11 +4,11 @@
  * Export catalog product reviews (blog comments).
  * Run on the OLD site (catalog iblock 26). Copy the pack to the new site via SCP, then delete it.
  *
- * Default pack path is outside the web root (../reviews_migrate) so phones/emails are not HTTP-public.
+ * Default pack path is upload/reviews_migrate (HTTP denied via .htaccess / web.config).
  *
  * CLI (from site root):
  *   php local/tools/export_product_reviews.php
- *   php local/tools/export_product_reviews.php --iblock=26 --out=../reviews_migrate
+ *   php local/tools/export_product_reviews.php --iblock=26 --out=upload/reviews_migrate
  *
  * Browser (admin only):
  *   /local/tools/export_product_reviews.php?run=Y
@@ -105,7 +105,7 @@ if (!CModule::IncludeModule('iblock') || !CModule::IncludeModule('blog')) {
  */
 $parseArgs = static function (array $argvList, bool $cli): array {
     $iblock = 26;
-    $out = '../reviews_migrate';
+    $out = 'upload/reviews_migrate';
 
     if ($cli) {
         foreach (array_slice($argvList, 1) as $arg) {
@@ -172,7 +172,7 @@ $packRoot = $normalizeFsPath(
 );
 $packBase = basename($packRoot);
 if ($outRel === '' || $packBase === '' || $packBase === '.' || $packBase === '..' || $isSameDir($packRoot, $docRoot)) {
-    $dnkErr("Refusing pack path that resolves to the site root. Use ../reviews_migrate or a dedicated subdirectory.\n");
+    $dnkErr("Refusing pack path that resolves to the site root. Use upload/reviews_migrate or a dedicated subdirectory.\n");
     $dnkFinish();
     exit(1);
 }
@@ -532,10 +532,8 @@ $dnkOut('Files: ' . count($fileIndex) . "\n");
 $resolvedPack = realpath($packRoot) ?: $packRoot;
 $dnkOut("Pack: {$resolvedPack}\n");
 $dnkOut("Contains personal data (names, emails, phones, photos). Copy via SCP/SFTP, then delete this directory.\n");
-$normalizedDoc = rtrim(str_replace('\\', '/', $docRoot), '/') . '/';
-$normalizedPack = rtrim(str_replace('\\', '/', $resolvedPack), '/') . '/';
-if (str_starts_with($normalizedPack, $normalizedDoc)) {
-    $dnkOut("WARNING: pack is inside the web root. HTTP deny files were written; delete the pack after copy.\n");
+if ($isStrictSubdirOf($resolvedPack, $docRoot)) {
+    $dnkOut("HTTP deny files (.htaccess / web.config) were written in the pack directory.\n");
 }
 if ($warnings !== []) {
     $dnkOut('Warnings: ' . count($warnings) . "\n");

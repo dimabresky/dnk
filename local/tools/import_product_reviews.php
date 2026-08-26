@@ -4,12 +4,12 @@
  * Import product reviews pack into catalog blog comments as unpublished (READY),
  * so managers can publish them from Сервисы → Блоги.
  *
- * Default pack path is outside the web root (../reviews_migrate).
+ * Default pack path is upload/reviews_migrate (HTTP denied via .htaccess / web.config).
  *
  * CLI (from site root):
  *   php local/tools/import_product_reviews.php --dry-run
  *   php local/tools/import_product_reviews.php --apply
- *   php local/tools/import_product_reviews.php --dry-run --pack=../reviews_migrate
+ *   php local/tools/import_product_reviews.php --dry-run --pack=upload/reviews_migrate
  *
  * Browser (admin only):
  *   /local/tools/import_product_reviews.php?run=Y&mode=dry-run
@@ -113,7 +113,7 @@ if (!Loader::includeModule('iblock') || !Loader::includeModule('blog')) {
 $parseArgs = static function (array $argvList, bool $cli): array {
     $mode = 'dry-run';
     $iblock = defined('DNK_CATALOG_IBLOCK_ID') ? (int) DNK_CATALOG_IBLOCK_ID : 42;
-    $pack = '../reviews_migrate';
+    $pack = 'upload/reviews_migrate';
     $blogUrl = 'catalog_comments';
 
     if ($cli) {
@@ -210,7 +210,7 @@ $packRoot = $normalizeFsPath(
 );
 $packBase = basename($packRoot);
 if ($packRel === '' || $packBase === '' || $packBase === '.' || $packBase === '..' || $isSameDir($packRoot, $docRoot)) {
-    $dnkErr("Refusing pack path that resolves to the site root. Use ../reviews_migrate or a dedicated subdirectory.\n");
+    $dnkErr("Refusing pack path that resolves to the site root. Use upload/reviews_migrate or a dedicated subdirectory.\n");
     $dnkFinish();
     exit(1);
 }
