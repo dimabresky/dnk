@@ -321,37 +321,35 @@ $normalizeUploadSrc = static function (string $url): ?string {
 };
 
 /**
+ * Original HTML src strings that point at /upload/ (absolute or root-relative).
+ *
  * @return list<string>
  */
-$extractSrcs = static function (string $html) use ($normalizeUploadSrc): array {
+$extractSrcs = static function (string $html): array {
     if ($html === '') {
         return [];
     }
     $found = [];
     if (preg_match_all('/(?:src|href)=["\']([^"\']+)["\']/i', $html, $m) > 0) {
         foreach ($m[1] as $raw) {
-            $norm = $normalizeUploadSrc((string) $raw);
-            if ($norm !== null) {
-                $found[$norm] = true;
-            }
+            $found[trim((string) $raw)] = true;
         }
     }
     if (preg_match_all('/srcset=["\']([^"\']+)["\']/i', $html, $sm)) {
         foreach ($sm[1] as $srcset) {
             foreach (preg_split('/\s*,\s*/', (string) $srcset) ?: [] as $part) {
                 $url = trim(explode(' ', trim($part))[0] ?? '');
-                $norm = $normalizeUploadSrc($url);
-                if ($norm !== null) {
-                    $found[$norm] = true;
+                if ($url !== '') {
+                    $found[$url] = true;
                 }
             }
         }
     }
     if (preg_match_all('/url\((["\']?)([^"\')]+)\1\)/i', $html, $um)) {
         foreach ($um[2] as $raw) {
-            $norm = $normalizeUploadSrc((string) $raw);
-            if ($norm !== null) {
-                $found[$norm] = true;
+            $url = trim((string) $raw);
+            if ($url !== '') {
+                $found[$url] = true;
             }
         }
     }
@@ -359,26 +357,61 @@ $extractSrcs = static function (string $html) use ($normalizeUploadSrc): array {
     return array_keys($found);
 };
 
+/**
+ * @return list<string>
+ */
+$htmlSrcVariants = static function (string $raw, string $norm): array {
+    $variants = [$raw, $norm];
+    $decoded = html_entity_decode(trim($raw), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    if ($decoded !== '') {
+        $variants[] = $decoded;
+        $stripped = (string) preg_replace('/[?#].*$/', '', $decoded);
+        if ($stripped !== '') {
+            $variants[] = $stripped;
+        }
+    }
+    $strippedRaw = (string) preg_replace('/[?#].*$/', '', trim($raw));
+    if ($strippedRaw !== '') {
+        $variants[] = $strippedRaw;
+    }
+
+    return array_values(array_unique(array_filter($variants, static fn (string $v): bool => $v !== '')));
+};
+
 $htmlPathMap = [];
 
 $harvestHtml = static function (string $html) use (
     $extractSrcs,
+    $htmlSrcVariants,
+    $normalizeUploadSrc,
     $copyAbsFile,
     $docRoot,
     &$htmlPathMap,
     &$warnings
 ): string {
-    foreach ($extractSrcs($html) as $src) {
-        if (isset($htmlPathMap[$src])) {
+    foreach ($extractSrcs($html) as $raw) {
+        $norm = $normalizeUploadSrc($raw);
+        if ($norm === null) {
             continue;
         }
-        $abs = $docRoot . str_replace('/', DIRECTORY_SEPARATOR, $src);
-        $entry = $copyAbsFile($abs, $src, basename($src));
-        if ($entry === null) {
-            $warnings[] = "HTML image not found on disk: {$src}";
+        if (!isset($htmlPathMap[$norm])) {
+            $abs = $docRoot . str_replace('/', DIRECTORY_SEPARATOR, $norm);
+            $entry = $copyAbsFile($abs, $norm, basename($norm));
+            if ($entry === null) {
+                $warnings[] = "HTML image not found on disk: {$norm}";
+                continue;
+            }
+            foreach ($htmlSrcVariants($raw, $norm) as $variant) {
+                $htmlPathMap[$variant] = $entry['pack_path'];
+            }
             continue;
         }
-        $htmlPathMap[$src] = $entry['pack_path'];
+        $packPath = $htmlPathMap[$norm];
+        foreach ($htmlSrcVariants($raw, $norm) as $variant) {
+            if (!isset($htmlPathMap[$variant])) {
+                $htmlPathMap[$variant] = $packPath;
+            }
+        }
     }
 
     return $html;

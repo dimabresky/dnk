@@ -432,6 +432,20 @@ $rewriteHtml = static function (string $html) use ($htmlPathMap, $uploadHtmlFile
         }
         $pairs[$oldSrc] = $newSrc;
     }
+
+    // Replace scheme+host+/upload/... before path-only keys, otherwise
+    // str_replace('/upload/...') leaves the old hostname in front of the new path.
+    foreach ($pairs as $from => $to) {
+        if (!str_starts_with($from, '/upload/')) {
+            continue;
+        }
+        $html = preg_replace(
+            '#https?://[^/\s"\']+' . preg_quote($from, '#') . '#i',
+            $to,
+            $html
+        ) ?? $html;
+    }
+
     uksort($pairs, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
     foreach ($pairs as $from => $to) {
         $html = str_replace($from, $to, $html);
