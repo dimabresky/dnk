@@ -112,7 +112,10 @@ $parseArgs = static function (array $argvList, bool $cli): array {
             if (strpos($arg, '--iblock=') === 0) {
                 $iblock = (int) substr($arg, 9);
             } elseif (strpos($arg, '--out=') === 0) {
-                $out = trim(substr($arg, 6));
+                $value = trim(substr($arg, 6));
+                if ($value !== '') {
+                    $out = $value;
+                }
             }
         }
     } else {
@@ -127,13 +130,52 @@ $parseArgs = static function (array $argvList, bool $cli): array {
     return ['iblock' => $iblock, 'out' => $out];
 };
 
+$normalizeFsPath = static function (string $path): string {
+    $path = str_replace('\\', '/', $path);
+    $absolute = str_starts_with($path, '/');
+    $parts = [];
+    foreach (explode('/', $path) as $seg) {
+        if ($seg === '' || $seg === '.') {
+            continue;
+        }
+        if ($seg === '..') {
+            array_pop($parts);
+            continue;
+        }
+        $parts[] = $seg;
+    }
+
+    $normalized = implode('/', $parts);
+
+    return $absolute ? '/' . $normalized : $normalized;
+};
+
+$isSameDir = static function (string $left, string $right): bool {
+    return rtrim(str_replace('\\', '/', $left), '/') === rtrim(str_replace('\\', '/', $right), '/');
+};
+
+$isStrictSubdirOf = static function (string $dir, string $root): bool {
+    $dirPath = rtrim(str_replace('\\', '/', $dir), '/') . '/';
+    $rootPath = rtrim(str_replace('\\', '/', $root), '/') . '/';
+
+    return $dirPath !== $rootPath && str_starts_with($dirPath, $rootPath);
+};
+
 $args = $parseArgs(isset($argv) && is_array($argv) ? $argv : [], $isCli);
 $iblockId = $args['iblock'];
-$outRel = str_replace('\\', '/', $args['out']);
+$outRel = str_replace('\\', '/', trim($args['out']));
 $docRoot = rtrim((string) $_SERVER['DOCUMENT_ROOT'], '/\\');
-$packRoot = str_starts_with($outRel, '/')
-    ? $outRel
-    : $docRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $outRel);
+$packRoot = $normalizeFsPath(
+    str_starts_with($outRel, '/')
+        ? $outRel
+        : $docRoot . '/' . $outRel
+);
+$packBase = basename($packRoot);
+if ($outRel === '' || $packBase === '' || $packBase === '.' || $packBase === '..' || $isSameDir($packRoot, $docRoot)) {
+    $dnkErr("Refusing pack path that resolves to the site root. Use ../reviews_migrate or a dedicated subdirectory.\n");
+    $dnkFinish();
+    exit(1);
+}
 $filesDir = $packRoot . DIRECTORY_SEPARATOR . 'files';
 
 if ($iblockId <= 0) {
@@ -174,10 +216,15 @@ $protectPackFromHttp = static function (string $directory): void {
     );
 };
 
-$protectPackFromHttp($packRoot);
-$protectPackFromHttp($filesDir);
-@chmod($packRoot, 0770);
-@chmod($filesDir, 0770);
+if ($isStrictSubdirOf($packRoot, $docRoot)) {
+    $protectPackFromHttp($packRoot);
+    $protectPackFromHttp($filesDir);
+}
+
+if (!$isSameDir($packRoot, $docRoot)) {
+    @chmod($packRoot, 0770);
+    @chmod($filesDir, 0770);
+}
 
 $copiedBySrc = [];
 $copiedByFileId = [];

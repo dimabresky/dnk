@@ -125,7 +125,10 @@ $parseArgs = static function (array $argvList, bool $cli): array {
             } elseif (str_starts_with($arg, '--iblock=')) {
                 $iblock = (int) substr($arg, 9);
             } elseif (str_starts_with($arg, '--pack=')) {
-                $pack = trim(substr($arg, 7));
+                $value = trim(substr($arg, 7));
+                if ($value !== '') {
+                    $pack = $value;
+                }
             } elseif (str_starts_with($arg, '--blog-url=')) {
                 $blogUrl = trim(substr($arg, 11));
             }
@@ -167,11 +170,50 @@ if (!is_array($iblock)) {
     exit(1);
 }
 
+$normalizeFsPath = static function (string $path): string {
+    $path = str_replace('\\', '/', $path);
+    $absolute = str_starts_with($path, '/');
+    $parts = [];
+    foreach (explode('/', $path) as $seg) {
+        if ($seg === '' || $seg === '.') {
+            continue;
+        }
+        if ($seg === '..') {
+            array_pop($parts);
+            continue;
+        }
+        $parts[] = $seg;
+    }
+
+    $normalized = implode('/', $parts);
+
+    return $absolute ? '/' . $normalized : $normalized;
+};
+
+$isSameDir = static function (string $left, string $right): bool {
+    return rtrim(str_replace('\\', '/', $left), '/') === rtrim(str_replace('\\', '/', $right), '/');
+};
+
+$isStrictSubdirOf = static function (string $dir, string $root): bool {
+    $dirPath = rtrim(str_replace('\\', '/', $dir), '/') . '/';
+    $rootPath = rtrim(str_replace('\\', '/', $root), '/') . '/';
+
+    return $dirPath !== $rootPath && str_starts_with($dirPath, $rootPath);
+};
+
 $docRoot = rtrim((string) $_SERVER['DOCUMENT_ROOT'], '/\\');
-$packRel = str_replace('\\', '/', $args['pack']);
-$packRoot = str_starts_with($packRel, '/')
-    ? $packRel
-    : $docRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $packRel);
+$packRel = str_replace('\\', '/', trim($args['pack']));
+$packRoot = $normalizeFsPath(
+    str_starts_with($packRel, '/')
+        ? $packRel
+        : $docRoot . '/' . $packRel
+);
+$packBase = basename($packRoot);
+if ($packRel === '' || $packBase === '' || $packBase === '.' || $packBase === '..' || $isSameDir($packRoot, $docRoot)) {
+    $dnkErr("Refusing pack path that resolves to the site root. Use ../reviews_migrate or a dedicated subdirectory.\n");
+    $dnkFinish();
+    exit(1);
+}
 $manifestPath = $packRoot . DIRECTORY_SEPARATOR . 'manifest.json';
 
 if (!is_file($manifestPath)) {
@@ -200,8 +242,10 @@ $protectPackFromHttp = static function (string $directory): void {
     );
 };
 
-$protectPackFromHttp($packRoot);
-$protectPackFromHttp($packRoot . DIRECTORY_SEPARATOR . 'files');
+if ($isStrictSubdirOf($packRoot, $docRoot)) {
+    $protectPackFromHttp($packRoot);
+    $protectPackFromHttp($packRoot . DIRECTORY_SEPARATOR . 'files');
+}
 
 $manifestRaw = file_get_contents($manifestPath);
 $manifest = is_string($manifestRaw) ? json_decode($manifestRaw, true) : null;
