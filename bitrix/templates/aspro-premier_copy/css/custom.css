@@ -182,3 +182,7 @@
 .grey-bg-goods-y .toggle-white-grey-bg {
 	--toggle-bg: #FAF6ED;
 }
+
+.sections-list__item {
+	background-color: #faf6ed;
+}
