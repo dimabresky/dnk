@@ -1,0 +1,6 @@
+/* Sticky contacts panel: messengers under phone */
+.contacts__sticky-panel__social .social,
+.contacts__sticky-panel__social .socials,
+.contacts__sticky-panel__social .social-list {
+	margin-top: 0;
+}

@@ -79,6 +79,24 @@ use \Bitrix\Main\Localization\Loc;
 										'LABEL' => Loc::getMessage('T_CONTACTS_PHONE'),
 									]);?>
 								</div>
+								<div class="contacts__sticky-panel__property mt mt--12 contacts__sticky-panel__social">
+									<?$APPLICATION->IncludeComponent(
+										"aspro:social.info.premier",
+										"messengers",
+										array(
+											"CACHE_TYPE" => "A",
+											"CACHE_TIME" => "3600000",
+											"CACHE_GROUPS" => "N",
+											"COMPONENT_TEMPLATE" => "messengers",
+											"SVG" => false,
+											"IMAGES" => true,
+											"ICONS" => true,
+											"SIZE" => "large",
+											"HIDE_MORE" => false,
+										),
+										false
+									);?>
+								</div>
 								<div class="contacts__sticky-panel__property mt mt--12">
 									<?TSolution::showContactEmail([
 										'LABEL' => Loc::getMessage('T_CONTACTS_EMAIL')
