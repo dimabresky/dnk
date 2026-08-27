@@ -35,6 +35,10 @@ final class Utils
     /** Уровень «Сотрудник» (без блока «до следующего уровня»). */
     private const BONUS_CLIENT_LEVEL_EMPLOYEE = 5;
 
+    public const CATALOG_IMPORT_CODE_PROPERTY_PRIMARY = 'CML2_BAR_CODE';
+
+    public const CATALOG_IMPORT_CODE_PROPERTY_FALLBACK = 'SHTRIKHKOD';
+
     /** Наименования уровней клиента (для отображения в ЛК). */
     private const BONUS_CLIENT_LEVEL_NAMES = [
         1 => 'Beauty Basic',
@@ -2424,5 +2428,185 @@ final class Utils
         }
 
         return $map;
+    }
+
+    /**
+     * Нормализация кода товара из выгрузки отзывов (ML_ONLINER / штрихкод).
+     */
+    public static function normalizeCatalogImportCode(string $code): string
+    {
+        return trim($code);
+    }
+
+    /**
+     * Карта код → ID элемента каталога: сначала CML2_BAR_CODE, иначе SHTRIKHKOD.
+     *
+     * @return array{
+     *     found: array<string, int>,
+     *     ambiguous: array<string, true>
+     * }
+     */
+    public static function buildCatalogElementIdMapByImportCode(int $iblockId): array
+    {
+        $found = [];
+        $ambiguous = [];
+
+        if ($iblockId <= 0 || !Loader::includeModule('iblock')) {
+            return [
+                'found' => $found,
+                'ambiguous' => $ambiguous,
+            ];
+        }
+
+        $primaryByCode = [];
+        $fallbackByCode = [];
+
+        $res = \CIBlockElement::GetList(
+            ['ID' => 'ASC'],
+            ['IBLOCK_ID' => $iblockId, 'CHECK_PERMISSIONS' => 'N'],
+            false,
+            false,
+            [
+                'ID',
+                'PROPERTY_' . self::CATALOG_IMPORT_CODE_PROPERTY_PRIMARY,
+                'PROPERTY_' . self::CATALOG_IMPORT_CODE_PROPERTY_FALLBACK,
+            ]
+        );
+
+        while ($row = $res->Fetch()) {
+            $elementId = (int) ($row['ID'] ?? 0);
+            if ($elementId <= 0) {
+                continue;
+            }
+
+            foreach (self::extractCatalogImportCodesFromElementRow(
+                $row,
+                self::CATALOG_IMPORT_CODE_PROPERTY_PRIMARY
+            ) as $code) {
+                $primaryByCode[$code][$elementId] = true;
+            }
+
+            foreach (self::extractCatalogImportCodesFromElementRow(
+                $row,
+                self::CATALOG_IMPORT_CODE_PROPERTY_FALLBACK
+            ) as $code) {
+                $fallbackByCode[$code][$elementId] = true;
+            }
+        }
+
+        self::mergeCatalogImportCodeMap($found, $ambiguous, $primaryByCode);
+        self::mergeCatalogImportCodeMap($found, $ambiguous, $fallbackByCode, true);
+
+        return [
+            'found' => $found,
+            'ambiguous' => $ambiguous,
+        ];
+    }
+
+    /**
+     * Поиск элемента каталога по коду из старого ML_ONLINER.
+     *
+     * @param array{found: array<string, int>, ambiguous: array<string, true>}|null $map
+     * @return array{id: int|null, status: 'empty'|'found'|'not_found'|'ambiguous'}
+     */
+    public static function findCatalogElementIdByImportCode(
+        int $iblockId,
+        string $code,
+        ?array $map = null
+    ): array {
+        $normalized = self::normalizeCatalogImportCode($code);
+        if ($normalized === '') {
+            return [
+                'id' => null,
+                'status' => 'empty',
+            ];
+        }
+
+        $map ??= self::buildCatalogElementIdMapByImportCode($iblockId);
+
+        if (isset($map['ambiguous'][$normalized])) {
+            return [
+                'id' => null,
+                'status' => 'ambiguous',
+            ];
+        }
+
+        $elementId = (int) ($map['found'][$normalized] ?? 0);
+        if ($elementId > 0) {
+            return [
+                'id' => $elementId,
+                'status' => 'found',
+            ];
+        }
+
+        return [
+            'id' => null,
+            'status' => 'not_found',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return list<string>
+     */
+    private static function extractCatalogImportCodesFromElementRow(array $row, string $propertyCode): array
+    {
+        $candidates = [
+            $row['PROPERTY_' . $propertyCode . '_VALUE'] ?? null,
+            $row['PROPERTY_' . $propertyCode] ?? null,
+        ];
+
+        $codes = [];
+        foreach ($candidates as $value) {
+            if ($value === null || $value === false || $value === '') {
+                continue;
+            }
+            if (is_array($value)) {
+                foreach ($value as $item) {
+                    if (is_array($item)) {
+                        $item = $item['VALUE'] ?? $item['value'] ?? '';
+                    }
+                    $normalized = self::normalizeCatalogImportCode((string) $item);
+                    if ($normalized !== '') {
+                        $codes[$normalized] = true;
+                    }
+                }
+                continue;
+            }
+
+            $normalized = self::normalizeCatalogImportCode((string) $value);
+            if ($normalized !== '') {
+                $codes[$normalized] = true;
+            }
+        }
+
+        return array_keys($codes);
+    }
+
+    /**
+     * @param array<string, int> $found
+     * @param array<string, true> $ambiguous
+     * @param array<string, array<int, true>> $source
+     */
+    private static function mergeCatalogImportCodeMap(
+        array &$found,
+        array &$ambiguous,
+        array $source,
+        bool $skipExisting = false
+    ): void {
+        foreach ($source as $code => $elementIds) {
+            if ($skipExisting && (isset($found[$code]) || isset($ambiguous[$code]))) {
+                continue;
+            }
+
+            $ids = array_keys($elementIds);
+            if (count($ids) !== 1) {
+                $ambiguous[$code] = true;
+                unset($found[$code]);
+                continue;
+            }
+
+            $found[$code] = $ids[0];
+        }
     }
 }
