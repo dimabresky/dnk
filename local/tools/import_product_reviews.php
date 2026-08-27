@@ -481,7 +481,7 @@ $getElementDetailUrl = static function (int $elementId) use (&$elementDetailUrls
         ['IBLOCK_ID' => $args['iblock'], 'ID' => $elementId, 'CHECK_PERMISSIONS' => 'N'],
         false,
         ['nTopCount' => 1],
-        ['ID', 'DETAIL_PAGE_URL']
+        ['ID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'CODE', 'EXTERNAL_ID', 'DETAIL_PAGE_URL']
     )->GetNext();
 
     $url = is_array($element) ? trim((string) ($element['DETAIL_PAGE_URL'] ?? '')) : '';
@@ -524,7 +524,7 @@ $ensureBlogPost = static function (
         ['IBLOCK_ID' => $args['iblock'], 'ID' => $elementId, 'CHECK_PERMISSIONS' => 'N'],
         false,
         ['nTopCount' => 1],
-        ['ID', 'NAME', 'DETAIL_PAGE_URL']
+        ['ID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'CODE', 'EXTERNAL_ID', 'NAME', 'DETAIL_PAGE_URL']
     )->GetNext();
 
     $name = is_array($element) ? (string) ($element['~NAME'] ?? $element['NAME'] ?? 'Product') : 'Product';
