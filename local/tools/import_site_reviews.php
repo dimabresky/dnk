@@ -3,6 +3,9 @@
 /**
  * Import site reviews pack (upload/site_reviews_migrate) into infoblock 7.
  *
+ * New elements are created inactive (ACTIVE=N); managers activate them in the admin after review.
+ * --update-existing does not change ACTIVE, so already published reviews stay published.
+ *
  * Idempotency: XML_ID = dnk_old_{sourceIblock}_{oldId}. Re-run --apply does not duplicate.
  * Empty CODE is allowed; a stable code is generated only when the source CODE is empty.
  *
@@ -763,7 +766,7 @@ $dnkOut("\nSections:\n");
 $dnkOut('  create: ' . count($sectionPlan['create']) . "\n");
 $dnkOut('  already exist (XML_ID/CODE): ' . count($sectionPlan['exists']) . "\n");
 $dnkOut("\nElements:\n");
-$dnkOut('  create: ' . count($elementPlan['create']) . "\n");
+$dnkOut('  create: ' . count($elementPlan['create']) . " (ACTIVE=N, managers activate after review)\n");
 $dnkOut('  already exist (XML_ID): ' . count($elementPlan['exists']) . "\n");
 $dnkOut('  elements with inline /upload/ images: ' . $elementHtmlImages . "\n");
 $dnkOut('  html_path_map entries: ' . count($htmlPathMap) . "\n");
@@ -812,8 +815,8 @@ if ($linkedPropertyNotes !== []) {
 
 if ($args['mode'] !== 'apply') {
     $dnkOut("\nDry-run only. Nothing was written.\n");
-    $dnkOut("Re-run with --apply to create missing sections/elements (duplicates skipped).\n");
-    $dnkOut("Use --update-existing together with --apply to overwrite duplicates.\n");
+    $dnkOut("Re-run with --apply to create missing sections/elements as inactive (duplicates skipped).\n");
+    $dnkOut("Use --update-existing together with --apply to overwrite duplicates (ACTIVE is not changed).\n");
     $dnkFinish();
     exit(0);
 }
@@ -934,7 +937,7 @@ foreach ($sourceElements as $element) {
         'IBLOCK_ID' => $args['iblock'],
         'NAME' => (string) ($element['NAME'] ?? $code),
         'CODE' => $code,
-        'ACTIVE' => (string) ($element['ACTIVE'] ?? 'Y'),
+        'ACTIVE' => 'N',
         'SORT' => (int) ($element['SORT'] ?? 500),
         'XML_ID' => $xmlId,
         'TAGS' => (string) ($element['TAGS'] ?? ''),
@@ -974,7 +977,7 @@ foreach ($sourceElements as $element) {
     $propertyValues = $built['values'];
 
     if ($existingId !== null) {
-        unset($fields['IBLOCK_ID']);
+        unset($fields['IBLOCK_ID'], $fields['ACTIVE']);
         if (!$elementApi->Update($existingId, $fields)) {
             $elementErrors[] = "{$xmlId}: " . $elementApi->LAST_ERROR;
             continue;
@@ -1009,7 +1012,7 @@ foreach ($sourceElements as $element) {
 
 $dnkOut("\nDone.\n");
 $dnkOut("Sections created={$sectionCreated} updated={$sectionUpdated} skipped={$sectionSkipped}\n");
-$dnkOut("Elements created={$elementCreated} updated={$elementUpdated} skipped={$elementSkipped}\n");
+$dnkOut("Elements created={$elementCreated} (ACTIVE=N) updated={$elementUpdated} skipped={$elementSkipped}\n");
 $dnkOut("Contains personal data. Delete the pack directory after a successful import.\n");
 
 if ($sectionErrors !== []) {
