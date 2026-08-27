@@ -1,8 +1,9 @@
 <?php
 
 /**
- * Import product reviews pack into catalog blog comments as published (PUBLISH).
- * Already imported unpublished comments are published on --apply.
+ * Import product reviews pack into catalog blog comments as published (PUBLISH),
+ * with PATH pointing to the product page for admin «Сервисы → Блоги».
+ * Re-run --apply updates already imported comments (files are not re-uploaded).
  *
  * Default pack path is upload/reviews_migrate (HTTP denied via .htaccess / web.config).
  *
@@ -316,16 +317,12 @@ $ensureOldIdUf = static function () use ($dnkErr, $dnkFinish): void {
 $ensureOldIdUf();
 
 /**
- * @return array{
- *     map: array<int, int>,
- *     meta: array<int, array{id: int, publish_status: string, post_id: int}>
- * }
+ * @return array<int, int> oldCommentId => newCommentId
  */
 $loadImportedOldIds = static function (int $blogId): array {
     $map = [];
-    $meta = [];
     if ($blogId <= 0) {
-        return ['map' => $map, 'meta' => $meta];
+        return $map;
     }
 
     $res = CBlogComment::GetList(
@@ -333,22 +330,17 @@ $loadImportedOldIds = static function (int $blogId): array {
         ['BLOG_ID' => $blogId],
         false,
         false,
-        ['ID', 'POST_ID', 'PUBLISH_STATUS', DNK_REVIEWS_IMPORT_OLD_ID_UF]
+        ['ID', DNK_REVIEWS_IMPORT_OLD_ID_UF]
     );
     while ($row = $res->Fetch()) {
         $oldId = (int) ($row[DNK_REVIEWS_IMPORT_OLD_ID_UF] ?? 0);
         $newId = (int) ($row['ID'] ?? 0);
         if ($oldId > 0 && $newId > 0) {
             $map[$oldId] = $newId;
-            $meta[$oldId] = [
-                'id' => $newId,
-                'publish_status' => (string) ($row['PUBLISH_STATUS'] ?? ''),
-                'post_id' => (int) ($row['POST_ID'] ?? 0),
-            ];
         }
     }
 
-    return ['map' => $map, 'meta' => $meta];
+    return $map;
 };
 
 $resolveBlog = static function (int $iblockId, string $blogUrl) use ($dnkErr, $dnkFinish): array {
@@ -440,9 +432,7 @@ foreach ($comments as $comment) {
     }
 }
 
-$importedLoaded = $loadImportedOldIds($blogId);
-$importedOldIds = $importedLoaded['map'];
-$importedMeta = $importedLoaded['meta'];
+$importedOldIds = $loadImportedOldIds($blogId);
 $phoneResolved = Utils::resolveUserIdsByBonusImportPhones($allPhones);
 
 $resolveAuthorUserId = static function (array $comment) use ($phoneResolved): ?int {
@@ -475,6 +465,40 @@ $formatDateCreate = static function (string $raw): string {
     }
 
     return ConvertTimeStamp(time() + CTimeZone::GetOffset(), 'FULL');
+};
+
+$elementDetailUrls = [];
+$getElementDetailUrl = static function (int $elementId) use (&$elementDetailUrls, $args): string {
+    if ($elementId <= 0) {
+        return '';
+    }
+    if (array_key_exists($elementId, $elementDetailUrls)) {
+        return $elementDetailUrls[$elementId];
+    }
+
+    $element = CIBlockElement::GetList(
+        [],
+        ['IBLOCK_ID' => $args['iblock'], 'ID' => $elementId, 'CHECK_PERMISSIONS' => 'N'],
+        false,
+        ['nTopCount' => 1],
+        ['ID', 'DETAIL_PAGE_URL']
+    )->GetNext();
+
+    $url = is_array($element) ? trim((string) ($element['DETAIL_PAGE_URL'] ?? '')) : '';
+    $elementDetailUrls[$elementId] = $url;
+
+    return $url;
+};
+
+$buildCommentPath = static function (string $detailPageUrl): string {
+    $detailPageUrl = trim($detailPageUrl);
+    if ($detailPageUrl === '') {
+        return '';
+    }
+
+    $separator = str_contains($detailPageUrl, '?') ? '&' : '?';
+
+    return $detailPageUrl . $separator . 'commentId=#comment_id##com#comment_id#';
 };
 
 $ensureBlogPost = static function (
@@ -575,12 +599,99 @@ $makeFileArrays = static function (array $files, string $packRoot) use (&$warnin
 
 $apply = $args['mode'] === 'apply';
 $publishStatus = defined('BLOG_PUBLISH_STATUS_PUBLISH') ? BLOG_PUBLISH_STATUS_PUBLISH : 'P';
+
+$buildCommentFields = static function (
+    array $comment,
+    int $postId,
+    int $elementId,
+    ?int $userId,
+    int $parentNewId,
+    bool $includeFiles
+) use (
+    $blogId,
+    $publishStatus,
+    $formatDateCreate,
+    $getElementDetailUrl,
+    $buildCommentPath,
+    $makeFileArrays,
+    $packRoot
+): array {
+    $oldId = (int) ($comment['id'] ?? 0);
+
+    $authorName = trim((string) ($comment['author_name'] ?? ''));
+    if ($authorName === '') {
+        $authorName = DNK_REVIEWS_IMPORT_GUEST_NAME;
+    }
+
+    $postText = trim((string) ($comment['post_text'] ?? ''));
+    if ($postText === '') {
+        $postText = '<comment></comment>';
+    }
+
+    $fields = [
+        'BLOG_ID' => $blogId,
+        'POST_ID' => $postId,
+        'POST_TEXT' => $postText,
+        'DATE_CREATE' => $formatDateCreate((string) ($comment['date_create'] ?? '')),
+        'PUBLISH_STATUS' => $publishStatus,
+        DNK_REVIEWS_IMPORT_OLD_ID_UF => $oldId,
+    ];
+
+    $path = $buildCommentPath($getElementDetailUrl($elementId));
+    if ($path !== '') {
+        $fields['PATH'] = $path;
+    }
+
+    if ($parentNewId > 0) {
+        $fields['PARENT_ID'] = $parentNewId;
+    }
+
+    $rating = (int) ($comment['rating'] ?? 0);
+    if ($rating > 0) {
+        $fields['UF_ASPRO_COM_RATING'] = $rating;
+    }
+    $like = (int) ($comment['like'] ?? 0);
+    if ($like > 0) {
+        $fields['UF_ASPRO_COM_LIKE'] = $like;
+    }
+    $dislike = (int) ($comment['dislike'] ?? 0);
+    if ($dislike > 0) {
+        $fields['UF_ASPRO_COM_DISLIKE'] = $dislike;
+    }
+    if (!empty($comment['approve'])) {
+        $fields['UF_ASPRO_COM_APPROVE'] = 1;
+    }
+
+    $title = trim((string) ($comment['title'] ?? ''));
+    if ($title !== '') {
+        $fields['TITLE'] = $title;
+    }
+
+    if ($userId !== null) {
+        $fields['AUTHOR_ID'] = $userId;
+    } else {
+        $fields['AUTHOR_NAME'] = $authorName;
+        $email = trim((string) ($comment['author_email'] ?? ''));
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $fields['AUTHOR_EMAIL'] = $email;
+        }
+    }
+
+    if ($includeFiles) {
+        $fileArrays = $makeFileArrays((array) ($comment['files'] ?? []), $packRoot);
+        if ($fileArrays !== []) {
+            $fields['UF_BLOG_COMMENT_DOC'] = $fileArrays;
+        }
+    }
+
+    return $fields;
+};
+
 $stats = [
     'matched' => 0,
     'guest' => 0,
     'created' => 0,
-    'already_imported' => 0,
-    'published_existing' => 0,
+    'updated' => 0,
     'skipped_no_onliner' => 0,
     'skipped_not_found' => 0,
     'skipped_ambiguous' => 0,
@@ -588,12 +699,6 @@ $stats = [
     'skipped_error' => 0,
 ];
 $touchedElementIds = [];
-$postToElement = [];
-foreach ($elementBlogPosts as $catalogElementId => $catalogPostId) {
-    if ($catalogPostId > 0) {
-        $postToElement[$catalogPostId] = $catalogElementId;
-    }
-}
 $oldToNew = $importedOldIds;
 $pending = [];
 
@@ -623,40 +728,6 @@ while ($pending !== [] && $progress) {
 
         $progress = true;
 
-        if ($oldId > 0 && isset($importedOldIds[$oldId])) {
-            ++$stats['already_imported'];
-            $oldToNew[$oldId] = $importedOldIds[$oldId];
-
-            $meta = $importedMeta[$oldId] ?? null;
-            $existingStatus = is_array($meta) ? (string) ($meta['publish_status'] ?? '') : '';
-            if ($existingStatus !== $publishStatus) {
-                $existingId = (int) $importedOldIds[$oldId];
-                $existingPostId = is_array($meta) ? (int) ($meta['post_id'] ?? 0) : 0;
-                $existingElementId = $postToElement[$existingPostId] ?? 0;
-
-                if ($apply) {
-                    $updatedId = (int) CBlogComment::Update(
-                        $existingId,
-                        ['PUBLISH_STATUS' => $publishStatus],
-                        false
-                    );
-                    if ($updatedId <= 0) {
-                        ++$stats['skipped_error'];
-                        $warnings[] = "Failed to publish existing comment {$oldId} (id {$existingId})";
-                        continue;
-                    }
-                }
-
-                ++$stats['published_existing'];
-                if ($existingElementId > 0) {
-                    $touchedElementIds[$existingElementId] = true;
-                } elseif ($apply) {
-                    $warnings[] = "Published existing comment {$oldId} but catalog element for POST_ID={$existingPostId} was not found";
-                }
-            }
-            continue;
-        }
-
         $mlOnliner = (string) ($comment['product']['ml_onliner'] ?? '');
         $match = Utils::findCatalogElementIdByImportCode($args['iblock'], $mlOnliner, $codeMap);
 
@@ -685,9 +756,18 @@ while ($pending !== [] && $progress) {
             ++$stats['guest'];
         }
 
+        $existingId = ($oldId > 0) ? (int) ($importedOldIds[$oldId] ?? 0) : 0;
+        $parentNewId = ($parentOldId > 0) ? (int) ($oldToNew[$parentOldId] ?? 0) : 0;
+
         if (!$apply) {
-            if ($oldId > 0) {
-                $oldToNew[$oldId] = $oldId;
+            if ($existingId > 0) {
+                $oldToNew[$oldId] = $existingId;
+                ++$stats['updated'];
+            } else {
+                if ($oldId > 0) {
+                    $oldToNew[$oldId] = $oldId;
+                }
+                ++$stats['created'];
             }
             continue;
         }
@@ -698,63 +778,31 @@ while ($pending !== [] && $progress) {
             continue;
         }
 
-        $authorName = trim((string) ($comment['author_name'] ?? ''));
-        if ($authorName === '') {
-            $authorName = DNK_REVIEWS_IMPORT_GUEST_NAME;
-        }
+        $fields = $buildCommentFields(
+            $comment,
+            $postId,
+            $elementId,
+            $userId,
+            $parentNewId,
+            $existingId <= 0
+        );
 
-        $postText = trim((string) ($comment['post_text'] ?? ''));
-        if ($postText === '') {
-            $postText = '<comment></comment>';
-        }
-
-        $fields = [
-            'BLOG_ID' => $blogId,
-            'POST_ID' => $postId,
-            'POST_TEXT' => $postText,
-            'DATE_CREATE' => $formatDateCreate((string) ($comment['date_create'] ?? '')),
-            'PUBLISH_STATUS' => $publishStatus,
-            DNK_REVIEWS_IMPORT_OLD_ID_UF => $oldId,
-        ];
-
-        if ($parentOldId > 0 && isset($oldToNew[$parentOldId])) {
-            $fields['PARENT_ID'] = $oldToNew[$parentOldId];
-        }
-
-        $rating = (int) ($comment['rating'] ?? 0);
-        if ($rating > 0) {
-            $fields['UF_ASPRO_COM_RATING'] = $rating;
-        }
-        $like = (int) ($comment['like'] ?? 0);
-        if ($like > 0) {
-            $fields['UF_ASPRO_COM_LIKE'] = $like;
-        }
-        $dislike = (int) ($comment['dislike'] ?? 0);
-        if ($dislike > 0) {
-            $fields['UF_ASPRO_COM_DISLIKE'] = $dislike;
-        }
-        if (!empty($comment['approve'])) {
-            $fields['UF_ASPRO_COM_APPROVE'] = 1;
-        }
-
-        $title = trim((string) ($comment['title'] ?? ''));
-        if ($title !== '') {
-            $fields['TITLE'] = $title;
-        }
-
-        if ($userId !== null) {
-            $fields['AUTHOR_ID'] = $userId;
-        } else {
-            $fields['AUTHOR_NAME'] = $authorName;
-            $email = trim((string) ($comment['author_email'] ?? ''));
-            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $fields['AUTHOR_EMAIL'] = $email;
+        if ($existingId > 0) {
+            $updatedId = (int) CBlogComment::Update($existingId, $fields, false);
+            if ($updatedId <= 0) {
+                global $APPLICATION;
+                $exception = is_object($APPLICATION) ? $APPLICATION->GetException() : null;
+                $error = is_object($exception) && method_exists($exception, 'GetString')
+                    ? (string) $exception->GetString()
+                    : 'CBlogComment::Update failed';
+                ++$stats['skipped_error'];
+                $warnings[] = "Failed to update comment {$oldId} (id {$existingId}): {$error}";
+                continue;
             }
-        }
 
-        $fileArrays = $makeFileArrays((array) ($comment['files'] ?? []), $packRoot);
-        if ($fileArrays !== []) {
-            $fields['UF_BLOG_COMMENT_DOC'] = $fileArrays;
+            $oldToNew[$oldId] = $existingId;
+            ++$stats['updated'];
+            continue;
         }
 
         $newId = (int) CBlogComment::Add($fields, false);
@@ -794,8 +842,7 @@ $dnkOut('Pack comments: ' . count($comments) . "\n");
 $dnkOut('Matched products: ' . $stats['matched'] . "\n");
 $dnkOut('Guest authors: ' . $stats['guest'] . "\n");
 $dnkOut('Created: ' . $stats['created'] . "\n");
-$dnkOut('Already imported: ' . $stats['already_imported'] . "\n");
-$dnkOut('Published existing: ' . $stats['published_existing'] . "\n");
+$dnkOut('Updated: ' . $stats['updated'] . "\n");
 $dnkOut('Skipped empty ML_ONLINER: ' . $stats['skipped_no_onliner'] . "\n");
 $dnkOut('Skipped product not found: ' . $stats['skipped_not_found'] . "\n");
 $dnkOut('Skipped ambiguous code: ' . $stats['skipped_ambiguous'] . "\n");
