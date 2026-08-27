@@ -13,6 +13,32 @@ $allowedCodes = [
     'VIBER' => true,
 ];
 
+$knownSocialCodes = [
+    'VK' => true,
+    'FACEBOOK' => true,
+    'TWITTER' => true,
+    'INSTAGRAM' => true,
+    'TELEGRAM' => true,
+    'YOUTUBE' => true,
+    'ODNOKLASSNIKI' => true,
+    'OK' => true,
+    'MAIL' => true,
+    'MAILRU' => true,
+    'TIKTOK' => true,
+    'VIBER' => true,
+    'ZEN' => true,
+    'PINTEREST' => true,
+    'SNAPCHAT' => true,
+    'LINKEDIN' => true,
+    'ASPRO_LINK' => true,
+    'ASPROLINK' => true,
+    'WHATS' => true,
+    'WHATSAPP' => true,
+    'SKYPE' => true,
+    'RUTUBE' => true,
+    'MAX' => true,
+];
+
 $normalizeCode = static function ($code): string {
     $code = strtoupper(trim((string) $code));
 
@@ -23,7 +49,7 @@ $isAllowedItem = static function ($key, $item) use ($allowedCodes, $normalizeCod
     $candidates = [$key];
 
     if (is_array($item)) {
-        foreach (['CODE', 'code', 'NAME', 'name', 'ID', 'id', 'TITLE', 'title'] as $field) {
+        foreach (['CODE', 'code', 'NAME', 'name', 'ID', 'id'] as $field) {
             if (!empty($item[$field]) && !is_array($item[$field])) {
                 $candidates[] = $item[$field];
             }
@@ -75,9 +101,16 @@ foreach ($arResult as $key => $item) {
         continue;
     }
 
-    if ($isAllowedItem($key, $item)) {
-        $filteredRoot[$key] = $item;
+    $code = $normalizeCode($key);
+    if (isset($knownSocialCodes[$code])) {
+        if ($isAllowedItem($key, $item)) {
+            $filteredRoot[$key] = $item;
+        }
+        continue;
     }
+
+    // Keep non-social metadata expected by the stock template.
+    $filteredRoot[$key] = $item;
 }
 
 $arResult = $filteredRoot;
