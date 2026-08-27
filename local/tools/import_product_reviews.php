@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Import product reviews pack into catalog blog comments as unpublished (READY),
- * so managers can publish them from Сервисы → Блоги.
+ * Import product reviews pack into catalog blog comments as published (PUBLISH).
+ * Already imported unpublished comments are published on --apply.
  *
  * Default pack path is upload/reviews_migrate (HTTP denied via .htaccess / web.config).
  *
@@ -316,12 +316,16 @@ $ensureOldIdUf = static function () use ($dnkErr, $dnkFinish): void {
 $ensureOldIdUf();
 
 /**
- * @return array<int, int> oldCommentId => newCommentId
+ * @return array{
+ *     map: array<int, int>,
+ *     meta: array<int, array{id: int, publish_status: string, post_id: int}>
+ * }
  */
 $loadImportedOldIds = static function (int $blogId): array {
     $map = [];
+    $meta = [];
     if ($blogId <= 0) {
-        return $map;
+        return ['map' => $map, 'meta' => $meta];
     }
 
     $res = CBlogComment::GetList(
@@ -329,17 +333,22 @@ $loadImportedOldIds = static function (int $blogId): array {
         ['BLOG_ID' => $blogId],
         false,
         false,
-        ['ID', DNK_REVIEWS_IMPORT_OLD_ID_UF]
+        ['ID', 'POST_ID', 'PUBLISH_STATUS', DNK_REVIEWS_IMPORT_OLD_ID_UF]
     );
     while ($row = $res->Fetch()) {
         $oldId = (int) ($row[DNK_REVIEWS_IMPORT_OLD_ID_UF] ?? 0);
         $newId = (int) ($row['ID'] ?? 0);
         if ($oldId > 0 && $newId > 0) {
             $map[$oldId] = $newId;
+            $meta[$oldId] = [
+                'id' => $newId,
+                'publish_status' => (string) ($row['PUBLISH_STATUS'] ?? ''),
+                'post_id' => (int) ($row['POST_ID'] ?? 0),
+            ];
         }
     }
 
-    return $map;
+    return ['map' => $map, 'meta' => $meta];
 };
 
 $resolveBlog = static function (int $iblockId, string $blogUrl) use ($dnkErr, $dnkFinish): array {
@@ -431,7 +440,9 @@ foreach ($comments as $comment) {
     }
 }
 
-$importedOldIds = $loadImportedOldIds($blogId);
+$importedLoaded = $loadImportedOldIds($blogId);
+$importedOldIds = $importedLoaded['map'];
+$importedMeta = $importedLoaded['meta'];
 $phoneResolved = Utils::resolveUserIdsByBonusImportPhones($allPhones);
 
 $resolveAuthorUserId = static function (array $comment) use ($phoneResolved): ?int {
@@ -563,11 +574,13 @@ $makeFileArrays = static function (array $files, string $packRoot) use (&$warnin
 };
 
 $apply = $args['mode'] === 'apply';
+$publishStatus = defined('BLOG_PUBLISH_STATUS_PUBLISH') ? BLOG_PUBLISH_STATUS_PUBLISH : 'P';
 $stats = [
     'matched' => 0,
     'guest' => 0,
     'created' => 0,
     'already_imported' => 0,
+    'published_existing' => 0,
     'skipped_no_onliner' => 0,
     'skipped_not_found' => 0,
     'skipped_ambiguous' => 0,
@@ -575,6 +588,12 @@ $stats = [
     'skipped_error' => 0,
 ];
 $touchedElementIds = [];
+$postToElement = [];
+foreach ($elementBlogPosts as $catalogElementId => $catalogPostId) {
+    if ($catalogPostId > 0) {
+        $postToElement[$catalogPostId] = $catalogElementId;
+    }
+}
 $oldToNew = $importedOldIds;
 $pending = [];
 
@@ -607,6 +626,34 @@ while ($pending !== [] && $progress) {
         if ($oldId > 0 && isset($importedOldIds[$oldId])) {
             ++$stats['already_imported'];
             $oldToNew[$oldId] = $importedOldIds[$oldId];
+
+            $meta = $importedMeta[$oldId] ?? null;
+            $existingStatus = is_array($meta) ? (string) ($meta['publish_status'] ?? '') : '';
+            if ($existingStatus !== $publishStatus) {
+                $existingId = (int) $importedOldIds[$oldId];
+                $existingPostId = is_array($meta) ? (int) ($meta['post_id'] ?? 0) : 0;
+                $existingElementId = $postToElement[$existingPostId] ?? 0;
+
+                if ($apply) {
+                    $updatedId = (int) CBlogComment::Update(
+                        $existingId,
+                        ['PUBLISH_STATUS' => $publishStatus],
+                        false
+                    );
+                    if ($updatedId <= 0) {
+                        ++$stats['skipped_error'];
+                        $warnings[] = "Failed to publish existing comment {$oldId} (id {$existingId})";
+                        continue;
+                    }
+                }
+
+                ++$stats['published_existing'];
+                if ($existingElementId > 0) {
+                    $touchedElementIds[$existingElementId] = true;
+                } elseif ($apply) {
+                    $warnings[] = "Published existing comment {$oldId} but catalog element for POST_ID={$existingPostId} was not found";
+                }
+            }
             continue;
         }
 
@@ -666,7 +713,7 @@ while ($pending !== [] && $progress) {
             'POST_ID' => $postId,
             'POST_TEXT' => $postText,
             'DATE_CREATE' => $formatDateCreate((string) ($comment['date_create'] ?? '')),
-            'PUBLISH_STATUS' => defined('BLOG_PUBLISH_STATUS_READY') ? BLOG_PUBLISH_STATUS_READY : 'K',
+            'PUBLISH_STATUS' => $publishStatus,
             DNK_REVIEWS_IMPORT_OLD_ID_UF => $oldId,
         ];
 
@@ -748,6 +795,7 @@ $dnkOut('Matched products: ' . $stats['matched'] . "\n");
 $dnkOut('Guest authors: ' . $stats['guest'] . "\n");
 $dnkOut('Created: ' . $stats['created'] . "\n");
 $dnkOut('Already imported: ' . $stats['already_imported'] . "\n");
+$dnkOut('Published existing: ' . $stats['published_existing'] . "\n");
 $dnkOut('Skipped empty ML_ONLINER: ' . $stats['skipped_no_onliner'] . "\n");
 $dnkOut('Skipped product not found: ' . $stats['skipped_not_found'] . "\n");
 $dnkOut('Skipped ambiguous code: ' . $stats['skipped_ambiguous'] . "\n");
