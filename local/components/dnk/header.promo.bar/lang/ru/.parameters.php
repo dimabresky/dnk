@@ -6,3 +6,5 @@ $MESS['DNK_HEADER_PROMO_BAR_PARAM_IBLOCK_ID'] = 'ID инфоблока (пуст
 $MESS['DNK_HEADER_PROMO_BAR_PARAM_CACHE_TIME'] = 'Время кеширования (сек.)';
 $MESS['DNK_HEADER_PROMO_BAR_PARAM_MOBILE_BREAKPOINT'] = 'Брейкпоинт «мобильная картинка» (px, max-width будет на 1 px меньше)';
 $MESS['DNK_HEADER_PROMO_BAR_PARAM_HIDE_ON_EXPIRE'] = 'Скрывать полоску после окончания таймера';
+$MESS['DNK_HEADER_PROMO_BAR_PARAM_RESIZE_IMAGE_DESKTOP'] = 'Ресайз десктопного изображения (2400×45)';
+$MESS['DNK_HEADER_PROMO_BAR_PARAM_RESIZE_IMAGE_MOBILE'] = 'Ресайз мобильного изображения (2400×45)';

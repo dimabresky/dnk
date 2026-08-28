@@ -50,6 +50,8 @@ class HeaderPromoEvents
                 'CACHE_TIME' => 120,
                 'MOBILE_BREAKPOINT' => 768,
                 'HIDE_ON_EXPIRE' => 'Y',
+                'RESIZE_IMAGE_DESKTOP' => 'N',
+                'RESIZE_IMAGE_MOBILE' => 'N',
             ],
             false,
             ['HIDE_ICONS' => 'Y']

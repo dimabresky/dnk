@@ -38,5 +38,17 @@ $arComponentParameters = [
             'TYPE' => 'CHECKBOX',
             'DEFAULT' => 'Y',
         ],
+        'RESIZE_IMAGE_DESKTOP' => [
+            'PARENT' => 'VIEW',
+            'NAME' => GetMessage('DNK_HEADER_PROMO_BAR_PARAM_RESIZE_IMAGE_DESKTOP'),
+            'TYPE' => 'CHECKBOX',
+            'DEFAULT' => 'N',
+        ],
+        'RESIZE_IMAGE_MOBILE' => [
+            'PARENT' => 'VIEW',
+            'NAME' => GetMessage('DNK_HEADER_PROMO_BAR_PARAM_RESIZE_IMAGE_MOBILE'),
+            'TYPE' => 'CHECKBOX',
+            'DEFAULT' => 'N',
+        ],
     ],
 ];
