@@ -119,10 +119,6 @@
     background: #fff;
 }
 
-.detail-gallery-big__item a.detail-gallery-big__link.popup_link.fancy.fancy-thumbs {
-    background: #FAF6ED;
-}
-
 @media screen and (max-width: 600px) {
     .detail-gallery-big-slider-main {
         max-width: 100%;
@@ -162,6 +158,10 @@
 	--toggle-bg: #FAF6ED;
 }
 
+.detail-gallery-big__item a.detail-gallery-big__link.popup_link.fancy.fancy-thumbs {
+    background: #FAF6ED;
+}
+
 .sections-list__item {
-	background-color: #faf6ed;
+	background-color: #FAF6ED;
 }
