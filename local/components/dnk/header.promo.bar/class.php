@@ -25,9 +25,18 @@ class DnkHeaderPromoBarComponent extends CBitrixComponent
             $iblockId = (int) DNK_HEADER_PROMO_IBLOCK_ID;
         }
 
+        $this->arParams['RESIZE_IMAGE_DESKTOP'] = ($this->arParams['RESIZE_IMAGE_DESKTOP'] ?? 'N') === 'Y' ? 'Y' : 'N';
+        $this->arParams['RESIZE_IMAGE_MOBILE'] = ($this->arParams['RESIZE_IMAGE_MOBILE'] ?? 'N') === 'Y' ? 'Y' : 'N';
+
         $cacheTime = (int) ($this->arParams['CACHE_TIME'] ?? 120);
         $cachePath = '/dnk/header.promo.bar';
-        $cacheId = md5(implode('|', [SITE_ID, LANGUAGE_ID, $iblockId]));
+        $cacheId = md5(implode('|', [
+            SITE_ID,
+            LANGUAGE_ID,
+            $iblockId,
+            $this->arParams['RESIZE_IMAGE_DESKTOP'],
+            $this->arParams['RESIZE_IMAGE_MOBILE'],
+        ]));
 
         $this->arResult['ITEM'] = null;
 
@@ -103,8 +112,14 @@ class DnkHeaderPromoBarComponent extends CBitrixComponent
             $alt = (string) $fields['NAME'];
         }
 
-        $imgDesktop = $this->resizeFileProperty($props['IMAGE_DESKTOP']['VALUE'] ?? null);
-        $imgMobile = $this->resizeFileProperty($props['IMAGE_MOBILE']['VALUE'] ?? null);
+        $imgDesktop = $this->resizeFileProperty(
+            $props['IMAGE_DESKTOP']['VALUE'] ?? null,
+            $this->arParams['RESIZE_IMAGE_DESKTOP'] === 'Y'
+        );
+        $imgMobile = $this->resizeFileProperty(
+            $props['IMAGE_MOBILE']['VALUE'] ?? null,
+            $this->arParams['RESIZE_IMAGE_MOBILE'] === 'Y'
+        );
 
         $fontSizeProp = Utils::sanitizeCssFontSize(trim((string) ($props['FONT_SIZE']['VALUE'] ?? '')));
 
@@ -141,9 +156,10 @@ class DnkHeaderPromoBarComponent extends CBitrixComponent
 
     /**
      * @param mixed $fileId
+     * @param bool $doResize
      * @return array{SRC: string, WIDTH: int, HEIGHT: int}
      */
-    private function resizeFileProperty($fileId): array
+    private function resizeFileProperty($fileId, bool $doResize = false): array
     {
         if (is_array($fileId)) {
             $fileId = (int) reset($fileId);
@@ -163,6 +179,14 @@ class DnkHeaderPromoBarComponent extends CBitrixComponent
         if ($ext === 'svg') {
             $src = (string) CFile::GetPath($fileId);
             return ['SRC' => $src, 'WIDTH' => (int) self::BAR_HEIGHT, 'HEIGHT' => (int) self::BAR_HEIGHT];
+        }
+
+        if (!$doResize) {
+            return [
+                'SRC' => (string) ($file['SRC'] ?? CFile::GetPath($fileId)),
+                'WIDTH' => (int) ($file['WIDTH'] ?? 0),
+                'HEIGHT' => (int) ($file['HEIGHT'] ?? 0),
+            ];
         }
 
         $res = CFile::ResizeImageGet(

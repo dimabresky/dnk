@@ -119,10 +119,6 @@
     background: #fff;
 }
 
-.detail-gallery-big__item a.detail-gallery-big__link.popup_link.fancy.fancy-thumbs {
-    background: #FAF6ED;
-}
-
 @media screen and (max-width: 600px) {
     .detail-gallery-big-slider-main {
         max-width: 100%;
@@ -159,9 +155,13 @@
 
 /* Product image grey background override */
 .grey-bg-goods-y .toggle-white-grey-bg {
-	--toggle-bg: #FAF6ED;
+	--toggle-bg: #f4f0ec;
+}
+
+.detail-gallery-big__item a.detail-gallery-big__link.popup_link.fancy.fancy-thumbs {
+    background: #faf8f6;
 }
 
 .sections-list__item {
-	background-color: #faf6ed;
+	background-color: #faf8f6;
 }
