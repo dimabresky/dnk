@@ -1871,6 +1871,29 @@ final class Utils
         return $id > 0 ? $id : null;
     }
 
+    public const MARKER_NOVINKA_VALUE = 'Новинка';
+
+    public const MARKER_NOVINKA_XML_ID = 'NEW';
+
+    /**
+     * @param array<string, mixed>|null $markerEnumRow результат CIBlockPropertyEnum::GetByID
+     */
+    public static function isMarkerNovinkaEnumRow(?array $markerEnumRow): bool
+    {
+        if ($markerEnumRow === null) {
+            return false;
+        }
+
+        $value = trim((string) ($markerEnumRow['VALUE'] ?? ''));
+        if ($value !== '' && mb_strtolower($value, 'UTF-8') === mb_strtolower(self::MARKER_NOVINKA_VALUE, 'UTF-8')) {
+            return true;
+        }
+
+        $xmlId = trim((string) ($markerEnumRow['XML_ID'] ?? ''));
+
+        return strcasecmp($xmlId, self::MARKER_NOVINKA_XML_ID) === 0;
+    }
+
     /**
      * Карта ID варианта списка => XML_ID для свойства типа L в инфоблоке.
      *
