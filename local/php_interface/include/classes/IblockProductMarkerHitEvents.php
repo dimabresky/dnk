@@ -9,10 +9,10 @@ use CIBlockPropertyEnum;
  * Синхронизация свойства HIT со списком MARKER_DLYA_SAYTA (VALUE → XML_ID варианта HIT).
  * NEW не выставляется отсюда (модуль dnk.stickers).
  *
- * Поведение:
- * - «Хит» / «Скидка» / «СПЕЦИАЛЬНОЕ ПРЕДЛОЖЕНИЕ» — merge: снять управляемые RECOMMEND/HIT/STOCK, добавить целевой.
- * - Пустой маркер или «Новинка» — снять только RECOMMEND/HIT/STOCK; NEW и прочие не трогаем.
- * - Несмапленное значение маркера — HIT не меняем.
+ * Поведение (единое правило):
+ * - в HIT не больше одного управляемого стикера (RECOMMEND / HIT / STOCK), и только того, что соответствует маркеру;
+ * - «Хит» / «Скидка» / «СПЕЦИАЛЬНОЕ ПРЕДЛОЖЕНИЕ» — снять остальные управляемые, добавить целевой;
+ * - пустой маркер / «Новинка» / несмапленное значение — снять все управляемые; NEW и прочие не трогаем.
  */
 final class IblockProductMarkerHitEvents
 {
@@ -25,6 +25,9 @@ final class IblockProductMarkerHitEvents
 
     /** Стикеры, которыми управляет sync из маркера (не трогаем NEW и прочие). */
     private const MANAGED_HIT_XML_IDS = ['RECOMMEND', 'HIT', 'STOCK'];
+
+    /** @var array<int, array<string, int>> iblockId => [xmlId => enumId] */
+    private static array $managedHitEnumIdsByXmlCache = [];
 
     public static function onAfterIBlockElementAdd(array &$arFields): void
     {
@@ -78,28 +81,23 @@ final class IblockProductMarkerHitEvents
 
         $markerEnumId = self::getSingleMarkerEnumId($iblockId, $elementId, $markerPropId);
         $markerEnumRow = null;
-        $hitXmlId = null;
-
         if ($markerEnumId !== null) {
-            $markerEnumRow = CIBlockPropertyEnum::GetByID($markerEnumId);
-            $hitXmlId = self::resolveHitXmlIdFromMarker(is_array($markerEnumRow) ? $markerEnumRow : null);
+            $row = CIBlockPropertyEnum::GetByID($markerEnumId);
+            $markerEnumRow = is_array($row) ? $row : null;
         }
 
-        $managedEnumIds = self::buildManagedEnumIdsMap($iblockId);
+        $activeHitXmlId = self::resolveManagedHitXmlIdFromMarker($markerEnumRow);
+        $managedByXml = self::getManagedHitEnumIdsByXml($iblockId);
+        $activeEnumId = ($activeHitXmlId !== null && isset($managedByXml[$activeHitXmlId]))
+            ? $managedByXml[$activeHitXmlId]
+            : null;
+
         $current = self::getCurrentHitEnumIds($iblockId, $elementId);
-
-        if ($hitXmlId !== null && $hitXmlId !== '' && strcasecmp($hitXmlId, Utils::MARKER_NOVINKA_XML_ID) !== 0) {
-            $targetEnumId = Utils::getIblockListPropertyEnumIdByXmlId($iblockId, 'HIT', $hitXmlId);
-            if ($targetEnumId === null) {
-                return false;
-            }
-
-            $next = self::buildNextHitKeepingUnmanaged($current, $managedEnumIds, $targetEnumId);
-        } elseif ($markerEnumId === null || Utils::isMarkerNovinkaEnumRow(is_array($markerEnumRow) ? $markerEnumRow : null)) {
-            $next = self::buildNextHitKeepingUnmanaged($current, $managedEnumIds, null);
-        } else {
-            return false;
-        }
+        $next = self::buildNextHitKeepingUnmanaged(
+            $current,
+            self::enumIdsToSet($managedByXml),
+            $activeEnumId
+        );
 
         return self::saveHitIfChanged($elementId, $iblockId, $current, $next);
     }
@@ -116,19 +114,59 @@ final class IblockProductMarkerHitEvents
     }
 
     /**
-     * @return array<int, true>
+     * XML_ID управляемого HIT-стикера по маркеру, либо null (очистить все управляемые).
+     *
+     * @param array<string, mixed>|null $markerEnumRow
      */
-    private static function buildManagedEnumIdsMap(int $iblockId): array
+    private static function resolveManagedHitXmlIdFromMarker(?array $markerEnumRow): ?string
     {
-        $managedEnumIds = [];
-        foreach (self::MANAGED_HIT_XML_IDS as $managedXmlId) {
-            $managedId = Utils::getIblockListPropertyEnumIdByXmlId($iblockId, 'HIT', $managedXmlId);
-            if ($managedId !== null) {
-                $managedEnumIds[$managedId] = true;
+        if ($markerEnumRow === null || Utils::isMarkerNovinkaEnumRow($markerEnumRow)) {
+            return null;
+        }
+
+        return self::resolveHitXmlIdFromMarker($markerEnumRow);
+    }
+
+    /**
+     * @return array<string, int> xmlId => enumId
+     */
+    private static function getManagedHitEnumIdsByXml(int $iblockId): array
+    {
+        if (isset(self::$managedHitEnumIdsByXmlCache[$iblockId])) {
+            return self::$managedHitEnumIdsByXmlCache[$iblockId];
+        }
+
+        $allowed = [];
+        foreach (self::MANAGED_HIT_XML_IDS as $xmlId) {
+            $allowed[strtoupper($xmlId)] = $xmlId;
+        }
+
+        $map = [];
+        foreach (Utils::buildIblockListPropertyEnumXmlIdMap($iblockId, 'HIT') as $enumId => $xmlId) {
+            $key = strtoupper(trim((string) $xmlId));
+            if (isset($allowed[$key])) {
+                $map[$allowed[$key]] = (int) $enumId;
             }
         }
 
-        return $managedEnumIds;
+        self::$managedHitEnumIdsByXmlCache[$iblockId] = $map;
+
+        return $map;
+    }
+
+    /**
+     * @param array<string, int> $managedByXml xmlId => enumId
+     *
+     * @return array<int, true>
+     */
+    private static function enumIdsToSet(array $managedByXml): array
+    {
+        $set = [];
+        foreach ($managedByXml as $enumId) {
+            $set[(int) $enumId] = true;
+        }
+
+        return $set;
     }
 
     /**
