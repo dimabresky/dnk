@@ -26,10 +26,6 @@ final class IblockProductMarkerHitEvents
     /** Стикеры, которыми управляет sync из маркера (не трогаем NEW и прочие). */
     private const MANAGED_HIT_XML_IDS = ['RECOMMEND', 'HIT', 'STOCK'];
 
-    private const MARKER_NOVINKA_VALUE = 'Новинка';
-
-    private const MARKER_NOVINKA_XML_ID = 'NEW';
-
     public static function onAfterIBlockElementAdd(array &$arFields): void
     {
         if (isset($arFields['RESULT']) && $arFields['RESULT'] === false) {
@@ -92,14 +88,14 @@ final class IblockProductMarkerHitEvents
         $managedEnumIds = self::buildManagedEnumIdsMap($iblockId);
         $current = self::getCurrentHitEnumIds($iblockId, $elementId);
 
-        if ($hitXmlId !== null && $hitXmlId !== '' && strcasecmp($hitXmlId, 'NEW') !== 0) {
+        if ($hitXmlId !== null && $hitXmlId !== '' && strcasecmp($hitXmlId, Utils::MARKER_NOVINKA_XML_ID) !== 0) {
             $targetEnumId = Utils::getIblockListPropertyEnumIdByXmlId($iblockId, 'HIT', $hitXmlId);
             if ($targetEnumId === null) {
                 return false;
             }
 
             $next = self::buildNextHitKeepingUnmanaged($current, $managedEnumIds, $targetEnumId);
-        } elseif ($markerEnumId === null || self::isMarkerNovinka(is_array($markerEnumRow) ? $markerEnumRow : null)) {
+        } elseif ($markerEnumId === null || Utils::isMarkerNovinkaEnumRow(is_array($markerEnumRow) ? $markerEnumRow : null)) {
             $next = self::buildNextHitKeepingUnmanaged($current, $managedEnumIds, null);
         } else {
             return false;
@@ -228,7 +224,7 @@ final class IblockProductMarkerHitEvents
         }
 
         $xmlId = trim((string) ($markerEnumRow['XML_ID'] ?? ''));
-        if (strcasecmp($xmlId, self::MARKER_NOVINKA_XML_ID) === 0) {
+        if (strcasecmp($xmlId, Utils::MARKER_NOVINKA_XML_ID) === 0) {
             return null;
         }
 
@@ -240,25 +236,6 @@ final class IblockProductMarkerHitEvents
         }
 
         return null;
-    }
-
-    /**
-     * @param array<string, mixed>|null $markerEnumRow результат CIBlockPropertyEnum::GetByID
-     */
-    private static function isMarkerNovinka(?array $markerEnumRow): bool
-    {
-        if ($markerEnumRow === null) {
-            return false;
-        }
-
-        $value = trim((string) ($markerEnumRow['VALUE'] ?? ''));
-        if ($value !== '' && self::normalizeUtf8Lower($value) === self::normalizeUtf8Lower(self::MARKER_NOVINKA_VALUE)) {
-            return true;
-        }
-
-        $xmlId = trim((string) ($markerEnumRow['XML_ID'] ?? ''));
-
-        return strcasecmp($xmlId, self::MARKER_NOVINKA_XML_ID) === 0;
     }
 
     private static function normalizeUtf8Lower(string $value): string
