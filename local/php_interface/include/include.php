@@ -34,6 +34,7 @@ use Dnk\PhpInterface\UserConsentRevokeTable;
 use Dnk\PhpInterface\UserConsentService;
 use Dnk\PhpInterface\UserRegisterExportQueueTable;
 use Dnk\PhpInterface\UserReauthorizeQueueTable;
+use Dnk\PhpInterface\DigiLayerService;
 use Dnk\PhpInterface\Utils;
 
 $includeDir = __DIR__;
@@ -78,6 +79,7 @@ Loader::registerAutoLoadClasses(null, [
     UserConsentService::class => $classesPath . '/UserConsentService.php',
     UserConsentEvents::class => $classesPath . '/UserConsentEvents.php',
     BlogCommentConsentEvents::class => $classesPath . '/BlogCommentConsentEvents.php',
+    DigiLayerService::class => $classesPath . '/DigiLayerService.php',
 ]);
 
 
