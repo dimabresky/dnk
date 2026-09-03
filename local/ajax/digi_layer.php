@@ -10,23 +10,41 @@ define('DisableEventsCheck', true);
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
 
+use Bitrix\Main\Application;
 use Bitrix\Main\Context;
+use Bitrix\Main\Engine\Response\AjaxJson;
+use Bitrix\Main\Error;
+use Bitrix\Main\ErrorCollection;
 use Bitrix\Main\SystemException;
 use Dnk\PhpInterface\DigiLayerService;
 
-header('Content-Type: application/json; charset=UTF-8');
+/**
+ * Sends D7 AjaxJson response and terminates the request.
+ *
+ * @see https://dev.1c-bitrix.ru/api_d7/bitrix/main/httpresponse/ajaxjson.php
+ */
+function digiLayerSendResponse(AjaxJson $response): void
+{
+    $application = Application::getInstance();
+    $application->getContext()->setResponse($response);
+    $application->end();
+}
 
-$response = [
-    'success' => false,
-    'result' => false,
-    'error' => '',
-];
+/**
+ * Builds AjaxJson error response with a single message.
+ */
+function digiLayerErrorResponse(string $message, string $code = ''): AjaxJson
+{
+    $errors = new ErrorCollection();
+    $errors->setError(new Error($message, $code));
+
+    return AjaxJson::createError($errors);
+}
 
 if (!check_bitrix_sessid()) {
-    $response['error'] = 'Invalid sessid';
-    echo json_encode($response);
-    require $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/epilog_after.php';
-    return;
+    $sessidErrors = new ErrorCollection();
+    $sessidErrors->setError(new Error('Invalid sessid', 'invalid_sessid'));
+    digiLayerSendResponse(AjaxJson::createDenied($sessidErrors));
 }
 
 $request = Context::getCurrent()->getRequest();
@@ -54,20 +72,24 @@ $mutationActions = [
 try {
     if (in_array($action, $stateOnlyActions, true)) {
         $snapshot = DigiLayerService::snapshot();
-        $response['success'] = true;
 
         if ($action === 'cartState') {
-            $response['result'] = $snapshot['cart'];
+            $result = $snapshot['cart'];
         } elseif ($action === 'favoritesState') {
-            $response['result'] = $snapshot['favorites'];
+            $result = $snapshot['favorites'];
         } else {
-            $response['result'] = $snapshot['compares'];
+            $result = $snapshot['compares'];
         }
 
-        $response['cart'] = $snapshot['cart'];
-        $response['favorites'] = $snapshot['favorites'];
-        $response['compares'] = $snapshot['compares'];
-    } elseif (in_array($action, $mutationActions, true)) {
+        digiLayerSendResponse(AjaxJson::createSuccess([
+            'result' => $result,
+            'cart' => $snapshot['cart'],
+            'favorites' => $snapshot['favorites'],
+            'compares' => $snapshot['compares'],
+        ]));
+    }
+
+    if (in_array($action, $mutationActions, true)) {
         switch ($action) {
             case 'addToCart':
                 DigiLayerService::addToCart($offerId, $amount);
@@ -90,20 +112,19 @@ try {
         }
 
         $snapshot = DigiLayerService::snapshot();
-        $response['success'] = true;
-        $response['result'] = true;
-        $response['cart'] = $snapshot['cart'];
-        $response['favorites'] = $snapshot['favorites'];
-        $response['compares'] = $snapshot['compares'];
-    } else {
-        $response['error'] = 'Unknown action';
-    }
-} catch (SystemException $e) {
-    $response['error'] = $e->getMessage();
-} catch (\Throwable $e) {
-    $response['error'] = 'Internal error';
-    error_log('digi_layer.php: ' . $e->getMessage());
-}
 
-echo json_encode($response);
-require $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/epilog_after.php';
+        digiLayerSendResponse(AjaxJson::createSuccess([
+            'result' => true,
+            'cart' => $snapshot['cart'],
+            'favorites' => $snapshot['favorites'],
+            'compares' => $snapshot['compares'],
+        ]));
+    }
+
+    digiLayerSendResponse(digiLayerErrorResponse('Unknown action', 'unknown_action'));
+} catch (SystemException $e) {
+    digiLayerSendResponse(digiLayerErrorResponse($e->getMessage(), 'system'));
+} catch (\Throwable $e) {
+    error_log('digi_layer.php: ' . $e->getMessage());
+    digiLayerSendResponse(digiLayerErrorResponse('Internal error', 'internal'));
+}

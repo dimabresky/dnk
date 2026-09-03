@@ -124,12 +124,16 @@
         dataType: 'json',
         data: data,
         onsuccess: function (response) {
-          if (!response || !response.success) {
-            reject(new Error((response && response.error) || 'digiLayer request failed'));
+          if (!response || response.status !== 'success' || !response.data) {
+            var message = 'digiLayer request failed';
+            if (response && Array.isArray(response.errors) && response.errors.length) {
+              message = response.errors[0].message || message;
+            }
+            reject(new Error(message));
             return;
           }
-          applySnapshot(response, refreshUi);
-          resolve(response.result);
+          applySnapshot(response.data, refreshUi);
+          resolve(response.data.result);
         },
         onfailure: function () {
           reject(new Error('digiLayer network error'));
