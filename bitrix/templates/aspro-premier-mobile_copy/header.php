@@ -13,7 +13,7 @@ $bIncludedModule = \Bitrix\Main\Loader::includeModule('aspro.premier');
                 
 		<title><?$APPLICATION->ShowTitle()?></title>
 		<?if($bIncludedModule):?><?MSolution::start();?><?endif;?>
-                <?include $_SERVER['DOCUMENT_ROOT'] . '/include/header/diginetica_inc.php'?>
+                <?include $_SERVER['DOCUMENT_ROOT'] . '/include/header/diginetica/diginetica_inc.php'?>
 	</head>
 	<body id="main" class="site_<?=SITE_ID?> <?=($bIncludedModule ? MSolution::getConditionClass() : '')?>">
                 
