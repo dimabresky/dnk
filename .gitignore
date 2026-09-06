@@ -117,6 +117,9 @@
 Thumbs.db
 desktop.ini
 
+# --- MiMoCode ---
+.mimocode/
+
 # --- Logs and temp ---
 *.log
 *.tmp
