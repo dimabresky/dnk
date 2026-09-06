@@ -12,6 +12,7 @@ use Dnk\PhpInterface\IblockProductMarkerIsNewEvents;
 use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\BlogCommentConsentEvents;
+use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\UserConsentEvents;
 use Dnk\PhpInterface\ProfileBirthdayEvents;
 use Bitrix\Main\UserConsent\Internals\ConsentTable;
@@ -159,4 +160,12 @@ EventManager::getInstance()->addEventHandlerCompatible(
     [BlogCommentConsentEvents::class, 'onBeforeCommentAdd'],
     false,
     50
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'blog',
+    'OnAfterCommentAdd',
+    [ReviewBonusEvents::class, 'onAfterCommentAdd'],
+    false,
+    100
 );

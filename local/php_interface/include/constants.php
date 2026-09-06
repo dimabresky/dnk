@@ -178,6 +178,18 @@ define('DNK_USER_REGISTER_EXPORT_QUEUE_BATCH', $dnkEnvInt('DNK_USER_REGISTER_EXP
 /** После стольких неудачных попыток статус E. */
 define('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS', $dnkEnvInt('DNK_USER_REGISTER_EXPORT_MAX_ATTEMPTS'));
 
+/** URL (POST JSON): начисление бонусов за отзывы; пустая строка — отправка отключена. */
+define('DNK_REVIEW_BONUS_ENDPOINT', $dnkEnvDefault('DNK_REVIEW_BONUS_ENDPOINT', ''));
+
+/** Сколько задач очереди отзывов за один запуск агента. */
+define('DNK_REVIEW_BONUS_QUEUE_BATCH', (int)$dnkEnvDefault('DNK_REVIEW_BONUS_QUEUE_BATCH', '10'));
+
+/** После стольких неудачных попыток статус E. */
+define('DNK_REVIEW_BONUS_MAX_ATTEMPTS', (int)$dnkEnvDefault('DNK_REVIEW_BONUS_MAX_ATTEMPTS', '5'));
+
+/** Интервал агента очереди отзывов (секунды, для регистрации в админке). */
+define('DNK_REVIEW_BONUS_AGENT_INTERVAL', (int)$dnkEnvDefault('DNK_REVIEW_BONUS_AGENT_INTERVAL', '600'));
+
 /** Базовый URL сайта для абсолютных ссылок в product feed (без завершающего /). */
 define('DNK_SITE_URL', rtrim($dnkEnv('DNK_SITE_URL'), '/'));
 
