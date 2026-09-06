@@ -34,6 +34,7 @@ use Dnk\PhpInterface\UserConsentRevokeTable;
 use Dnk\PhpInterface\UserConsentService;
 use Dnk\PhpInterface\UserRegisterExportQueueTable;
 use Dnk\PhpInterface\UserReauthorizeQueueTable;
+use Dnk\PhpInterface\DigiLayerService;
 use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\ReviewBonusQueueTable;
 use Dnk\PhpInterface\ReviewBonusQueueAgent;
@@ -81,6 +82,7 @@ Loader::registerAutoLoadClasses(null, [
     UserConsentService::class => $classesPath . '/UserConsentService.php',
     UserConsentEvents::class => $classesPath . '/UserConsentEvents.php',
     BlogCommentConsentEvents::class => $classesPath . '/BlogCommentConsentEvents.php',
+    DigiLayerService::class => $classesPath . '/DigiLayerService.php',
     ReviewBonusEvents::class => $classesPath . '/ReviewBonusEvents.php',
     ReviewBonusQueueTable::class => $classesPath . '/ReviewBonusQueueTable.php',
     ReviewBonusQueueAgent::class => $classesPath . '/ReviewBonusQueueAgent.php',

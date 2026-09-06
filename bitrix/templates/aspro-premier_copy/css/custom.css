@@ -180,9 +180,9 @@
 
 /* Product image grey background override */
 .grey-bg-goods-y .toggle-white-grey-bg {
-	--toggle-bg: #FAF6ED;
+	--toggle-bg: #faf8f6;
 }
 
 .sections-list__item {
-	background-color: #faf6ed;
+	background-color: #faf8f6;
 }

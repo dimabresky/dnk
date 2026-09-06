@@ -20,7 +20,7 @@ $bIncludedModule = \Bitrix\Main\Loader::includeModule('aspro.premier');
 		<?$APPLICATION->ShowHead();?>
 		<?$APPLICATION->AddHeadString('<script>BX.message('.CUtil::PhpToJSObject($MESS, false).')</script>', true);?>
 		<?if($bIncludedModule) Solution::Start();?>
-                <?include $_SERVER['DOCUMENT_ROOT'] . '/include/header/diginetica_inc.php'?>
+                <?include $_SERVER['DOCUMENT_ROOT'] . '/include/header/diginetica/diginetica_inc.php'?>
 
         </head>
 	<body class="<?=($bIndexBot ? "wbot" : "")?> site_<?=SITE_ID?> <?=($bIncludedModule ? TSolution::getConditionClass() : '')?>" id="main" data-site="<?=SITE_DIR?>">

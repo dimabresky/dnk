@@ -17,7 +17,8 @@ This repository powers **DNK.BY**, a cosmetics e-commerce site on **1C-Bitrix: S
 | Install / migrate / agent runners | `local/tools/` — one-off or CLI helpers, not production request path |
 | Point AJAX endpoints | `local/ajax/` |
 | Custom components (`dnk:*`) | `local/components/dnk/` |
-| Site templates (including Aspro copies) | `bitrix/templates/` (e.g. `aspro-premier_copy`, `aspro-premier-mobile_copy`) |
+| Site templates (Aspro copies) | `bitrix/templates/aspro-premier_copy/` (desktop) |
+| **Mobile template (Aspro copy)** | `bitrix/templates/aspro-premier-mobile_copy/` (mobile) |
 | **Custom Bitrix modules** | `local/modules/<vendor>.<name>/` — структура `install/`, `lib/`, `include.php`, см. раздел ниже |
 
 Project-specific layout details are summarized in [`README.md`](README.md).

@@ -13,10 +13,6 @@ final class IblockProductMarkerIsNewEvents
     /** @var list<string> */
     private const IS_NEW_ENUM_XML_IDS = ['Y', 'NEW', 'YES'];
 
-    private const MARKER_NOVINKA_VALUE = 'Новинка';
-
-    private const MARKER_NOVINKA_XML_ID = 'NEW';
-
     public static function onAfterIBlockElementAdd(array &$arFields): void
     {
         if (isset($arFields['RESULT']) && $arFields['RESULT'] === false) {
@@ -72,7 +68,7 @@ final class IblockProductMarkerIsNewEvents
 
         if ($markerEnumId !== null) {
             $markerEnumRow = CIBlockPropertyEnum::GetByID($markerEnumId);
-            $isNovinka = self::isMarkerNovinka(is_array($markerEnumRow) ? $markerEnumRow : null);
+            $isNovinka = Utils::isMarkerNovinkaEnumRow(is_array($markerEnumRow) ? $markerEnumRow : null);
         }
 
         if ($isNovinka) {
@@ -128,24 +124,5 @@ final class IblockProductMarkerIsNewEvents
         }
 
         return null;
-    }
-
-    /**
-     * @param array<string, mixed>|null $markerEnumRow результат CIBlockPropertyEnum::GetByID
-     */
-    private static function isMarkerNovinka(?array $markerEnumRow): bool
-    {
-        if ($markerEnumRow === null) {
-            return false;
-        }
-
-        $value = trim((string) ($markerEnumRow['VALUE'] ?? ''));
-        if ($value !== '' && mb_strtolower($value, 'UTF-8') === mb_strtolower(self::MARKER_NOVINKA_VALUE, 'UTF-8')) {
-            return true;
-        }
-
-        $xmlId = trim((string) ($markerEnumRow['XML_ID'] ?? ''));
-
-        return strcasecmp($xmlId, self::MARKER_NOVINKA_XML_ID) === 0;
     }
 }
