@@ -171,11 +171,14 @@ final class DigineticaGlobalFeedExporter
             [
                 'ID',
                 'IBLOCK_ID',
+                'IBLOCK_SECTION_ID',
+                'CODE',
+                'EXTERNAL_ID',
                 'NAME',
                 'DETAIL_PAGE_URL',
                 'DETAIL_PICTURE',
                 'PREVIEW_PICTURE',
-                'IBLOCK_SECTION_ID',
+                'CATALOG_AVAILABLE',
             ]
         );
 
@@ -371,7 +374,7 @@ final class DigineticaGlobalFeedExporter
             return '';
         }
 
-        $available = self::isProductAvailable($productId) ? 'true' : 'false';
+        $available = (($fields['CATALOG_AVAILABLE'] ?? 'N') === 'Y') ? 'true' : 'false';
         $groupId = self::resolveGroupId($props[self::GROUPING_PROPERTY_CODE] ?? null);
 
         $open = '      <offer id="' . self::escapeXml((string) $productId) . '" available="' . $available . '"';
@@ -431,7 +434,7 @@ final class DigineticaGlobalFeedExporter
      */
     private static function resolveProductUrl(array $fields, string $siteUrl): string
     {
-        $detailUrl = (string) ($fields['~DETAIL_PAGE_URL'] ?? $fields['DETAIL_PAGE_URL'] ?? '');
+        $detailUrl = (string) ($fields['DETAIL_PAGE_URL'] ?? '');
         $detailUrl = str_replace(' ', '%20', $detailUrl);
         if ($detailUrl === '') {
             return '';
@@ -442,19 +445,6 @@ final class DigineticaGlobalFeedExporter
         }
 
         return $siteUrl . $detailUrl;
-    }
-
-    private static function isProductAvailable(int $productId): bool
-    {
-        $catalogProduct = CCatalogProduct::GetByID($productId);
-        if (!is_array($catalogProduct)) {
-            return false;
-        }
-
-        $quantity = (float) ($catalogProduct['QUANTITY'] ?? 0);
-        $canBuyZero = (string) ($catalogProduct['CAN_BUY_ZERO'] ?? 'N');
-
-        return $quantity > 0 || $canBuyZero === 'Y';
     }
 
     /**
@@ -708,7 +698,7 @@ final class DigineticaGlobalFeedExporter
                 'GLOBAL_ACTIVE' => 'Y',
             ],
             false,
-            ['ID', 'IBLOCK_SECTION_ID', 'NAME', 'SECTION_PAGE_URL']
+            ['ID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'CODE', 'EXTERNAL_ID', 'NAME', 'SECTION_PAGE_URL']
         );
         while ($section = $res->GetNext()) {
             $id = (int) ($section['ID'] ?? 0);
@@ -730,7 +720,7 @@ final class DigineticaGlobalFeedExporter
                 $attrs .= ' parentId="' . $parentId . '"';
             }
 
-            $sectionUrl = (string) ($section['~SECTION_PAGE_URL'] ?? $section['SECTION_PAGE_URL'] ?? '');
+            $sectionUrl = (string) ($section['SECTION_PAGE_URL'] ?? '');
             $sectionUrl = str_replace(' ', '%20', $sectionUrl);
             if ($sectionUrl !== '') {
                 if (preg_match('#^https?://#i', $sectionUrl) !== 1) {
