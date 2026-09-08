@@ -42,7 +42,10 @@
 /index.php
 
 # --- Bitrix: connection and environment (secrets) ---
-/bitrix/php_interface/
+/bitrix/php_interface/*
+!/bitrix/php_interface/include/
+/bitrix/php_interface/include/*
+!/bitrix/php_interface/include/catalog_export/
 /bitrix/.settings.php
 /bitrix/.settings_extra.php
 /.env
