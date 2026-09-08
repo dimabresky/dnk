@@ -9,7 +9,7 @@
  * @global string $SETUP_FILE_NAME
  * @global string $SETUP_SERVER_NAME
  * @global string $USE_HTTPS
- * @global array $YANDEX_EXPORT
+ * @global array $IBLOCK_EXPORT
  * @global string $strExportErrorMessage
  */
 
@@ -56,7 +56,7 @@ if ($strExportErrorMessage == '')
 	$SETUP_FILE_NAME = Rel2Abs("/", $SETUP_FILE_NAME);
 }
 
-if ($strExportErrorMessage == '' && (empty($YANDEX_EXPORT) || !is_array($YANDEX_EXPORT)))
+if ($strExportErrorMessage == '' && (empty($IBLOCK_EXPORT) || !is_array($IBLOCK_EXPORT)))
 {
 	$strExportErrorMessage .= GetMessage("CET_ERROR_NO_IBLOCKS")."<br>";
 }
@@ -93,7 +93,7 @@ if ($strExportErrorMessage == '')
 	try
 	{
 		DigineticaGlobalFeedExporter::export(
-			array_values($YANDEX_EXPORT),
+			array_values($IBLOCK_EXPORT),
 			$absoluteFilePath,
 			$siteUrl,
 			$shopName

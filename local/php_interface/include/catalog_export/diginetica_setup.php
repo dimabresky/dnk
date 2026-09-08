@@ -10,7 +10,7 @@
 /** @global string $SETUP_PROFILE_NAME */
 /** @global string $SETUP_SERVER_NAME */
 /** @global string $USE_HTTPS */
-/** @global array $YANDEX_EXPORT */
+/** @global array $IBLOCK_EXPORT */
 
 IncludeModuleLangFile($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/catalog/export_setup_templ.php');
 
@@ -27,8 +27,8 @@ if (!isset($USE_HTTPS) || $USE_HTTPS === '')
 
 if (($ACTION == 'EXPORT_EDIT' || $ACTION == 'EXPORT_COPY') && $STEP == 1)
 {
-	if (isset($arOldSetupVars['YANDEX_EXPORT']))
-		$YANDEX_EXPORT = $arOldSetupVars['YANDEX_EXPORT'];
+	if (isset($arOldSetupVars['IBLOCK_EXPORT']))
+		$IBLOCK_EXPORT = $arOldSetupVars['IBLOCK_EXPORT'];
 	if (isset($arOldSetupVars['SETUP_FILE_NAME']))
 		$SETUP_FILE_NAME = str_replace($strCatalogDefaultFolder, '', $arOldSetupVars['SETUP_FILE_NAME']);
 	if (isset($arOldSetupVars['SETUP_PROFILE_NAME']))
@@ -41,7 +41,7 @@ if (($ACTION == 'EXPORT_EDIT' || $ACTION == 'EXPORT_COPY') && $STEP == 1)
 
 if ($STEP > 1)
 {
-	if (empty($YANDEX_EXPORT) || !is_array($YANDEX_EXPORT))
+	if (empty($IBLOCK_EXPORT) || !is_array($IBLOCK_EXPORT))
 		$arSetupErrors[] = GetMessage("CET_ERROR_NO_IBLOCKS");
 
 	if ($SETUP_FILE_NAME == '')
@@ -57,7 +57,7 @@ if ($STEP > 1)
 		}
 		elseif ($APPLICATION->GetFileAccessPermission($SETUP_FILE_NAME) < "W")
 		{
-			$arSetupErrors[] = str_replace("#FILE#", $SETUP_FILE_NAME, GetMessage('CET_YAND_RUN_ERR_SETUP_FILE_ACCESS_DENIED'));
+			$arSetupErrors[] = str_replace("#FILE#", $SETUP_FILE_NAME, 'Нет прав на запись файла #FILE#');
 		}
 	}
 
@@ -114,12 +114,12 @@ if ($STEP==1)
 {
 ?><tr>
 	<td colspan="2"><?
-	if (!isset($YANDEX_EXPORT) || !is_array($YANDEX_EXPORT))
-		$YANDEX_EXPORT = array();
+	if (!isset($IBLOCK_EXPORT) || !is_array($IBLOCK_EXPORT))
+		$IBLOCK_EXPORT = array();
 
-	$arYandexKeys = array();
-	if (!empty($YANDEX_EXPORT))
-		$arYandexKeys = array_fill_keys($YANDEX_EXPORT, true);
+	$arExportKeys = array();
+	if (!empty($IBLOCK_EXPORT))
+		$arExportKeys = array_fill_keys($IBLOCK_EXPORT, true);
 	$boolAll = false;
 	$intCountChecked = 0;
 	$intCountAvailIBlock = 0;
@@ -150,15 +150,15 @@ if ($STEP==1)
 			$arSiteList[] = $arSite["SITE_ID"];
 		}
 
-		$boolYandex = isset($arYandexKeys[$res['ID']]);
+		$boolExport = isset($arExportKeys[$res['ID']]);
 		$arIBlockList[] = array(
 			'ID' => $res['ID'],
 			'NAME' => $res['NAME'],
 			'IBLOCK_TYPE_ID' => $res['IBLOCK_TYPE_ID'],
-			'YANDEX_EXPORT' => $boolYandex,
+			'IBLOCK_EXPORT' => $boolExport,
 			'SITE_LIST' => '('.implode(' ',$arSiteList).')',
 		);
-		if ($boolYandex)
+		if ($boolExport)
 			$intCountChecked++;
 		$intCountAvailIBlock++;
 	}
@@ -167,8 +167,8 @@ if ($STEP==1)
 	?><table class="internal" width="100%">
 	<tr class="heading">
 		<td><? echo GetMessage("CET_CATALOG");?></td>
-		<td><? echo GetMessage("CET_EXPORT2YANDEX");?>&nbsp;
-			<input style="vertical-align: middle;" type="checkbox" id="yandex_export_all" value="Y" onclick="checkAll(this,<? echo $intCountAvailIBlock; ?>);"<? echo ($boolAll ? ' checked' : ''); ?>>
+		<td>Экспорт&nbsp;
+			<input style="vertical-align: middle;" type="checkbox" id="iblock_export_all" value="Y" onclick="checkAll(this,<? echo $intCountAvailIBlock; ?>);"<? echo ($boolAll ? ' checked' : ''); ?>>
 		</td>
 	</tr><?
 	foreach ($arIBlockList as $key => $arIBlock)
@@ -176,7 +176,7 @@ if ($STEP==1)
 	?><tr>
 		<td><? echo htmlspecialcharsEx("[".$arIBlock["IBLOCK_TYPE_ID"]."] ".$arIBlock["NAME"]." ".$arIBlock['SITE_LIST']); ?></td>
 		<td align="center">
-			<input type="checkbox" name="YANDEX_EXPORT[<? echo $key; ?>]" id="YANDEX_EXPORT_<? echo $key; ?>" value="<? echo $arIBlock["ID"]; ?>"<? if ($arIBlock['YANDEX_EXPORT']) echo " checked"; ?> onclick="checkOne(this,<? echo $intCountAvailIBlock; ?>);">
+			<input type="checkbox" name="IBLOCK_EXPORT[<? echo $key; ?>]" id="IBLOCK_EXPORT_<? echo $key; ?>" value="<? echo $arIBlock["ID"]; ?>"<? if ($arIBlock['IBLOCK_EXPORT']) echo " checked"; ?> onclick="checkOne(this,<? echo $intCountAvailIBlock; ?>);">
 		</td>
 	</tr><?
 	}
@@ -189,7 +189,7 @@ if ($STEP==1)
 			i;
 		for (i = 0; i < cnt; i++)
 		{
-			BX('YANDEX_EXPORT_'+i, true).checked = boolCheck;
+			BX('IBLOCK_EXPORT_'+i, true).checked = boolCheck;
 		}
 		BX('count_checked', true).value = (boolCheck ? cnt : 0);
 	}
@@ -198,14 +198,14 @@ if ($STEP==1)
 		var boolCheck = obj.checked,
 			intCurrent = parseInt(BX('count_checked', true).value, 10);
 		intCurrent += (boolCheck ? 1 : -1);
-		BX('yandex_export_all', true).checked = (intCurrent >= cnt);
+		BX('iblock_export_all', true).checked = (intCurrent >= cnt);
 		BX('count_checked', true).value = intCurrent;
 	}
 	</script>
 	</td>
 </tr>
 <tr>
-	<td width="40%"><? echo GetMessage('CAT_YANDEX_USE_HTTPS'); ?></td>
+	<td width="40%">Использовать HTTPS</td>
 	<td width="60%">
 		<input type="hidden" name="USE_HTTPS" value="N">
 		<input type="checkbox" name="USE_HTTPS" value="Y"<? echo ($USE_HTTPS == 'Y' ? ' checked' : ''); ?>>
@@ -241,7 +241,7 @@ $tabControl->BeginNextTab();
 
 if ($STEP==2)
 {
-	$YANDEX_EXPORT = array_values($YANDEX_EXPORT);
+	$IBLOCK_EXPORT = array_values($IBLOCK_EXPORT);
 	$FINITE = true;
 }
 
@@ -261,7 +261,7 @@ if (2 > $STEP)
 <input type="hidden" name="ACT_FILE" value="<?echo htmlspecialcharsbx($_REQUEST["ACT_FILE"]) ?>">
 <input type="hidden" name="ACTION" value="<?echo htmlspecialcharsbx($ACTION) ?>">
 <input type="hidden" name="STEP" value="<?echo intval($STEP) + 1 ?>">
-<input type="hidden" name="SETUP_FIELDS_LIST" value="YANDEX_EXPORT,SETUP_SERVER_NAME,SETUP_FILE_NAME,USE_HTTPS">
+<input type="hidden" name="SETUP_FIELDS_LIST" value="IBLOCK_EXPORT,SETUP_SERVER_NAME,SETUP_FILE_NAME,USE_HTTPS">
 <input type="submit" value="<?echo ($ACTION=="EXPORT")?GetMessage("CET_EXPORT"):GetMessage("CET_SAVE")?>">
 	<?
 }
