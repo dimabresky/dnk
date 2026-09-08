@@ -58,15 +58,13 @@ After clone: `git submodule update --init --recursive`.
 
 ## Documentation and references
 
-When implementing or debugging, align with internal documentation (paths may be exposed as `@docs` in the workspace):
-
-- `@docs/1C-Bitrix api`
-- `@docs/1C-Bitrix Разработчик курс`
-- `@docs/1C-Bitrix Vue курс`
-- `@docs/IMask`
-- `@docs/Swiperjs`
-
-Public API reference: [Bitrix dev docs](https://dev.1c-bitrix.ru/api_help/).
+| Resource | URL |
+|----------|-----|
+| Курс разработчика 1C-Битрикс | https://dev.1c-bitrix.ru/learning/course/index.php?COURSE_ID=43 |
+| Курс Vue в 1C-Битрикс | https://dev.1c-bitrix.ru/learning/course/index.php?COURSE_ID=176&INDEX=Y |
+| Документация D7 ORM | https://dev.1c-bitrix.ru/api_d7/ |
+| API справка (старое ядро) | https://dev.1c-bitrix.ru/api_help/ |
+| Документация Аспро Премьер | https://aspro.ru/docs/course/?COURSE_ID=69 |
 
 ## Git and delivery
 
