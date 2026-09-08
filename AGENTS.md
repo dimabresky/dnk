@@ -18,6 +18,7 @@ This repository powers **DNK.BY**, a cosmetics e-commerce site on **1C-Bitrix: S
 | Point AJAX endpoints | `local/ajax/` |
 | Custom components (`dnk:*`) | `local/components/dnk/` |
 | Site templates (including Aspro copies) | `bitrix/templates/` (e.g. `aspro-premier_copy`, `aspro-premier-mobile_copy`) |
+| **Shared component templates (desktop + mobile)** | `bitrix/templates/.default/components/<namespace>/<component>/<template>/` — when markup and logic are the same for desktop and mobile site templates |
 | **Custom Bitrix modules** | `local/modules/<vendor>.<name>/` — структура `install/`, `lib/`, `include.php`, см. раздел ниже |
 
 Project-specific layout details are summarized in [`README.md`](README.md).
@@ -52,6 +53,7 @@ After clone: `git submodule update --init --recursive`.
 - **Component templates**:
   - Do **not** manually include `./script.js` or `./style.css` — they are loaded automatically.
   - Do **not** manually include lang files — they are loaded automatically.
+  - If desktop (`aspro-premier_copy`) and mobile (`aspro-premier-mobile_copy`) need the **same** component template (same markup and logic), place it once under `bitrix/templates/.default/components/<namespace>/<component>/<template>/` instead of duplicating into both site templates. Bitrix resolves `.default` for any site template when a site-specific override is absent. Use site-specific template dirs only when desktop and mobile must diverge.
 - **CSS**: add rules in the component’s `styles.css`, or in  
   `bitrix/templates/aspro-premier_copy/css/custom.css` or  
   `bitrix/templates/aspro-premier-mobile_copy/css/custom.css`, depending on context (desktop vs mobile template).
