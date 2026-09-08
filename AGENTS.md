@@ -1,12 +1,13 @@
 # Agent instructions — DNK.BY
 
-This repository powers **DNK.BY**, a cosmetics e-commerce site on **1C-Bitrix: Site Management** (Online Store edition, core **≥ 26.150.0**), using the **Aspro Premier** template ecosystem. Automated/assisted coding agents should follow this document together with [`README.md`](README.md) and workspace Cursor rules (`.cursor/rules/`). When instructions conflict, follow the **narrowest** rule for the task at hand, then **project-specific** rules over generic advice.
+This repository powers **DNK.BY**, a cosmetics e-commerce site on **1C-Bitrix: Site Management** (Online Store edition, core **≥ 26.150.0**), using the **Aspro Premier** template ecosystem. Automated/assisted coding agents should follow this document together with [`README.md`](README.md) and workspace Cursor rules (`.cursor/rules/`). When instructions conflict, follow the order in [If rules conflict](#if-rules-conflict).
 
 ## Role and priorities
 
 - Prefer **Bitrix-native APIs**: standard modules, classes, events, and component APIs.
 - Keep changes **scoped** to the task; match existing patterns (naming, namespaces, PHP style, how components are structured).
 - **Include PHP classes with `use`** where applicable; do not invent parallel frameworks inside the project.
+- Follow the [development principles](#general-principles) below (SOLID, DRY, PSR).
 
 ## Where to put code
 
@@ -44,6 +45,108 @@ Project-specific layout details are summarized in [`README.md`](README.md).
 After clone: `git submodule update --init --recursive`.
 
 **Git** for changes under `local/modules/` — same rules as [Git and delivery](#git-and-delivery): feature branch, Conventional Commits, PR into `dev`, no direct commits to `dev`.
+
+## General principles
+
+- Do not hardcode business logic in component templates, `result_modifier.php`, or `component.php`. `component.php` prepares data for the template; calculations, integrations, and queues belong in php_interface or module services.
+- Keep layers separate:
+  - infrastructure (modules, autoload, install, queues, ORM tables),
+  - domain logic (services, event handlers, agents),
+  - presentation (component templates, include areas, pages).
+- Preserve backward compatibility where it is reasonable — especially for public module APIs and component contracts.
+
+Site-specific custom code belongs in `local/php_interface/` (`*Events`, `*Service`, `*Agent`, `*Table` under `Dnk\PhpInterface`). Put a **new module** under `local/modules/` only when the feature needs install/uninstall, its own schema, or independent versioning. Do not migrate existing php_interface code into modules unless the task explicitly asks for that. Paths: [Where to put code](#where-to-put-code).
+
+## SOLID in this project
+
+### S (Single Responsibility)
+
+- One class / service — one area of responsibility.
+- Established split in php_interface:
+  - `*Events` — Bitrix event handlers (thin: read event data, call a service, return).
+  - `*Service` — domain operations (e.g. `BasketBonusService`, `UserConsentService`, `StickerService` in `dnk.stickers`).
+  - `*Agent` — agent entry points and batch work.
+  - `*Table` — D7 ORM (`DataManager`) for custom tables.
+- Examples: `BasketBonusEvents` + `BasketBonusService`; `OrderExportEvents` + `OrderExportQueueAgent` + `OrderExportQueueTable`.
+- Controllers (if used) stay thin and delegate to services.
+
+### O (Open/Closed)
+
+- Extend behaviour through:
+  - php_interface event classes and `include/events.php`,
+  - custom modules and their public APIs,
+  - Bitrix events (`EventManager`, `RegisterModuleDependences`),
+  - inheritance or decoration only where it fits neighbouring code.
+- Do not patch Bitrix core or stock / Aspro modules. Use events, configuration, or a local module instead.
+
+### L (Liskov Substitution)
+
+- When extending Bitrix or project base classes, do not change method contracts (do not strengthen preconditions or weaken postconditions).
+- Do not add surprises (unexpected exceptions, hidden side effects).
+- If you introduce abstractions (repositories, services), their implementations must be interchangeable.
+
+### I (Interface Segregation)
+
+- Keep interfaces in custom modules small and focused (e.g. a reader vs a writer).
+- Do not create “god” interfaces that force clients to implement unused methods.
+- If an interface grows, split it. Prefer existing concrete `*Service` classes over new interfaces unless multiple implementations are real.
+
+### D (Dependency Inversion)
+
+- Depend on abstractions where it helps, not on concrete Bitrix classes, when that is practical.
+- This repo does **not** use a DI container / `ServiceLocator`. The established pattern is static methods on `Utils`, `*Events`, and `*Service` classes.
+- Prefer constructor injection only for **new** non-static services where it fits; do not retrofit static `Utils` / `*Events` into a container.
+- Avoid `new` of complex services inside domain classes when a shared static API or a factory already exists.
+
+## DRY and reuse
+
+- Avoid duplicating domain logic across components and php_interface classes, and the same event-handler bodies.
+- Extract repeats into `Utils` (see [Where to put code](#where-to-put-code)) or a dedicated `*Service` when `Utils` would become a god class. Use a base component class only if that hierarchy already exists nearby.
+- Do not invent parallel helper libraries (`BitrixHelpers`, `CatalogTools`, etc.).
+- Do not abstract too early: if logic repeats 2–3 times and may diverge, temporary duplication is acceptable with a comment and a refactor note.
+
+## PSR standards and code style
+
+Follow current PSR standards unless a nearby file has a documented exception:
+
+- **PSR-12** — formatting (indentation, braces, spacing, file structure).
+- **PSR-1** — one class / interface / trait per file; PascalCase classes; camelCase methods; `UPPER_CASE` constants.
+- **PSR-4** — for custom **modules** (`local/modules/<vendor>.<name>/lib/` → namespaces like `Dnk\Stickers\...`).
+
+php_interface is **not** PSR-4 directory autoload: classes live in `Dnk\PhpInterface` and must be registered in `Loader::registerAutoLoadClasses` in [`local/php_interface/include/include.php`](local/php_interface/include/include.php). Register every new class there.
+
+Bitrix specifics:
+
+- Existing code still uses `C*` classes and globals (`$APPLICATION`, `$USER`, `$DB`). New code should prefer namespaced D7 APIs (`Bitrix\Main`, `Bitrix\Catalog`, `Bitrix\Iblock`) where the framework allows it.
+
+Style requirements:
+
+- Do not mix an ad-hoc style with PSR in the same file.
+- Component templates (`template.php`) may be more “template-like”, but keep naming and formatting consistent.
+
+## Architecture notes
+
+- **Bootstrapping:** `init.php` only includes `include/include.php`. Autoload and constants live there — not domain logic. Event **registration** belongs in `include/events.php`; handler **implementations** belong in `*Events` classes. Module handlers stay inside the module (`RegisterModuleDependences` / `EventManager`).
+- **Data access:** prefer D7 ORM (`Bitrix\Main\ORM`, Catalog / Iblock Data classes) over ad-hoc `CIBlockElement` queries where practical.
+
+## Refactoring and changes
+
+- For non-trivial work (catalog, orders, integrations), outline a short plan before large edits.
+- When changing existing code: keep or improve SOLID / DRY / PSR alignment; do not add new violations for a “quick fix”. If a temporary violation is necessary, mark it with a comment and how to remove it.
+
+## Tests and quality
+
+- This repository has **no PHPUnit harness** today. For behaviour changes, describe a manual check list: which pages, `dnk:*` components, events, agents, or admin screens to verify.
+- If a test environment is added later, propose readable PHPUnit tests for new module / php_interface domain logic and keep them in sync with behaviour changes — do not delete tests to make a change pass.
+- Manual scenarios should name concrete paths (catalog, checkout, bonus, stickers, feeds) rather than “smoke the site”.
+
+## If rules conflict
+
+1. Explicit user instructions in the current chat.
+2. This `AGENTS.md` (narrowest section for the files you are changing).
+3. Workspace Cursor rules (`.cursor/rules/`) and [`README.md`](README.md).
+
+If a user request conflicts with these principles, follow the user, but note risks (SOLID/DRY/PSR drift, Bitrix upgradeability, maintenance). Project-specific layout in [Where to put code](#where-to-put-code) wins over generic Bitrix “put everything in a module” advice.
 
 ## Bitrix and Aspro conventions
 
@@ -89,4 +192,4 @@ Do not commit secrets (e.g. `bitrix/php_interface/dbconn.php`, `bitrix/.settings
 - New top-level documentation files beyond what maintainers ask for.
 - Changes that break Bitrix upgrade paths or bypass standard extension points without clear justification.
 
-Prefer small, reviewable diffs; every line should serve the task. When in doubt, stay consistent with neighbouring code and Bitrix documentation for the edition and version in use.
+When in doubt, stay consistent with neighbouring code and Bitrix documentation for the edition and version in use.
