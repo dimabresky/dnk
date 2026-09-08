@@ -36,6 +36,7 @@ use Dnk\PhpInterface\UserRegisterExportQueueTable;
 use Dnk\PhpInterface\UserReauthorizeQueueTable;
 use Dnk\PhpInterface\DigiLayerService;
 use Dnk\PhpInterface\DigineticaGlobalFeedExporter;
+use Dnk\PhpInterface\ImshopCatalogFeedExporter;
 use Dnk\PhpInterface\Utils;
 
 $includeDir = __DIR__;
@@ -82,6 +83,7 @@ Loader::registerAutoLoadClasses(null, [
     BlogCommentConsentEvents::class => $classesPath . '/BlogCommentConsentEvents.php',
     DigiLayerService::class => $classesPath . '/DigiLayerService.php',
     DigineticaGlobalFeedExporter::class => $classesPath . '/DigineticaGlobalFeedExporter.php',
+    ImshopCatalogFeedExporter::class => $classesPath . '/ImshopCatalogFeedExporter.php',
 ]);
 
 
