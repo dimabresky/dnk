@@ -35,6 +35,7 @@ use Dnk\PhpInterface\UserConsentService;
 use Dnk\PhpInterface\UserRegisterExportQueueTable;
 use Dnk\PhpInterface\UserReauthorizeQueueTable;
 use Dnk\PhpInterface\DigiLayerService;
+use Dnk\PhpInterface\DigineticaGlobalFeedExporter;
 use Dnk\PhpInterface\Utils;
 
 $includeDir = __DIR__;
@@ -80,6 +81,7 @@ Loader::registerAutoLoadClasses(null, [
     UserConsentEvents::class => $classesPath . '/UserConsentEvents.php',
     BlogCommentConsentEvents::class => $classesPath . '/BlogCommentConsentEvents.php',
     DigiLayerService::class => $classesPath . '/DigiLayerService.php',
+    DigineticaGlobalFeedExporter::class => $classesPath . '/DigineticaGlobalFeedExporter.php',
 ]);
 
 
