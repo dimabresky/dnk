@@ -7,7 +7,7 @@ This repository powers **DNK.BY**, a cosmetics e-commerce site on **1C-Bitrix: S
 - Prefer **Bitrix-native APIs**: standard modules, classes, events, and component APIs.
 - Keep changes **scoped** to the task; match existing patterns (naming, namespaces, PHP style, how components are structured).
 - **Include PHP classes with `use`** where applicable; do not invent parallel frameworks inside the project.
-- Follow the [development principles](#general-principles) below (SOLID, DRY, PSR). Do not replace the established `local/php_interface` layout with a generic “everything in modules + DI” architecture.
+- Follow the [development principles](#general-principles) below (SOLID, DRY, PSR).
 
 ## Where to put code
 
@@ -48,15 +48,14 @@ After clone: `git submodule update --init --recursive`.
 
 ## General principles
 
-- Write code that fits Bitrix Framework and the patterns already used in this repo.
-- Do not hardcode business logic in component templates or `result_modifier.php`.
+- Do not hardcode business logic in component templates, `result_modifier.php`, or `component.php`. `component.php` prepares data for the template; calculations, integrations, and queues belong in php_interface or module services.
 - Keep layers separate:
   - infrastructure (modules, autoload, install, queues, ORM tables),
   - domain logic (services, event handlers, agents),
   - presentation (component templates, include areas, pages).
 - Preserve backward compatibility where it is reasonable — especially for public module APIs and component contracts.
 
-Site-specific custom code belongs in `local/php_interface/` (`*Events`, `*Service`, `*Agent`, `*Table` under `Dnk\PhpInterface`). Put a **new module** under `local/modules/` only when the feature needs install/uninstall, its own schema, or independent versioning. Do not migrate existing php_interface code into modules unless the task explicitly asks for that.
+Site-specific custom code belongs in `local/php_interface/` (`*Events`, `*Service`, `*Agent`, `*Table` under `Dnk\PhpInterface`). Put a **new module** under `local/modules/` only when the feature needs install/uninstall, its own schema, or independent versioning. Do not migrate existing php_interface code into modules unless the task explicitly asks for that. Paths: [Where to put code](#where-to-put-code).
 
 ## SOLID in this project
 
@@ -69,8 +68,6 @@ Site-specific custom code belongs in `local/php_interface/` (`*Events`, `*Servic
   - `*Agent` — agent entry points and batch work.
   - `*Table` — D7 ORM (`DataManager`) for custom tables.
 - Examples: `BasketBonusEvents` + `BasketBonusService`; `OrderExportEvents` + `OrderExportQueueAgent` + `OrderExportQueueTable`.
-- Do not put large business logic in module `include.php`, `init.php`, or `component.php`.
-- In components, `component.php` prepares data for the template; calculations, integrations, and queues belong in php_interface or module services.
 - Controllers (if used) stay thin and delegate to services.
 
 ### O (Open/Closed)
@@ -103,14 +100,8 @@ Site-specific custom code belongs in `local/php_interface/` (`*Events`, `*Servic
 
 ## DRY and reuse
 
-- Avoid duplicating:
-  - domain logic across components and php_interface classes,
-  - the same `CIBlockElement` / `Catalog\ProductTable` (and similar) queries,
-  - the same event-handler bodies.
-- Extract repeats into:
-  - `local/php_interface/include/classes/Utils.php` for small shared helpers,
-  - a dedicated `*Service` when `Utils` would become a god class,
-  - a base component class only if that hierarchy already exists nearby.
+- Avoid duplicating domain logic across components and php_interface classes, and the same event-handler bodies.
+- Extract repeats into `Utils` (see [Where to put code](#where-to-put-code)) or a dedicated `*Service` when `Utils` would become a god class. Use a base component class only if that hierarchy already exists nearby.
 - Do not invent parallel helper libraries (`BitrixHelpers`, `CatalogTools`, etc.).
 - Do not abstract too early: if logic repeats 2–3 times and may diverge, temporary duplication is acceptable with a comment and a refactor note.
 
@@ -127,26 +118,21 @@ php_interface is **not** PSR-4 directory autoload: classes live in `Dnk\PhpInter
 Bitrix specifics:
 
 - Existing code still uses `C*` classes and globals (`$APPLICATION`, `$USER`, `$DB`). New code should prefer namespaced D7 APIs (`Bitrix\Main`, `Bitrix\Catalog`, `Bitrix\Iblock`) where the framework allows it.
-- Do not add large scripts in the site root; use php_interface, modules, components, or `local/tools/` for one-off CLI.
 
 Style requirements:
 
 - Do not mix an ad-hoc style with PSR in the same file.
-- Component templates (`template.php`) may be more “template-like”, but keep naming/formatting sane and keep heavy logic out of them.
+- Component templates (`template.php`) may be more “template-like”, but keep naming and formatting consistent.
 
 ## Architecture notes
 
-- **php_interface vs modules:** site-specific events, services, agents, and custom tables stay in `local/php_interface/`. Modules are for installable, self-contained features (see [Custom Bitrix modules](#custom-bitrix-modules-localmodules)).
-- **Bootstrapping:** `init.php` only includes `include/include.php`. Autoload and constants live there; event **registration** belongs in `include/events.php`; handler **implementations** belong in `*Events` classes. Module handlers stay inside the module (`RegisterModuleDependences` / `EventManager`).
-- **Components:** presentation and light orchestration. Heavy work goes to php_interface or module services. Do not duplicate the same component in two site templates when a shared `.default` template applies.
-- **Events:** extend stock behaviour with Bitrix events, not core patches. Do not inline handler logic in `init.php`.
-- **Data access:** prefer D7 ORM (`Bitrix\Main\ORM`, Catalog / Iblock Data classes) over ad-hoc `CIBlockElement` queries where practical. Put repeated queries and filters into `Utils` or a `*Service`.
+- **Bootstrapping:** `init.php` only includes `include/include.php`. Autoload and constants live there — not domain logic. Event **registration** belongs in `include/events.php`; handler **implementations** belong in `*Events` classes. Module handlers stay inside the module (`RegisterModuleDependences` / `EventManager`).
+- **Data access:** prefer D7 ORM (`Bitrix\Main\ORM`, Catalog / Iblock Data classes) over ad-hoc `CIBlockElement` queries where practical.
 
 ## Refactoring and changes
 
 - For non-trivial work (catalog, orders, integrations), outline a short plan before large edits.
 - When changing existing code: keep or improve SOLID / DRY / PSR alignment; do not add new violations for a “quick fix”. If a temporary violation is necessary, mark it with a comment and how to remove it.
-- Prefer small, incremental diffs that are easy to review in Bitrix (components, events, admin).
 
 ## Tests and quality
 
@@ -206,4 +192,4 @@ Do not commit secrets (e.g. `bitrix/php_interface/dbconn.php`, `bitrix/.settings
 - New top-level documentation files beyond what maintainers ask for.
 - Changes that break Bitrix upgrade paths or bypass standard extension points without clear justification.
 
-Prefer small, reviewable diffs; every line should serve the task. When in doubt, stay consistent with neighbouring code and Bitrix documentation for the edition and version in use.
+When in doubt, stay consistent with neighbouring code and Bitrix documentation for the edition and version in use.
