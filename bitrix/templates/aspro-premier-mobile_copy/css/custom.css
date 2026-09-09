@@ -212,6 +212,10 @@
 		flex-wrap: unset;
 	}
 
+	#basket-root table.basket-items-list-table .basket-items-list-item-wrapper:first-of-type {
+		border-top-width: 0;
+	}
+
 	#basket-root tr.basket-items-list-item-wrapper.basket-items-list-item-container-expend {
 		display: block !important;
 	}
