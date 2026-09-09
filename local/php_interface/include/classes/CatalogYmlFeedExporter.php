@@ -120,6 +120,7 @@ abstract class CatalogYmlFeedExporter
         try {
             $this->writeFeedHeader($targetFp, $siteUrl, $shopName);
             $this->writeCategories($targetFp, $usedSectionIds, $siteUrl);
+            $this->writeAfterCategories($targetFp, $siteUrl);
             fwrite($targetFp, "    <offers>\n");
             $this->appendFile($targetFp, $offersTempPath);
             fwrite($targetFp, "    </offers>\n");
@@ -160,8 +161,7 @@ abstract class CatalogYmlFeedExporter
      */
     protected function writeFeedHeader($fp, string $siteUrl, string $shopName): void
     {
-        $date = (new DateTimeImmutable('now', new DateTimeZone(date_default_timezone_get() ?: 'Europe/Minsk')))
-            ->format('Y-m-d\TH:i:sP');
+        $date = $this->formatYmlCatalogDate();
 
         fwrite($fp, '<?xml version="1.0" encoding="UTF-8"?>' . "\n");
         fwrite($fp, '<yml_catalog date="' . self::escapeXml($date) . '">' . "\n");
@@ -173,9 +173,27 @@ abstract class CatalogYmlFeedExporter
     }
 
     /**
+     * Значение атрибута date у yml_catalog.
+     */
+    protected function formatYmlCatalogDate(): string
+    {
+        return (new DateTimeImmutable('now', new DateTimeZone(date_default_timezone_get() ?: 'Europe/Minsk')))
+            ->format('Y-m-d\TH:i:sP');
+    }
+
+    /**
      * @param resource $fp
      */
     protected function writeFeedHeaderExtras($fp): void
+    {
+    }
+
+    /**
+     * Хук после блока categories (vendors и т.п.).
+     *
+     * @param resource $fp
+     */
+    protected function writeAfterCategories($fp, string $siteUrl): void
     {
     }
 
@@ -551,15 +569,35 @@ abstract class CatalogYmlFeedExporter
         $groupId = $this->resolveGroupId($props[self::GROUPING_PROPERTY_CODE] ?? null);
 
         $open = '      <offer id="' . self::escapeXml((string) $productId) . '" available="' . $available . '"';
-        if ($groupId !== '') {
+        if ($groupId !== '' && $this->shouldWriteGroupId($groupId, $productId)) {
             $open .= ' group_id="' . self::escapeXml($groupId) . '"';
         }
+        $open .= $this->extraOfferOpenAttributes($fields, $props);
         $open .= '>';
 
         return [
             $open,
             '        <name><![CDATA[' . self::sanitizeCdata($name) . ']]></name>',
         ];
+    }
+
+    /**
+     * Дополнительный фильтр group_id (пустое значение уже отсекается).
+     */
+    protected function shouldWriteGroupId(string $groupId, int $productId): bool
+    {
+        return true;
+    }
+
+    /**
+     * Дополнительные атрибуты открывающего тега offer.
+     *
+     * @param array<string, mixed> $fields
+     * @param array<string, mixed> $props
+     */
+    protected function extraOfferOpenAttributes(array $fields, array $props): string
+    {
+        return '';
     }
 
     /**
@@ -761,6 +799,34 @@ abstract class CatalogYmlFeedExporter
     }
 
     /**
+     * Имя атрибута ссылки категории (url для Diginetica, universalLink для IMSHOP).
+     */
+    protected function categoryLinkAttributeName(): string
+    {
+        return 'url';
+    }
+
+    /**
+     * Дополнительные поля GetList разделов.
+     *
+     * @return list<string>
+     */
+    protected function extraCategorySelectFields(): array
+    {
+        return [];
+    }
+
+    /**
+     * Дополнительные атрибуты тега category.
+     *
+     * @param array<string, mixed> $section
+     */
+    protected function extraCategoryAttributes(array $section, string $siteUrl): string
+    {
+        return '';
+    }
+
+    /**
      * @param resource $fp
      * @param array<int, true> $usedSectionIds
      */
@@ -776,6 +842,10 @@ abstract class CatalogYmlFeedExporter
         }
 
         $sections = [];
+        $select = array_values(array_unique(array_merge(
+            ['ID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'CODE', 'EXTERNAL_ID', 'NAME', 'SECTION_PAGE_URL'],
+            $this->extraCategorySelectFields()
+        )));
         $res = CIBlockSection::GetList(
             ['LEFT_MARGIN' => 'ASC'],
             [
@@ -784,7 +854,7 @@ abstract class CatalogYmlFeedExporter
                 'GLOBAL_ACTIVE' => 'Y',
             ],
             false,
-            ['ID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'CODE', 'EXTERNAL_ID', 'NAME', 'SECTION_PAGE_URL']
+            $select
         );
         while ($section = $res->GetNext()) {
             $id = (int) ($section['ID'] ?? 0);
@@ -812,8 +882,10 @@ abstract class CatalogYmlFeedExporter
                 if (preg_match('#^https?://#i', $sectionUrl) !== 1) {
                     $sectionUrl = $siteUrl . $sectionUrl;
                 }
-                $attrs .= ' url="' . self::escapeXml($sectionUrl) . '"';
+                $linkAttr = $this->categoryLinkAttributeName();
+                $attrs .= ' ' . $linkAttr . '="' . self::escapeXml($sectionUrl) . '"';
             }
+            $attrs .= $this->extraCategoryAttributes($section, $siteUrl);
 
             fwrite(
                 $fp,
