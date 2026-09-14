@@ -24,6 +24,13 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
         'STOCK' => 'Скидка',
     ];
 
+    private const SHADES_IBLOCK_ID = 47;
+
+    private const GROUP_ID_LINKS_PARAM_NAMES = [
+        Utils::SKU_VARIANT_MODE_SHADE => 'Оттенок',
+        Utils::SKU_VARIANT_MODE_VOLUME => 'Объем',
+    ];
+
     private string $currency = self::DEFAULT_CURRENCY;
 
     /**
@@ -32,6 +39,13 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
      * @var array<string, string>
      */
     private array $vendors = [];
+
+    /**
+     * Кэш вариантов SKU на время экспорта: iblockId:groupingValue => payload.
+     *
+     * @var array<string, array{mode: string, items: list<array{id: int, value: string, imageFileId: int}>}>
+     */
+    private array $skuGroupVariantItemsCache = [];
 
     /**
      * Пишет статический UTF-8 YML в $absoluteFilePath и возвращает число офферов.
@@ -51,6 +65,7 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
     {
         $this->currency = $this->resolveBaseCurrency();
         $this->vendors = [];
+        $this->skuGroupVariantItemsCache = [];
     }
 
     protected function formatYmlCatalogDate(): string
@@ -146,7 +161,7 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
 
     protected function shouldWriteGroupId(string $groupId, int $productId): bool
     {
-        return $groupId !== (string) $productId;
+        return false;
     }
 
     /**
@@ -220,9 +235,79 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
             $lines[] = '        ' . $paramLine;
         }
 
+        $this->appendGroupIdLinks($lines, $fields, $props, $siteUrl);
+
         $lines[] = '      </offer>';
 
         return implode("\n", $lines) . "\n";
+    }
+
+    /**
+     * @param list<string> $lines
+     * @param array<string, mixed> $fields
+     * @param array<string, mixed> $props
+     */
+    private function appendGroupIdLinks(array &$lines, array $fields, array $props, string $siteUrl): void
+    {
+        $productId = (int) ($fields['ID'] ?? 0);
+        $iblockId = (int) ($fields['IBLOCK_ID'] ?? 0);
+        $groupingValue = $this->resolveGroupId($props[self::GROUPING_PROPERTY_CODE] ?? null);
+        if ($productId <= 0 || $iblockId <= 0 || $groupingValue === '') {
+            return;
+        }
+
+        $payload = $this->getCachedSkuGroupVariantItems($iblockId, $groupingValue);
+        $items = $payload['items'];
+        if (count($items) < 2) {
+            return;
+        }
+
+        $currentInGroup = false;
+        foreach ($items as $item) {
+            if ($item['id'] === $productId) {
+                $currentInGroup = true;
+                break;
+            }
+        }
+        if (!$currentInGroup) {
+            return;
+        }
+
+        $paramName = self::GROUP_ID_LINKS_PARAM_NAMES[$payload['mode']] ?? '';
+        if ($paramName === '') {
+            return;
+        }
+
+        $lines[] = '        <groupIdLinks>';
+        $lines[] = '          <groupIdLinksParam name="' . self::escapeXml($paramName) . '">';
+        foreach ($items as $item) {
+            $attrs = ' value="' . self::escapeXml($item['value']) . '"'
+                . ' groupId="' . self::escapeXml((string) $item['id']) . '"';
+            $imageUrl = $this->fileIdToUrl((int) ($item['imageFileId'] ?? 0), $siteUrl);
+            if (preg_match('#^https://#i', $imageUrl) === 1) {
+                $attrs .= ' imageUrl="' . self::escapeXml($imageUrl) . '"';
+            }
+            $lines[] = '            <groupIdLink' . $attrs . '/>';
+        }
+        $lines[] = '          </groupIdLinksParam>';
+        $lines[] = '        </groupIdLinks>';
+    }
+
+    /**
+     * @return array{mode: string, items: list<array{id: int, value: string, imageFileId: int}>}
+     */
+    private function getCachedSkuGroupVariantItems(int $iblockId, string $groupingValue): array
+    {
+        $cacheKey = $iblockId . ':' . md5($groupingValue);
+        if (!isset($this->skuGroupVariantItemsCache[$cacheKey])) {
+            $this->skuGroupVariantItemsCache[$cacheKey] = Utils::getSkuGroupVariantItems(
+                $iblockId,
+                $groupingValue,
+                self::SHADES_IBLOCK_ID
+            );
+        }
+
+        return $this->skuGroupVariantItemsCache[$cacheKey];
     }
 
     /**
