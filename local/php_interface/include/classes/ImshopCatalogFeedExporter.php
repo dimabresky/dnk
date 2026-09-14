@@ -363,12 +363,26 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
      */
     private function resolveDescription(array $fields): string
     {
-        $detail = trim((string) ($fields['~DETAIL_TEXT'] ?? $fields['DETAIL_TEXT'] ?? ''));
+        $detail = $this->toPlainText((string) ($fields['~DETAIL_TEXT'] ?? $fields['DETAIL_TEXT'] ?? ''));
         if ($detail !== '') {
             return $detail;
         }
 
-        return trim((string) ($fields['~PREVIEW_TEXT'] ?? $fields['PREVIEW_TEXT'] ?? ''));
+        return $this->toPlainText((string) ($fields['~PREVIEW_TEXT'] ?? $fields['PREVIEW_TEXT'] ?? ''));
+    }
+
+    private function toPlainText(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return '';
+        }
+
+        $plain = html_entity_decode(strip_tags($raw), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $plain = preg_replace('/[ \t]+/u', ' ', $plain) ?? $plain;
+        $plain = preg_replace('/\R{3,}/u', "\n\n", $plain) ?? $plain;
+
+        return trim($plain);
     }
 
     /**
