@@ -24,8 +24,6 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
         'STOCK' => 'Скидка',
     ];
 
-    private const SHADES_IBLOCK_ID = 47;
-
     private const GROUP_ID_LINKS_PARAM_NAMES = [
         Utils::SKU_VARIANT_MODE_SHADE => 'Оттенок',
         Utils::SKU_VARIANT_MODE_VOLUME => 'Объем',
@@ -308,7 +306,7 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
             $this->skuGroupVariantItemsCache[$cacheKey] = Utils::getSkuGroupVariantItems(
                 $iblockId,
                 $groupingValue,
-                self::SHADES_IBLOCK_ID
+                defined('DNK_SHADES_IBLOCK_ID') ? (int) DNK_SHADES_IBLOCK_ID : 0
             );
         }
 
