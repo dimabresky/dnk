@@ -2390,7 +2390,7 @@ final class Utils
 
             return [
                 'mode' => $mode,
-                'items' => self::uniqueSkuGroupVariantItemsByValue($items),
+                'items' => $items,
             ];
         }
 
@@ -2432,7 +2432,7 @@ final class Utils
 
         return [
             'mode' => self::SKU_VARIANT_MODE_SHADE,
-            'items' => self::uniqueSkuGroupVariantItemsByValue($items),
+            'items' => $items,
         ];
     }
 
@@ -2637,26 +2637,6 @@ final class Utils
         }
 
         return $map;
-    }
-
-    /**
-     * @param list<array{id: int, value: string, imageFileId: int}> $items
-     * @return list<array{id: int, value: string, imageFileId: int}>
-     */
-    private static function uniqueSkuGroupVariantItemsByValue(array $items): array
-    {
-        $seen = [];
-        $unique = [];
-        foreach ($items as $item) {
-            $value = (string) ($item['value'] ?? '');
-            if ($value === '' || isset($seen[$value])) {
-                continue;
-            }
-            $seen[$value] = true;
-            $unique[] = $item;
-        }
-
-        return $unique;
     }
 
     /**

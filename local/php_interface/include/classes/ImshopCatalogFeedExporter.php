@@ -251,7 +251,7 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
     {
         $productId = (int) ($fields['ID'] ?? 0);
         $iblockId = (int) ($fields['IBLOCK_ID'] ?? 0);
-        $groupingValue = $this->resolveGroupId($props[self::GROUPING_PROPERTY_CODE] ?? null);
+        $groupingValue = $this->resolveSkuGroupingValue($props[self::GROUPING_PROPERTY_CODE] ?? null);
         if ($productId <= 0 || $iblockId <= 0 || $groupingValue === '') {
             return;
         }
@@ -270,6 +270,11 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
             }
         }
         if (!$currentInGroup) {
+            return;
+        }
+
+        $items = $this->uniqueGroupIdLinkItemsByValue($items);
+        if (count($items) < 2) {
             return;
         }
 
@@ -308,6 +313,51 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
         }
 
         return $this->skuGroupVariantItemsCache[$cacheKey];
+    }
+
+    /**
+     * Сырое значение GRUPPIROVKATOVAROVNASAYTE для фильтра SKU, без DISPLAY_VALUE и сжатия пробелов.
+     *
+     * @param array<string, mixed>|null $property
+     */
+    private function resolveSkuGroupingValue(?array $property): string
+    {
+        if ($property === null) {
+            return '';
+        }
+
+        $value = $property['~VALUE'] ?? $property['VALUE'] ?? null;
+        if (is_array($value)) {
+            $value = !empty($value) ? reset($value) : null;
+            if (is_array($value)) {
+                $value = $value['TEXT'] ?? $value['VALUE'] ?? reset($value);
+            }
+        }
+        if ($value === null || $value === '' || $value === false) {
+            return '';
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * @param list<array{id: int, value: string, imageFileId: int}> $items
+     * @return list<array{id: int, value: string, imageFileId: int}>
+     */
+    private function uniqueGroupIdLinkItemsByValue(array $items): array
+    {
+        $seen = [];
+        $unique = [];
+        foreach ($items as $item) {
+            $value = (string) ($item['value'] ?? '');
+            if ($value === '' || isset($seen[$value])) {
+                continue;
+            }
+            $seen[$value] = true;
+            $unique[] = $item;
+        }
+
+        return $unique;
     }
 
     /**
