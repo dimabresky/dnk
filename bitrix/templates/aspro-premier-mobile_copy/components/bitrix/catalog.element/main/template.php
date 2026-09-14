@@ -857,7 +857,7 @@ if ($arParams['USE_GIFTS_DETAIL'] === 'Y') {
         "CACHE_TIME" => 3600,
         "IBLOCK_ID" => $arResult["IBLOCK_ID"],
         "ELEMENT_ID" => $arResult["ID"],
-        "SHADES_IBLOCK_ID" => 47
+        "SHADES_IBLOCK_ID" => DNK_SHADES_IBLOCK_ID
     ],
     false
 );?>

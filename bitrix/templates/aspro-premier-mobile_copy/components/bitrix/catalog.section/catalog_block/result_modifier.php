@@ -189,7 +189,7 @@ if (!empty($arResult['ITEMS'])) {
     }
     $skuExtraCountMap = Utils::getSkuGroupExtraCountMap(
         (int) $arParams['IBLOCK_ID'],
-        47,
+        (int) DNK_SHADES_IBLOCK_ID,
         $pageElementIds
     );
     foreach ($arResult['ITEMS'] as $itemKey => $arCatalogItem) {
