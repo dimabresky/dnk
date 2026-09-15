@@ -2859,4 +2859,72 @@ final class Utils
             $found[$code] = $ids[0];
         }
     }
+
+    /**
+     * Outputs rel=canonical for a catalog section URL, not the current request URL.
+     * Callers must pass the section page path so smart-filter SEF, pagination and sort stay out of canonical.
+     */
+    public static function addCatalogSectionCanonicalUrl(string $sectionPageUrl): void
+    {
+        $sectionPageUrl = trim($sectionPageUrl);
+        if ($sectionPageUrl === '' || str_contains($sectionPageUrl, '#')) {
+            return;
+        }
+
+        $request = Context::getCurrent()->getRequest();
+        if ($request->isAjaxRequest()) {
+            return;
+        }
+
+        if (class_exists(\TSolution::class) && \TSolution::checkAjaxRequest()) {
+            return;
+        }
+
+        if (!preg_match('#^https?://#i', $sectionPageUrl)) {
+            $sectionPageUrl = (string) \CHTTP::URN2URI($sectionPageUrl);
+        }
+
+        if ($sectionPageUrl === '') {
+            return;
+        }
+
+        global $APPLICATION;
+        $APPLICATION->AddHeadString(
+            '<link rel="canonical" href="' . htmlspecialcharsbx($sectionPageUrl) . '" />',
+            true
+        );
+    }
+
+    /**
+     * Resolves SECTION_PAGE_URL via CIBlockSection::GetNext() (computed field, not stored in DB).
+     */
+    public static function getIblockSectionPageUrl(int $iblockId, int $sectionId): string
+    {
+        if ($iblockId <= 0 || $sectionId <= 0 || !Loader::includeModule('iblock')) {
+            return '';
+        }
+
+        $rs = \CIBlockSection::GetList(
+            [],
+            [
+                'IBLOCK_ID' => $iblockId,
+                'ID' => $sectionId,
+                'GLOBAL_ACTIVE' => 'Y',
+            ],
+            false,
+            ['ID', 'IBLOCK_ID', 'CODE', 'EXTERNAL_ID', 'IBLOCK_SECTION_ID', 'SECTION_PAGE_URL']
+        );
+
+        $row = $rs->GetNext();
+        if (!is_array($row)) {
+            return '';
+        }
+
+        $sectionPageUrl = trim((string) ($row['SECTION_PAGE_URL'] ?? ''));
+        if ($sectionPageUrl === '' || str_contains($sectionPageUrl, '#')) {
+            return '';
+        }
+
+        return $sectionPageUrl;
+    }
 }

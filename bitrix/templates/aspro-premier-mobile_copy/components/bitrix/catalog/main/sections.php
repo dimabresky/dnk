@@ -1,10 +1,13 @@
 <?
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 
+use Dnk\PhpInterface\Utils;
+
 $this->setFrameMode(true);
 
 global $arTheme, $APPLICATION;
 $APPLICATION->AddViewContent('right_block_class', 'catalog_page ');
+Utils::addCatalogSectionCanonicalUrl((string) ($arResult['FOLDER'] ?? ''));
 $APPLICATION->SetPageProperty('MENU', 'N');
 ?>
 <div class="main-wrapper flexbox flexbox--direction-row">
