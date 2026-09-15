@@ -59,7 +59,7 @@ if ($arResult['VARIABLES']['SECTION_ID'] > 0) {
     $arSectionFilter = ['GLOBAL_ACTIVE' => 'Y', '=CODE' => $arResult['VARIABLES']['SECTION_CODE'], 'IBLOCK_ID' => $arParams['IBLOCK_ID']];
 }
 if ($arSectionFilter) {
-    $section = TSolution\Cache::CIBlockSection_GetList(['CACHE' => ['MULTI' => 'N', 'TAG' => TSolution\Cache::GetIBlockCacheTag($arParams['IBLOCK_ID'])]], TSolution::makeSectionFilterInRegion($arSectionFilter), false, ['ID', 'IBLOCK_ID', 'NAME', "PICTURE", "DETAIL_PICTURE", 'DESCRIPTION', 'UF_SECTION_DESCR', 'UF_FILTER_VIEW', 'UF_OFFERS_TYPE', 'UF_TABLE_PROPS', 'UF_INCLUDE_SUBSECTION', 'UF_LINKED_BANNERS', $arParams['SECTION_DISPLAY_PROPERTY'], 'IBLOCK_SECTION_ID', 'DEPTH_LEVEL', 'LEFT_MARGIN', 'RIGHT_MARGIN',  "SectionValues", "UF_CATALOG_ICON", 'SECTION_PAGE_URL']);
+    $section = TSolution\Cache::CIBlockSection_GetList(['CACHE' => ['MULTI' => 'N', 'TAG' => TSolution\Cache::GetIBlockCacheTag($arParams['IBLOCK_ID'])]], TSolution::makeSectionFilterInRegion($arSectionFilter), false, ['ID', 'IBLOCK_ID', 'CODE', 'EXTERNAL_ID', 'NAME', "PICTURE", "DETAIL_PICTURE", 'DESCRIPTION', 'UF_SECTION_DESCR', 'UF_FILTER_VIEW', 'UF_OFFERS_TYPE', 'UF_TABLE_PROPS', 'UF_INCLUDE_SUBSECTION', 'UF_LINKED_BANNERS', $arParams['SECTION_DISPLAY_PROPERTY'], 'IBLOCK_SECTION_ID', 'DEPTH_LEVEL', 'LEFT_MARGIN', 'RIGHT_MARGIN',  "SectionValues", "UF_CATALOG_ICON", 'SECTION_PAGE_URL']);
 }
 
 $typeSKU = '';
@@ -67,7 +67,7 @@ $bSetElementsLineRow = false;
 
 if ($section) {
     $sectionPageUrl = trim((string) ($section['SECTION_PAGE_URL'] ?? ''));
-    if ($sectionPageUrl === '') {
+    if ($sectionPageUrl === '' || str_contains($sectionPageUrl, '#')) {
         $sectionPageUrl = Utils::getIblockSectionPageUrl((int) $section['IBLOCK_ID'], (int) $section['ID']);
     }
     Utils::addCatalogSectionCanonicalUrl($sectionPageUrl);

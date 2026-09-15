@@ -2867,7 +2867,7 @@ final class Utils
     public static function addCatalogSectionCanonicalUrl(string $sectionPageUrl): void
     {
         $sectionPageUrl = trim($sectionPageUrl);
-        if ($sectionPageUrl === '') {
+        if ($sectionPageUrl === '' || str_contains($sectionPageUrl, '#')) {
             return;
         }
 
@@ -2912,7 +2912,7 @@ final class Utils
                 'GLOBAL_ACTIVE' => 'Y',
             ],
             false,
-            ['ID', 'IBLOCK_ID', 'SECTION_PAGE_URL']
+            ['ID', 'IBLOCK_ID', 'CODE', 'EXTERNAL_ID', 'IBLOCK_SECTION_ID', 'SECTION_PAGE_URL']
         );
 
         $row = $rs->GetNext();
@@ -2920,6 +2920,11 @@ final class Utils
             return '';
         }
 
-        return trim((string) ($row['SECTION_PAGE_URL'] ?? ''));
+        $sectionPageUrl = trim((string) ($row['SECTION_PAGE_URL'] ?? ''));
+        if ($sectionPageUrl === '' || str_contains($sectionPageUrl, '#')) {
+            return '';
+        }
+
+        return $sectionPageUrl;
     }
 }
