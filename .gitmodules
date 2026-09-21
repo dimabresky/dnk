@@ -4,3 +4,6 @@
 [submodule "local/modules/bx.imagewebp"]
 	path = local/modules/bx.imagewebp
 	url = https://github.com/dimabresky/bx.imagewebp.git
+[submodule "local/modules/bx.imshop.integration"]
+	path = local/modules/bx.imshop.integration
+	url = https://github.com/dimabresky/bx.imshop.integration.git
