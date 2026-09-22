@@ -10,7 +10,7 @@ $bIncludedModule = \Bitrix\Main\Loader::includeModule('aspro.premier');
 <html lang="<?=LANGUAGE_ID?>">
 	<head>
                 <?include $_SERVER['DOCUMENT_ROOT'] . '/include/header/google_metrics_includer.php'?>
-                
+                <?include $_SERVER['DOCUMENT_ROOT'] . '/include/header/engagelayer_includer.php'?>
 		<title><?$APPLICATION->ShowTitle()?></title>
 		<?if($bIncludedModule):?><?MSolution::start();?><?endif;?>
                 <?include $_SERVER['DOCUMENT_ROOT'] . '/include/header/diginetica/diginetica_inc.php'?>
