@@ -1,1 +1,3 @@
+<?if($GLOBALS['USER']->IsAdmin()):?>
 <script data-skip-moving="true" async src="https://engagelayer.io/widget.js" data-public-key="n556l_9tMm3Iy87gCEhAnW-F"></script>
+<?endif;?>
