@@ -41,6 +41,7 @@ Project-specific layout details are summarized in [`README.md`](README.md).
 | `dnk.stickers` | HIT sticker assignment tracking (NEW / «Новинка»), remember/expire agents — see [`local/modules/dnk.stickers/README.md`](local/modules/dnk.stickers/README.md) |
 | `sms.traffic` | SMS via SmartDelivery as Bitrix `messageservice` sender — **git submodule** |
 | `bx.imagewebp` | Async iblock image → WebP — **git submodule** |
+| `bx.imshop.integration` | IMSHOP webhook-и, расчёт доставок — **git submodule**, вход `POST /local/imshop/deliveries` |
 
 After clone: `git submodule update --init --recursive`.
 

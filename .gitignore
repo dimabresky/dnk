@@ -110,6 +110,9 @@
 !/include/mainpage/components/seo/
 !/include/mainpage/components/seo/**
 
+# --- Imshop docs (local only) ---
+/local/imshopdocs/
+
 # --- IDE / OS ---
 .idea/
 .vscode/
