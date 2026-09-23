@@ -6,6 +6,7 @@ use Aspro\Bonus\Enums\HistoryOperations as BonusHistoryOperationsEnum;
 use Aspro\Bonus\Helper as BonusHelper;
 use Aspro\Bonus\History\User as BonusUser;
 use Aspro\Bonus\ORM\HistoryOperationsTable;
+use Bitrix\Blog\CommentTable;
 use Bitrix\Iblock\ElementTable;
 use Bitrix\Main\Context;
 use Bitrix\Main\Loader;
@@ -16,6 +17,7 @@ use Bitrix\Main\UserPhoneAuthTable;
 use Bitrix\Main\UserTable;
 use Bitrix\Main\Web\HttpClient;
 use Bitrix\Sale\BasketItemBase;
+use Bitrix\Sale\Internals\BasketTable;
 
 /**
  * Общие вспомогательные методы для php_interface.
@@ -38,6 +40,10 @@ final class Utils
     public const CATALOG_IMPORT_CODE_PROPERTY_PRIMARY = 'CML2_BAR_CODE';
 
     public const CATALOG_IMPORT_CODE_PROPERTY_FALLBACK = 'SHTRIKHKOD';
+
+    private const FINISHED_ORDER_STATUS_ID = 'F';
+
+    private const REVIEW_COMMENT_ANCHOR = '#catalog_comments';
 
     /** Наименования уровней клиента (для отображения в ЛК). */
     private const BONUS_CLIENT_LEVEL_NAMES = [
@@ -2926,5 +2932,240 @@ final class Utils
         }
 
         return $sectionPageUrl;
+    }
+
+    /**
+     * Товары из завершённых заказов (статус F), по которым пользователь ещё не оставил отзыв.
+     * Порядок: от более нового заказа к более старому.
+     *
+     * @return list<array{id: int, name: string, picture: string, url: string}>
+     */
+    public static function getProductsAwaitingReview(int $userId, string $siteId = ''): array
+    {
+        if ($userId <= 0 || !defined('DNK_CATALOG_IBLOCK_ID') || (int) DNK_CATALOG_IBLOCK_ID <= 0) {
+            return [];
+        }
+
+        $siteId = trim($siteId);
+        if ($siteId === '' && defined('SITE_ID')) {
+            $siteId = (string) SITE_ID;
+        }
+        if ($siteId === '') {
+            return [];
+        }
+
+        if (
+            !Loader::includeModule('sale')
+            || !Loader::includeModule('iblock')
+            || !Loader::includeModule('catalog')
+        ) {
+            return [];
+        }
+
+        $elementIds = self::collectPurchasedCatalogElementIds($userId, $siteId);
+        if ($elementIds === []) {
+            return [];
+        }
+
+        $products = self::loadCatalogProductsForReview($elementIds);
+        if ($products === []) {
+            return [];
+        }
+
+        $reviewedPostIds = self::findReviewedBlogPostIds($userId, $products);
+
+        $awaiting = [];
+        foreach ($elementIds as $elementId) {
+            if (!isset($products[$elementId])) {
+                continue;
+            }
+
+            $product = $products[$elementId];
+            if ($product['post_id'] > 0 && isset($reviewedPostIds[$product['post_id']])) {
+                continue;
+            }
+
+            $awaiting[] = [
+                'id' => $elementId,
+                'name' => $product['name'],
+                'picture' => $product['picture'],
+                'url' => $product['url'],
+            ];
+        }
+
+        return $awaiting;
+    }
+
+    /**
+     * Уникальные ID элементов каталога из корзин завершённых заказов, от нового заказа к старому.
+     *
+     * @return list<int>
+     */
+    private static function collectPurchasedCatalogElementIds(int $userId, string $siteId): array
+    {
+        $rows = BasketTable::getList([
+            'select' => ['ID', 'PRODUCT_ID'],
+            'filter' => [
+                '=ORDER.USER_ID' => $userId,
+                '=ORDER.STATUS_ID' => self::FINISHED_ORDER_STATUS_ID,
+                '=ORDER.CANCELED' => 'N',
+                '=ORDER.LID' => $siteId,
+                '=MODULE' => 'catalog',
+                '>ORDER_ID' => 0,
+                '>PRODUCT_ID' => 0,
+            ],
+            'order' => [
+                'ORDER.DATE_INSERT' => 'DESC',
+                'ID' => 'ASC',
+            ],
+        ]);
+
+        $productIds = [];
+        while ($row = $rows->fetch()) {
+            $productId = (int) ($row['PRODUCT_ID'] ?? 0);
+            if ($productId > 0) {
+                $productIds[] = $productId;
+            }
+        }
+
+        if ($productIds === []) {
+            return [];
+        }
+
+        $parentsByOfferId = \CCatalogSku::getProductList(array_values(array_unique($productIds)));
+        if (!is_array($parentsByOfferId)) {
+            $parentsByOfferId = [];
+        }
+
+        $elementIds = [];
+        $seen = [];
+        foreach ($productIds as $productId) {
+            $elementId = (int) ($parentsByOfferId[$productId]['ID'] ?? $productId);
+            if ($elementId <= 0 || isset($seen[$elementId])) {
+                continue;
+            }
+
+            $seen[$elementId] = true;
+            $elementIds[] = $elementId;
+        }
+
+        return $elementIds;
+    }
+
+    /**
+     * Активные товары каталога с адресом карточки и ID поста блога отзывов.
+     *
+     * @param list<int> $elementIds
+     * @return array<int, array{name: string, picture: string, url: string, post_id: int}>
+     */
+    private static function loadCatalogProductsForReview(array $elementIds): array
+    {
+        $catalogIblockId = (int) DNK_CATALOG_IBLOCK_ID;
+        $certificateIblockId = defined('DNK_CERTIFICATE_CATALOG_IBLOCK_ID')
+            ? (int) DNK_CERTIFICATE_CATALOG_IBLOCK_ID
+            : 0;
+        if ($certificateIblockId > 0 && $certificateIblockId === $catalogIblockId) {
+            return [];
+        }
+
+        $res = \CIBlockElement::GetList(
+            [],
+            [
+                'IBLOCK_ID' => $catalogIblockId,
+                'ID' => $elementIds,
+                'ACTIVE' => 'Y',
+            ],
+            false,
+            false,
+            [
+                'ID',
+                'IBLOCK_ID',
+                'IBLOCK_SECTION_ID',
+                'CODE',
+                'EXTERNAL_ID',
+                'IBLOCK_CODE',
+                'IBLOCK_EXTERNAL_ID',
+                'IBLOCK_TYPE_ID',
+                'NAME',
+                'PREVIEW_PICTURE',
+                'DETAIL_PICTURE',
+                'DETAIL_PAGE_URL',
+                'PROPERTY_BLOG_POST_ID',
+            ]
+        );
+
+        $products = [];
+        while ($row = $res->GetNext(false)) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $elementId = (int) ($row['ID'] ?? 0);
+            $detailUrl = trim((string) ($row['DETAIL_PAGE_URL'] ?? ''));
+            if ($elementId <= 0 || $detailUrl === '' || str_contains($detailUrl, '#')) {
+                continue;
+            }
+
+            $pictureId = (int) ($row['PREVIEW_PICTURE'] ?? 0);
+            if ($pictureId <= 0) {
+                $pictureId = (int) ($row['DETAIL_PICTURE'] ?? 0);
+            }
+            $picture = $pictureId > 0 ? (string) \CFile::GetPath($pictureId) : '';
+
+            $products[$elementId] = [
+                'name' => trim((string) ($row['NAME'] ?? '')),
+                'picture' => $picture,
+                'url' => $detailUrl . self::REVIEW_COMMENT_ANCHOR,
+                'post_id' => (int) ($row['PROPERTY_BLOG_POST_ID_VALUE'] ?? 0),
+            ];
+        }
+
+        return $products;
+    }
+
+    /**
+     * ID постов блога, на которые пользователь уже оставил корневой отзыв.
+     *
+     * @param array<int, array{name: string, picture: string, url: string, post_id: int}> $products
+     * @return array<int, true>
+     */
+    private static function findReviewedBlogPostIds(int $userId, array $products): array
+    {
+        if (!Loader::includeModule('blog')) {
+            return [];
+        }
+
+        $postIds = [];
+        foreach ($products as $product) {
+            if ($product['post_id'] > 0) {
+                $postIds[$product['post_id']] = $product['post_id'];
+            }
+        }
+        if ($postIds === []) {
+            return [];
+        }
+
+        $comments = CommentTable::getList([
+            'select' => ['POST_ID'],
+            'filter' => [
+                '=AUTHOR_ID' => $userId,
+                '@POST_ID' => array_values($postIds),
+                [
+                    'LOGIC' => 'OR',
+                    ['=PARENT_ID' => null],
+                    ['=PARENT_ID' => 0],
+                ],
+            ],
+        ]);
+
+        $reviewed = [];
+        while ($comment = $comments->fetch()) {
+            $postId = (int) ($comment['POST_ID'] ?? 0);
+            if ($postId > 0) {
+                $reviewed[$postId] = true;
+            }
+        }
+
+        return $reviewed;
     }
 }
