@@ -19,18 +19,17 @@ $arOptions = [
 	'init' => false,
 	'loop' => false,
 	'countSlides' => $count,
-	'slidesPerView' => 'auto',
-	'freeMode' => [
-		'enabled' => true,
-		'momentum' => true,
-		'sticky' => true,
-	],
+	'slidesPerView' => 1,
 	'spaceBetween' => 12,
 	'pagination' => false,
 	'watchSlidesProgress' => true,
+	'navigation' => [
+		'prevEl' => '.products-need-review--slider__wrap .swiper-button-prev',
+		'nextEl' => '.products-need-review--slider__wrap .swiper-button-next',
+	],
 	'breakpoints' => [
-		601 => [
-			'slidesPerView' => 'auto',
+		768 => [
+			'slidesPerView' => 2,
 			'spaceBetween' => 24,
 		],
 	],
@@ -78,11 +77,26 @@ $arOptions = [
 	<?endif;?>
 </div>
 <script>
-	document.addEventListener('DOMContentLoaded', function () {
-		if (typeof initSwiperSlider === 'function') {
-			initSwiperSlider();
+	(function () {
+		var slider = document.querySelector('.products-need-review--slider');
+		if (!slider) {
+			return;
 		}
-	});
+
+		var start = function () {
+			if (slider.classList.contains('swiper-initialized') || typeof initSwiperSlider !== 'function') {
+				return;
+			}
+			initSwiperSlider();
+		};
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', start);
+		} else {
+			start();
+		}
+		window.addEventListener('load', start);
+	})();
 </script>
 <?
 unset($products, $count, $arOptions, $product, $name, $url, $picture);
