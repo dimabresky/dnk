@@ -3078,7 +3078,18 @@ final class Utils
             ],
             false,
             false,
-            ['ID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'CODE', 'DETAIL_PAGE_URL', 'PROPERTY_BLOG_POST_ID']
+            [
+                'ID',
+                'IBLOCK_ID',
+                'IBLOCK_SECTION_ID',
+                'CODE',
+                'EXTERNAL_ID',
+                'IBLOCK_CODE',
+                'IBLOCK_EXTERNAL_ID',
+                'IBLOCK_TYPE_ID',
+                'DETAIL_PAGE_URL',
+                'PROPERTY_BLOG_POST_ID',
+            ]
         );
 
         $products = [];
@@ -3089,7 +3100,7 @@ final class Utils
 
             $elementId = (int) ($row['ID'] ?? 0);
             $detailUrl = trim((string) ($row['DETAIL_PAGE_URL'] ?? ''));
-            if ($elementId <= 0 || $detailUrl === '') {
+            if ($elementId <= 0 || $detailUrl === '' || str_contains($detailUrl, '#')) {
                 continue;
             }
 
