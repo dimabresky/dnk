@@ -41,9 +41,6 @@ final class Utils
 
     public const CATALOG_IMPORT_CODE_PROPERTY_FALLBACK = 'SHTRIKHKOD';
 
-    /** Служебный адрес пользовательской ссылки «Ждут отзывы» в ЛК. */
-    public const PRODUCTS_AWAITING_REVIEW_LINK = '#products-awaiting-review';
-
     private const FINISHED_ORDER_STATUS_ID = 'F';
 
     private const REVIEW_COMMENT_ANCHOR = '#catalog_comments';
@@ -2941,7 +2938,7 @@ final class Utils
      * Товары из завершённых заказов (статус F), по которым пользователь ещё не оставил отзыв.
      * Порядок: от более нового заказа к более старому.
      *
-     * @return list<array{id: int, url: string}>
+     * @return list<array{id: int, name: string, picture: string, url: string}>
      */
     public static function getProductsAwaitingReview(int $userId, string $siteId = ''): array
     {
@@ -2990,6 +2987,8 @@ final class Utils
 
             $awaiting[] = [
                 'id' => $elementId,
+                'name' => $product['name'],
+                'picture' => $product['picture'],
                 'url' => $product['url'],
             ];
         }
@@ -3057,7 +3056,7 @@ final class Utils
      * Активные товары каталога с адресом карточки и ID поста блога отзывов.
      *
      * @param list<int> $elementIds
-     * @return array<int, array{url: string, post_id: int}>
+     * @return array<int, array{name: string, picture: string, url: string, post_id: int}>
      */
     private static function loadCatalogProductsForReview(array $elementIds): array
     {
@@ -3087,6 +3086,9 @@ final class Utils
                 'IBLOCK_CODE',
                 'IBLOCK_EXTERNAL_ID',
                 'IBLOCK_TYPE_ID',
+                'NAME',
+                'PREVIEW_PICTURE',
+                'DETAIL_PICTURE',
                 'DETAIL_PAGE_URL',
                 'PROPERTY_BLOG_POST_ID',
             ]
@@ -3104,7 +3106,15 @@ final class Utils
                 continue;
             }
 
+            $pictureId = (int) ($row['PREVIEW_PICTURE'] ?? 0);
+            if ($pictureId <= 0) {
+                $pictureId = (int) ($row['DETAIL_PICTURE'] ?? 0);
+            }
+            $picture = $pictureId > 0 ? (string) \CFile::GetPath($pictureId) : '';
+
             $products[$elementId] = [
+                'name' => trim((string) ($row['NAME'] ?? '')),
+                'picture' => $picture,
                 'url' => $detailUrl . self::REVIEW_COMMENT_ANCHOR,
                 'post_id' => (int) ($row['PROPERTY_BLOG_POST_ID_VALUE'] ?? 0),
             ];
@@ -3116,7 +3126,7 @@ final class Utils
     /**
      * ID постов блога, на которые пользователь уже оставил корневой отзыв.
      *
-     * @param array<int, array{url: string, post_id: int}> $products
+     * @param array<int, array{name: string, picture: string, url: string, post_id: int}> $products
      * @return array<int, true>
      */
     private static function findReviewedBlogPostIds(int $userId, array $products): array

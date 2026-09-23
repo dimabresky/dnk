@@ -5,8 +5,7 @@ use Bitrix\Main\Localization\Loc,
 	CPremier as Solution,
 	Aspro\Functions\CAsproPremier as SolutionFunctions,
 	Aspro\Premier\Functions\Extensions,
-	Aspro\Premier\Itemaction,
-	Dnk\PhpInterface\Utils;
+	Aspro\Premier\Itemaction;
 
 if (
 	!empty($arParams['CUSTOM_MAIN_LINKS']) &&
@@ -225,29 +224,10 @@ foreach ($arParams['MAIN_LINKS_ORDER'] as $link) {
 							$icon = '<i class="svg-inline-more_icon color-theme fa '.htmlspecialcharsbx($arCustomMainLink['icon']).'"></i>';
 						}
 
-						$dsc = $arCustomMainLink['dsc'];
-						$url = $arCustomMainLink['url'];
-						if (trim((string)$url) === Utils::PRODUCTS_AWAITING_REVIEW_LINK) {
-							$awaitingProducts = Utils::getProductsAwaitingReview((int)($arResult['USER_ID'] ?? 0));
-							if ($awaitingProducts === []) {
-								break;
-							}
-
-							$dsc = SolutionFunctions::declOfNum(
-								count($awaitingProducts),
-								[
-									Loc::getMessage('SPS_PRODUCT_1'),
-									Loc::getMessage('SPS_PRODUCT_2'),
-									Loc::getMessage('SPS_PRODUCT_0'),
-								]
-							);
-							$url = $awaitingProducts[0]['url'];
-						}
-
 						$arMainLinks[] = array(
 							'name' => $arCustomMainLink['name'],
-							'dsc' => $dsc,
-							'url' => $url,
+							'dsc' => $arCustomMainLink['dsc'],
+							'url' => $arCustomMainLink['url'],
 							'icon' => $icon,
 						);
 

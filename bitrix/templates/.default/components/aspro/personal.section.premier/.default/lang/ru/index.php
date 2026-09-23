@@ -31,6 +31,7 @@ $MESS['SPS_BONUS_EXPIRATION_HINT'] = 'успейте использовать с
 $MESS['SPS_MAIN_BLOCK_TITLE_USER_LEVEL'] = 'Ваш уровень';
 $MESS['SPS_USER_LEVEL_NEXT_LEVEL'] = 'До следующего уровня: #SUM# BYN';
 $MESS['SPS_MAIN_BLOCK_TITLE_ORDERS'] = 'Активные заказы';
+$MESS['SPS_MAIN_BLOCK_TITLE_PRODUCTS_NEED_REVIEW'] = 'Ждут отзывы';
 $MESS['SPS_MAIN_BLOCK_ALL_ORDERS'] = 'Все активные заказы';
 $MESS['SPS_MAIN_BLOCK_TITLE_VOTES'] = 'Товары для оценки';
 $MESS['SPS_MAIN_BLOCK_TITLE_RECOMS'] = 'Вам может понравиться';

@@ -31,6 +31,7 @@ $MESS['SPS_BONUS_EXPIRATION_HINT'] = 'use your bonuses in time<br>(1 pt = 1 BYN)
 $MESS['SPS_MAIN_BLOCK_TITLE_USER_LEVEL'] = 'Your level';
 $MESS['SPS_USER_LEVEL_NEXT_LEVEL'] = 'To the next level: #SUM# BYN';
 $MESS['SPS_MAIN_BLOCK_TITLE_ORDERS'] = 'Active Orders';
+$MESS['SPS_MAIN_BLOCK_TITLE_PRODUCTS_NEED_REVIEW'] = 'Waiting for reviews';
 $MESS['SPS_MAIN_BLOCK_ALL_ORDERS'] = 'All active orders';
 $MESS['SPS_MAIN_BLOCK_TITLE_VOTES'] = 'Items to rate';
 $MESS['SPS_MAIN_BLOCK_TITLE_RECOMS'] = 'You might like it';
