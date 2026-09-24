@@ -5733,7 +5733,10 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
           checkbox,
           BX.create("LABEL", {
             attrs: { for: checkboxId },
-            props: { className: "form-checkbox__label" },
+            props: {
+              htmlFor: checkboxId,
+              className: "form-checkbox__label",
+            },
             children: [
               BX.create("SPAN", {
                 props: { className: "form-checbox__text" },
