@@ -2,6 +2,7 @@
 
 use Bitrix\Main\EventManager;
 use Dnk\PhpInterface\BasketBonusEvents;
+use Dnk\PhpInterface\CheckoutOrderPropEvents;
 use Dnk\PhpInterface\BonusAccrualEvents;
 use Dnk\PhpInterface\BonusDisplayEvents;
 use Dnk\PhpInterface\HeaderPromoEvents;
@@ -23,6 +24,12 @@ EventManager::getInstance()->addEventHandler(
 );
 
 BasketBonusEvents::register();
+
+EventManager::getInstance()->addEventHandler(
+    'sale',
+    'OnSaleComponentOrderResultPrepared',
+    [CheckoutOrderPropEvents::class, 'onSaleComponentOrderResultPrepared']
+);
 
 EventManager::getInstance()->addEventHandler(
     'aspro.bonus',
