@@ -5727,7 +5727,6 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
       label.appendChild(text);
       BX.addClass(row, "bx-soa-total-yn");
       BX.addClass(label, "bx-soa-total-yn__label");
-      label.removeAttribute("for");
 
       wrap = container.closest(".bx-soa-extraprops");
       if (wrap) {
