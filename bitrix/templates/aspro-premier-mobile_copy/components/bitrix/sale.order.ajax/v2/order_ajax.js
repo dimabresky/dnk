@@ -5693,12 +5693,45 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
         while ((property = propsIterator())) {
           if (property.getSettings().CODE === propCode) {
             this.getPropertyRowNode(property, $propInner, false, false);
+            if (propCode === "OPERATOR_CALL") {
+              this.wrapTotalYnProperty($propInner);
+            }
             isAddProp = true;
           }
         }
       }
       if (isAddProp) {
         node.appendChild($prop);
+      }
+    },
+
+    wrapTotalYnProperty: function (container) {
+      var row = container.querySelector(".bx-soa-customer-field"),
+        label,
+        propContainer,
+        text,
+        wrap;
+
+      if (!row) return;
+
+      label = row.querySelector("label.bx-soa-custom-label");
+      propContainer = row.querySelector(".soa-property-container");
+      if (!label || !propContainer) return;
+
+      text = BX.create("SPAN", {
+        props: { className: "bx-soa-total-yn__text" },
+        html: label.innerHTML,
+      });
+      BX.cleanNode(label);
+      label.appendChild(propContainer);
+      label.appendChild(text);
+      BX.addClass(row, "bx-soa-total-yn");
+      BX.addClass(label, "bx-soa-total-yn__label");
+      label.removeAttribute("for");
+
+      wrap = container.closest(".bx-soa-extraprops");
+      if (wrap) {
+        BX.addClass(wrap, "bx-soa-total-yn-wrap");
       }
     },
 
