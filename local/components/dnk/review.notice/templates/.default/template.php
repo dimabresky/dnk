@@ -4,16 +4,17 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
     die();
 }
 
-$this->setFrameMode(false);
+$frame = $this->createFrame('dnk-review-notice')->begin('');
 
-$config = [
-    'intervalHours' => (int) ($arResult['INTERVAL_HOURS'] ?? 12),
-    'title' => (string) ($arResult['TITLE'] ?? ''),
-    'detail' => (string) ($arResult['DETAIL'] ?? ''),
-    'image' => (string) ($arResult['IMAGE'] ?? ''),
-    'link' => (string) ($arResult['LINK'] ?? ''),
-];
-?>
+if (!empty($arResult['IMAGE'])) {
+    $config = [
+        'intervalHours' => (int) ($arResult['INTERVAL_HOURS'] ?? 12),
+        'title' => (string) ($arResult['TITLE'] ?? ''),
+        'detail' => (string) ($arResult['DETAIL'] ?? ''),
+        'image' => (string) ($arResult['IMAGE'] ?? ''),
+        'link' => (string) ($arResult['LINK'] ?? ''),
+    ];
+    ?>
 <script>
   BX.ready(function () {
     if (typeof dnkReviewNotice === 'function') {
@@ -21,3 +22,7 @@ $config = [
     }
   });
 </script>
+    <?php
+}
+
+$frame->end();

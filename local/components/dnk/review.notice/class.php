@@ -32,38 +32,27 @@ class DnkReviewNoticeComponent extends CBitrixComponent
 
     public function executeComponent(): void
     {
-        $this->setFrameMode(false);
+        $this->arResult = [];
 
         global $USER;
 
-        if (!is_object($USER) || !$USER->IsAuthorized()) {
-            return;
+        if (is_object($USER) && $USER->IsAuthorized()) {
+            $userId = (int) $USER->GetID();
+            if ($userId > 0 && Loader::includeModule('aspro.premier')) {
+                $products = Utils::getProductsAwaitingReview($userId, defined('SITE_ID') ? (string) SITE_ID : '');
+                $product = $this->pickProductWithPicture($products);
+                if ($product !== null) {
+                    Extensions::init('notice');
+                    $this->arResult = [
+                        'INTERVAL_HOURS' => (int) $this->arParams['INTERVAL_HOURS'],
+                        'TITLE' => (string) Loc::getMessage('DNK_REVIEW_NOTICE_TITLE'),
+                        'DETAIL' => (string) Loc::getMessage('DNK_REVIEW_NOTICE_DETAIL'),
+                        'IMAGE' => $product['picture'],
+                        'LINK' => $product['url'],
+                    ];
+                }
+            }
         }
-
-        $userId = (int) $USER->GetID();
-        if ($userId <= 0) {
-            return;
-        }
-
-        if (!Loader::includeModule('aspro.premier')) {
-            return;
-        }
-
-        $products = Utils::getProductsAwaitingReview($userId, defined('SITE_ID') ? (string) SITE_ID : '');
-        $product = $this->pickProductWithPicture($products);
-        if ($product === null) {
-            return;
-        }
-
-        Extensions::init('notice');
-
-        $this->arResult = [
-            'INTERVAL_HOURS' => (int) $this->arParams['INTERVAL_HOURS'],
-            'TITLE' => (string) Loc::getMessage('DNK_REVIEW_NOTICE_TITLE'),
-            'DETAIL' => (string) Loc::getMessage('DNK_REVIEW_NOTICE_DETAIL'),
-            'IMAGE' => $product['picture'],
-            'LINK' => $product['url'],
-        ];
 
         $this->includeComponentTemplate();
     }
