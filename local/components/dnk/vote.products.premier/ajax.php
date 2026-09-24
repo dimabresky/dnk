@@ -285,7 +285,6 @@ class VoteProductsController extends \Bitrix\Main\Engine\Controller {
 				foreach ($arProductsByOffersId as $offerId => $arProduct) {
 					if ($arProduct && $arProduct['ID']) {
 						$productsIds[$arProduct['ID']] = $arProduct['ID'];
-						unset($productsIds[$offerId]);
 					}
 				}
 			}

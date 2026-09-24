@@ -249,7 +249,10 @@ class VoteProducts extends \CBitrixComponent
             foreach ($this->arItems as $arItem) {
                 $postId = $arItem['POST_ID'];
                 if (!$postId) {
-                    $productsIdsWithoutPost[] = $arItem['ID'];
+                    $elementId = (int) ($arItem['PRODUCT_ID'] ?: $arItem['ID']);
+                    if ($elementId > 0) {
+                        $productsIdsWithoutPost[$elementId] = $elementId;
+                    }
                 }
             }
 
@@ -262,12 +265,18 @@ class VoteProducts extends \CBitrixComponent
 
                 $dbRes = \CIBlockElement::GetList(
                     [],
-                    ['ID' => $productsIdsWithoutPost],
+                    ['ID' => array_values($productsIdsWithoutPost)],
                     false,
                     false,
                     [
                         'ID',
                         'IBLOCK_ID',
+                        'IBLOCK_SECTION_ID',
+                        'CODE',
+                        'EXTERNAL_ID',
+                        'IBLOCK_CODE',
+                        'IBLOCK_EXTERNAL_ID',
+                        'IBLOCK_TYPE_ID',
                         'CREATED_BY',
                         'NAME',
                         'PREVIEW_TEXT',
@@ -288,9 +297,14 @@ class VoteProducts extends \CBitrixComponent
                         unset($owner, $ownersIterator);
                     }
 
+                    $detailUrl = (string) ($arItem['~DETAIL_PAGE_URL'] ?? '');
+                    $detailLink = ($detailUrl !== '' && !str_contains($detailUrl, '#'))
+                        ? '[URL=http://'.$_SERVER['HTTP_HOST'].$detailUrl.']'.$arItem['~NAME']."[/URL]\n"
+                        : $arItem['~NAME']."\n";
+
                     $arFields = [
                         'TITLE' => $arItem['~NAME'],
-                        'DETAIL_TEXT' => '[URL=http://'.$_SERVER['HTTP_HOST'].$arItem['~DETAIL_PAGE_URL'].']'.$arItem['~NAME']."[/URL]\n".
+                        'DETAIL_TEXT' => $detailLink.
                             ($arItem['~PREVIEW_TEXT'] != '' ? $arItem['~PREVIEW_TEXT'] : '')."\n",
                         'PUBLISH_STATUS' => BLOG_PUBLISH_STATUS_PUBLISH,
                         'PERMS_POST' => [],
@@ -312,7 +326,12 @@ class VoteProducts extends \CBitrixComponent
                             ]
                         );
 
-                        $this->arItems[$arItem['ID']]['POST_ID'] = $postId;
+                        foreach ($this->arItems as $itemKey => $item) {
+                            $elementId = (int) ($item['PRODUCT_ID'] ?: $item['ID']);
+                            if ($elementId === (int) $arItem['ID']) {
+                                $this->arItems[$itemKey]['POST_ID'] = $postId;
+                            }
+                        }
                     }
                 }
             }
@@ -372,6 +391,12 @@ class VoteProducts extends \CBitrixComponent
                     [
                         'ID',
                         'IBLOCK_ID',
+                        'IBLOCK_SECTION_ID',
+                        'CODE',
+                        'EXTERNAL_ID',
+                        'IBLOCK_CODE',
+                        'IBLOCK_EXTERNAL_ID',
+                        'IBLOCK_TYPE_ID',
                         'NAME',
                         'PREVIEW_PICTURE',
                         'DETAIL_PICTURE',
@@ -416,6 +441,12 @@ class VoteProducts extends \CBitrixComponent
                             [
                                 'ID',
                                 'IBLOCK_ID',
+                                'IBLOCK_SECTION_ID',
+                                'CODE',
+                                'EXTERNAL_ID',
+                                'IBLOCK_CODE',
+                                'IBLOCK_EXTERNAL_ID',
+                                'IBLOCK_TYPE_ID',
                                 'NAME',
                                 'PREVIEW_PICTURE',
                                 'DETAIL_PICTURE',
@@ -427,10 +458,14 @@ class VoteProducts extends \CBitrixComponent
                                 !$arItem['PREVIEW_PICTURE']
                                 && !$arItem['DETAIL_PICTURE']
                             ) {
-                                foreach ($arOffersIdsByProductId[$arItem['ID']] as $arOffer) {
+                                foreach ($arOffersIdsByProductId[$arItem['ID']] as $offerId) {
+                                    $arOffer = $arOffers[$offerId] ?? null;
                                     if (
-                                        $arOffer['PREVIEW_PICTURE']
-                                        || $arOffer['DETAIL_PICTURE']
+                                        is_array($arOffer)
+                                        && (
+                                            $arOffer['PREVIEW_PICTURE']
+                                            || $arOffer['DETAIL_PICTURE']
+                                        )
                                     ) {
                                         $arItem['PREVIEW_PICTURE'] = $arOffer['PREVIEW_PICTURE'];
                                         $arItem['DETAIL_PICTURE'] = $arOffer['DETAIL_PICTURE'];
@@ -510,7 +545,12 @@ class VoteProducts extends \CBitrixComponent
                                 ]
                             );
 
-                            $arItem['DETAIL_PAGE_URL'] = ($isOffer ? $arOffers[$arBasketItem['PRODUCT_ID']]['DETAIL_PAGE_URL'] : $arProducts[$productId]['DETAIL_PAGE_URL']) ?: $arItem['DETAIL_PAGE_URL'];
+                            $detailUrl = (string) ($isOffer
+                                ? ($arOffers[$arBasketItem['PRODUCT_ID']]['DETAIL_PAGE_URL'] ?? '')
+                                : ($arProducts[$productId]['DETAIL_PAGE_URL'] ?? ''));
+                            if ($detailUrl !== '' && !str_contains($detailUrl, '#')) {
+                                $arItem['DETAIL_PAGE_URL'] = $detailUrl;
+                            }
                         } else {
                             if ($arBasketItem['MODULE'] == 'sale') {
                                 // inner payment
