@@ -694,6 +694,7 @@ body #bx-soa-order-main .bx-soa-tooltip-coupon {
   padding-left: 0;
   padding-right: 0;
   margin-top: 16px;
+  margin-bottom: 20px;
 }
 .bx-soa-cart-total .bx-soa-total-yn.form-group {
   margin: 0;
@@ -706,8 +707,8 @@ body #bx-soa-order-main .bx-soa-tooltip-coupon {
   margin: 0;
   padding: 0;
   cursor: pointer;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: 1rem;
+  line-height: calc(1em + 6px);
   font-weight: 500;
   color: var(--white_text_black);
 }
