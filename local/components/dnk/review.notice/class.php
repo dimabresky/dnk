@@ -36,13 +36,16 @@ class DnkReviewNoticeComponent extends CBitrixComponent
 
         global $USER;
 
+        if (Loader::includeModule('aspro.premier')) {
+            Extensions::init('notice');
+        }
+
         if (is_object($USER) && $USER->IsAuthorized()) {
             $userId = (int) $USER->GetID();
             if ($userId > 0 && Loader::includeModule('aspro.premier')) {
                 $products = Utils::getProductsAwaitingReview($userId, defined('SITE_ID') ? (string) SITE_ID : '');
                 $product = $this->pickProductWithPicture($products);
                 if ($product !== null) {
-                    Extensions::init('notice');
                     $this->arResult = [
                         'INTERVAL_HOURS' => (int) $this->arParams['INTERVAL_HOURS'],
                         'TITLE' => (string) Loc::getMessage('DNK_REVIEW_NOTICE_TITLE'),
