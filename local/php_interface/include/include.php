@@ -6,6 +6,7 @@ use Dnk\PhpInterface\BasketBonusService;
 use Dnk\PhpInterface\BonusAccrualEvents;
 use Dnk\PhpInterface\BonusDisplayEvents;
 use Dnk\PhpInterface\CertificateBuyPhoneAuth;
+use Dnk\PhpInterface\CheckoutOrderPropEvents;
 use Dnk\PhpInterface\CertificateRequestStatus;
 use Dnk\PhpInterface\BonusBalanceQueueAgent;
 use Dnk\PhpInterface\HeaderPromoEvents;
@@ -52,6 +53,7 @@ Loader::registerAutoLoadClasses(null, [
     BasketBonusService::class => $classesPath . '/BasketBonusService.php',
     BasketBonusEvents::class => $classesPath . '/BasketBonusEvents.php',
     CertificateBuyPhoneAuth::class => $classesPath . '/CertificateBuyPhoneAuth.php',
+    CheckoutOrderPropEvents::class => $classesPath . '/CheckoutOrderPropEvents.php',
     CertificateRequestStatus::class => $classesPath . '/CertificateRequestStatus.php',
     BonusAccrualEvents::class => $classesPath . '/BonusAccrualEvents.php',
     BonusDisplayEvents::class => $classesPath . '/BonusDisplayEvents.php',

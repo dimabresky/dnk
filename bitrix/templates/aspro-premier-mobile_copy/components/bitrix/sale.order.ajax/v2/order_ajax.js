@@ -7595,7 +7595,8 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
             this.deliveryLocationInfo.loc == property.getId() ||
             this.deliveryLocationInfo.zip == property.getId() ||
             this.deliveryLocationInfo.city == property.getId() ||
-            property.getSettings().CODE === "ADDRESS"
+            property.getSettings().CODE === "ADDRESS" ||
+            property.getSettings().CODE === "OPERATOR_CALL"
           )
             continue;
           this.getPropertyRowNode(property, propsInnerWrapper, false);
@@ -8135,6 +8136,9 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
 
       var regionErrors = this.isValidRegionBlock(),
         propsErrors = this.isValidPropertiesBlock(),
+        totalErrors = this.totalInfoBlockNode
+          ? this.isValidPropertiesBlock(false, this.totalInfoBlockNode)
+          : [],
         navigated = false,
         tooltips,
         i;
@@ -8164,7 +8168,13 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
           }, this),
           100
         );
-        // this.animateScrollTo(this.propsBlockNode, 800, 50);
+      } else if (totalErrors.length && !navigated) {
+        setTimeout(
+          BX.delegate(function () {
+            this.animateScrollTo(this.totalInfoBlockNode, 800, 50);
+          }, this),
+          100
+        );
       }
 
       if (regionErrors.length) {
@@ -8198,7 +8208,7 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
         BX.removeClass(this.propsBlockNode, "bx-step-error");
       }
 
-      return !(regionErrors.length + propsErrors.length);
+      return !(regionErrors.length + propsErrors.length + totalErrors.length);
     },
 
     isValidRegionBlock: function () {
@@ -9032,6 +9042,7 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
 
         this.showTotalDeliveryInfo();
         this.showTotalPaymentInfo();
+        this.showPropInDelivery("OPERATOR_CALL", this.totalInfoBlockNode);
         this.totalInfoBlockNode.appendChild(
           BX.create("DIV", {
             props: {
