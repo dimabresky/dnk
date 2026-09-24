@@ -5712,6 +5712,7 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
         checkbox,
         checkboxId,
         formCheckbox,
+        textHtml,
         wrap;
 
       if (!row) return;
@@ -5725,33 +5726,40 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
 
       checkboxId = "soa-property-" + row.getAttribute("data-property-id-row");
       checkbox.id = checkboxId;
+      checkbox.removeAttribute("disabled");
       BX.addClass(checkbox, "form-checkbox__input");
+
+      textHtml = label.innerHTML;
+      BX.remove(label);
 
       formCheckbox = BX.create("DIV", {
         props: { className: "form-checkbox" },
-        children: [
-          checkbox,
-          BX.create("LABEL", {
-            attrs: { for: checkboxId },
-            props: {
-              htmlFor: checkboxId,
-              className: "form-checkbox__label",
-            },
-            children: [
-              BX.create("SPAN", {
-                props: { className: "form-checbox__text" },
-                html: label.innerHTML,
-              }),
-              BX.create("SPAN", {
-                props: { className: "form-checkbox__box form-box" },
-              }),
-            ],
-          }),
-        ],
       });
-
-      BX.remove(label);
+      formCheckbox.appendChild(checkbox);
+      formCheckbox.appendChild(
+        BX.create("LABEL", {
+          attrs: { for: checkboxId },
+          props: {
+            htmlFor: checkboxId,
+            className: "form-checkbox__label",
+          },
+          html:
+            '<span class="form-checbox__text">' +
+            textHtml +
+            '</span><span class="form-checkbox__box form-box"></span>',
+        })
+      );
       propContainer.appendChild(formCheckbox);
+
+      BX.bind(formCheckbox, "click", function (event) {
+        var target = event.target || event.srcElement;
+        if (target === checkbox) {
+          return;
+        }
+        event.preventDefault();
+        checkbox.checked = !checkbox.checked;
+        BX.fireEvent(checkbox, "change");
+      });
 
       wrap = container.closest(".bx-soa-extraprops");
       if (wrap) {
