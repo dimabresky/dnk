@@ -5709,7 +5709,9 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
       var row = container.querySelector(".bx-soa-customer-field"),
         label,
         propContainer,
-        text,
+        checkbox,
+        checkboxId,
+        formCheckbox,
         wrap;
 
       if (!row) return;
@@ -5718,15 +5720,35 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
       propContainer = row.querySelector(".soa-property-container");
       if (!label || !propContainer) return;
 
-      text = BX.create("SPAN", {
-        props: { className: "bx-soa-total-yn__text" },
-        html: label.innerHTML,
+      checkbox = propContainer.querySelector("input[type=checkbox]");
+      if (!checkbox) return;
+
+      checkboxId = "soa-property-" + row.getAttribute("data-property-id-row");
+      checkbox.id = checkboxId;
+      BX.addClass(checkbox, "form-checkbox__input");
+
+      formCheckbox = BX.create("DIV", {
+        props: { className: "form-checkbox" },
+        children: [
+          checkbox,
+          BX.create("LABEL", {
+            attrs: { for: checkboxId },
+            props: { className: "form-checkbox__label" },
+            children: [
+              BX.create("SPAN", {
+                props: { className: "form-checbox__text" },
+                html: label.innerHTML,
+              }),
+              BX.create("SPAN", {
+                props: { className: "form-checkbox__box form-box" },
+              }),
+            ],
+          }),
+        ],
       });
-      BX.cleanNode(label);
-      label.appendChild(propContainer);
-      label.appendChild(text);
-      BX.addClass(row, "bx-soa-total-yn");
-      BX.addClass(label, "bx-soa-total-yn__label");
+
+      BX.remove(label);
+      propContainer.appendChild(formCheckbox);
 
       wrap = container.closest(".bx-soa-extraprops");
       if (wrap) {
