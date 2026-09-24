@@ -5709,7 +5709,10 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
       var row = container.querySelector(".bx-soa-customer-field"),
         label,
         propContainer,
-        text,
+        checkbox,
+        checkboxId,
+        formCheckbox,
+        textHtml,
         wrap;
 
       if (!row) return;
@@ -5718,15 +5721,45 @@ BX.namespace("BX.Sale.OrderAjaxComponent");
       propContainer = row.querySelector(".soa-property-container");
       if (!label || !propContainer) return;
 
-      text = BX.create("SPAN", {
-        props: { className: "bx-soa-total-yn__text" },
-        html: label.innerHTML,
+      checkbox = propContainer.querySelector("input[type=checkbox]");
+      if (!checkbox) return;
+
+      checkboxId = "soa-property-" + row.getAttribute("data-property-id-row");
+      checkbox.id = checkboxId;
+      checkbox.removeAttribute("disabled");
+      BX.addClass(checkbox, "form-checkbox__input");
+
+      textHtml = label.innerHTML;
+      BX.remove(label);
+
+      formCheckbox = BX.create("DIV", {
+        props: { className: "form-checkbox" },
       });
-      BX.cleanNode(label);
-      label.appendChild(propContainer);
-      label.appendChild(text);
-      BX.addClass(row, "bx-soa-total-yn");
-      BX.addClass(label, "bx-soa-total-yn__label");
+      formCheckbox.appendChild(checkbox);
+      formCheckbox.appendChild(
+        BX.create("LABEL", {
+          attrs: { for: checkboxId },
+          props: {
+            htmlFor: checkboxId,
+            className: "form-checkbox__label",
+          },
+          html:
+            '<span class="form-checbox__text">' +
+            textHtml +
+            '</span><span class="form-checkbox__box form-box"></span>',
+        })
+      );
+      propContainer.appendChild(formCheckbox);
+
+      BX.bind(formCheckbox, "click", function (event) {
+        var target = event.target || event.srcElement;
+        if (target === checkbox) {
+          return;
+        }
+        event.preventDefault();
+        checkbox.checked = !checkbox.checked;
+        BX.fireEvent(checkbox, "change");
+      });
 
       wrap = container.closest(".bx-soa-extraprops");
       if (wrap) {
