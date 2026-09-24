@@ -11,7 +11,7 @@ $arComponentParams = [
 
 ob_start();
 $cnt = $APPLICATION->IncludeComponent(
-	"aspro:vote.products.premier",
+	"dnk:vote.products.premier",
 	"",
 	$arComponentParams,
 	$component,
