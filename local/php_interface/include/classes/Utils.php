@@ -6,6 +6,7 @@ use Aspro\Bonus\Enums\HistoryOperations as BonusHistoryOperationsEnum;
 use Aspro\Bonus\Helper as BonusHelper;
 use Aspro\Bonus\History\User as BonusUser;
 use Aspro\Bonus\ORM\HistoryOperationsTable;
+use Bitrix\Blog\CommentTable;
 use Bitrix\Iblock\ElementTable;
 use Bitrix\Main\Context;
 use Bitrix\Main\Loader;
@@ -16,6 +17,7 @@ use Bitrix\Main\UserPhoneAuthTable;
 use Bitrix\Main\UserTable;
 use Bitrix\Main\Web\HttpClient;
 use Bitrix\Sale\BasketItemBase;
+use Bitrix\Sale\Internals\BasketTable;
 
 /**
  * Общие вспомогательные методы для php_interface.
@@ -38,6 +40,10 @@ final class Utils
     public const CATALOG_IMPORT_CODE_PROPERTY_PRIMARY = 'CML2_BAR_CODE';
 
     public const CATALOG_IMPORT_CODE_PROPERTY_FALLBACK = 'SHTRIKHKOD';
+
+    private const FINISHED_ORDER_STATUS_ID = 'F';
+
+    private const REVIEW_COMMENT_ANCHOR = '#catalog_comments';
 
     /** Наименования уровней клиента (для отображения в ЛК). */
     private const BONUS_CLIENT_LEVEL_NAMES = [
@@ -2290,6 +2296,153 @@ final class Utils
     }
 
     /**
+     * Варианты группы для перелинковки карточек (как dnk:sku.list): оттенок или объём.
+     *
+     * @return array{
+     *     mode: string,
+     *     items: list<array{id: int, value: string, imageFileId: int}>
+     * }
+     */
+    public static function getSkuGroupVariantItems(
+        int $iblockId,
+        string $groupingValue,
+        int $shadesIblockId
+    ): array {
+        $empty = [
+            'mode' => self::SKU_VARIANT_MODE_SHADE,
+            'items' => [],
+        ];
+
+        $groupingValue = trim($groupingValue);
+        if ($iblockId <= 0 || $groupingValue === '' || !Loader::includeModule('iblock')) {
+            return $empty;
+        }
+
+        $resolution = self::resolveSkuGroupVariantElementIds($iblockId, $groupingValue, $shadesIblockId);
+        $visibleIds = $resolution['visible'];
+        $mode = $resolution['mode'];
+        if ($visibleIds === []) {
+            return [
+                'mode' => $mode,
+                'items' => [],
+            ];
+        }
+
+        $ottenokEnumXmlIdMap = self::buildIblockListPropertyEnumXmlIdMap(
+            $iblockId,
+            self::SKU_SHADE_PROPERTY_CODE
+        );
+
+        $rs = \CIBlockElement::GetList(
+            ['SORT' => 'ASC', 'NAME' => 'ASC'],
+            [
+                'IBLOCK_ID' => $iblockId,
+                'ACTIVE' => 'Y',
+                'PROPERTY_' . self::SKU_GROUPING_PROPERTY_CODE => $groupingValue,
+            ],
+            false,
+            false,
+            [
+                'ID',
+                'DETAIL_PICTURE',
+                'PREVIEW_PICTURE',
+                'PROPERTY_' . self::SKU_SHADE_PROPERTY_CODE,
+                'PROPERTY_' . self::SKU_VOLUME_PROPERTY_CODE,
+            ]
+        );
+
+        $rawItems = [];
+        while ($ob = $rs->GetNext()) {
+            $id = (int) $ob['ID'];
+            if (!isset($visibleIds[$id])) {
+                continue;
+            }
+
+            $productPictureId = (int) ($ob['DETAIL_PICTURE'] ?: $ob['PREVIEW_PICTURE']);
+            $enumId = self::coerceIblockListEnumId(
+                $ob['PROPERTY_' . self::SKU_SHADE_PROPERTY_CODE . '_ENUM_ID'] ?? null
+            );
+            $ottenokXmlId = ($enumId !== null && isset($ottenokEnumXmlIdMap[$enumId]))
+                ? trim((string) $ottenokEnumXmlIdMap[$enumId])
+                : '';
+
+            $volumeLabel = trim((string) (
+                $ob['PROPERTY_' . self::SKU_VOLUME_PROPERTY_CODE . '_VALUE']
+                    ?? $ob['PROPERTY_' . self::SKU_VOLUME_PROPERTY_CODE]
+                    ?? ''
+            ));
+
+            $rawItems[] = [
+                'id' => $id,
+                'productPictureId' => $productPictureId,
+                'ottenokXmlId' => $ottenokXmlId,
+                'volumeLabel' => $volumeLabel,
+            ];
+        }
+
+        if ($mode === self::SKU_VARIANT_MODE_VOLUME) {
+            $items = [];
+            foreach ($rawItems as $row) {
+                if ($row['volumeLabel'] === '') {
+                    continue;
+                }
+                $items[] = [
+                    'id' => $row['id'],
+                    'value' => $row['volumeLabel'],
+                    'imageFileId' => 0,
+                ];
+            }
+            self::sortSkuVolumeItemsByLabelAsc($items);
+
+            return [
+                'mode' => $mode,
+                'items' => $items,
+            ];
+        }
+
+        $ottenokXmlIds = [];
+        foreach ($rawItems as $row) {
+            if ($row['ottenokXmlId'] !== '') {
+                $ottenokXmlIds[$row['ottenokXmlId']] = true;
+            }
+        }
+
+        $shadesMap = ($shadesIblockId > 0 && $ottenokXmlIds !== [])
+            ? self::loadSkuShadeItemsByXmlIds($shadesIblockId, array_keys($ottenokXmlIds))
+            : [];
+
+        $items = [];
+        foreach ($rawItems as $row) {
+            $xmlId = $row['ottenokXmlId'];
+            if ($xmlId === '' || !isset($shadesMap[$xmlId])) {
+                continue;
+            }
+
+            $shade = $shadesMap[$xmlId];
+            $shadeName = trim((string) ($shade['NAME'] ?? ''));
+            if ($shadeName === '') {
+                continue;
+            }
+
+            $imageFileId = (int) ($shade['PICTURE_ID'] ?? 0);
+            if ($imageFileId <= 0) {
+                $imageFileId = (int) $row['productPictureId'];
+            }
+
+            $items[] = [
+                'id' => $row['id'],
+                'value' => $shadeName,
+                'imageFileId' => $imageFileId > 0 ? $imageFileId : 0,
+            ];
+        }
+
+        return [
+            'mode' => self::SKU_VARIANT_MODE_SHADE,
+            'items' => $items,
+        ];
+    }
+
+    /**
      * @param mixed $value
      */
     private static function normalizeSkuGroupingPropertyValue($value): ?string
@@ -2451,6 +2604,86 @@ final class Utils
         }
 
         return $map;
+    }
+
+    /**
+     * @param list<string> $xmlIds
+     * @return array<string, array{NAME: string, PICTURE_ID: int}>
+     */
+    private static function loadSkuShadeItemsByXmlIds(int $shadesIblockId, array $xmlIds): array
+    {
+        $xmlIds = array_values(array_filter(array_unique(array_map('strval', $xmlIds))));
+        if ($shadesIblockId <= 0 || $xmlIds === []) {
+            return [];
+        }
+
+        $map = [];
+        $rs = \CIBlockElement::GetList(
+            ['SORT' => 'ASC', 'NAME' => 'ASC'],
+            [
+                'IBLOCK_ID' => $shadesIblockId,
+                'ACTIVE' => 'Y',
+                'XML_ID' => $xmlIds,
+            ],
+            false,
+            false,
+            ['ID', 'NAME', 'XML_ID', 'DETAIL_PICTURE']
+        );
+
+        while ($ob = $rs->GetNext()) {
+            $xmlId = trim((string) ($ob['XML_ID'] ?? ''));
+            if ($xmlId === '') {
+                continue;
+            }
+
+            $map[$xmlId] = [
+                'NAME' => (string) ($ob['NAME'] ?? ''),
+                'PICTURE_ID' => (int) ($ob['DETAIL_PICTURE'] ?? 0),
+            ];
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param list<array{id: int, value: string, imageFileId: int}> $items
+     */
+    private static function sortSkuVolumeItemsByLabelAsc(array &$items): void
+    {
+        usort($items, static function (array $a, array $b): int {
+            $keyA = self::skuVolumeLabelToSortKey((string) ($a['value'] ?? ''));
+            $keyB = self::skuVolumeLabelToSortKey((string) ($b['value'] ?? ''));
+            if ($keyA !== $keyB) {
+                return $keyA <=> $keyB;
+            }
+
+            return strcmp((string) ($a['value'] ?? ''), (string) ($b['value'] ?? ''));
+        });
+    }
+
+    /**
+     * Числовой ключ для сортировки подписи объёма (мл/л) по возрастанию.
+     */
+    private static function skuVolumeLabelToSortKey(string $label): float
+    {
+        $label = mb_strtolower(str_replace(',', '.', trim($label)));
+        if ($label === '') {
+            return PHP_FLOAT_MAX;
+        }
+
+        $compact = preg_replace('/\h/u', '', $label) ?? $label;
+        if (!preg_match('/(\d+(?:\.\d+)?)(мл|ml|л|l)?/u', $compact, $matches)) {
+            return PHP_FLOAT_MAX;
+        }
+
+        $value = (float) $matches[1];
+        $unit = $matches[2] ?? 'мл';
+
+        if ($unit === 'л' || $unit === 'l') {
+            return $value * 1000.0;
+        }
+
+        return $value;
     }
 
     /**
@@ -2631,5 +2864,308 @@ final class Utils
 
             $found[$code] = $ids[0];
         }
+    }
+
+    /**
+     * Outputs rel=canonical for a catalog section URL, not the current request URL.
+     * Callers must pass the section page path so smart-filter SEF, pagination and sort stay out of canonical.
+     */
+    public static function addCatalogSectionCanonicalUrl(string $sectionPageUrl): void
+    {
+        $sectionPageUrl = trim($sectionPageUrl);
+        if ($sectionPageUrl === '' || str_contains($sectionPageUrl, '#')) {
+            return;
+        }
+
+        $request = Context::getCurrent()->getRequest();
+        if ($request->isAjaxRequest()) {
+            return;
+        }
+
+        if (class_exists(\TSolution::class) && \TSolution::checkAjaxRequest()) {
+            return;
+        }
+
+        if (!preg_match('#^https?://#i', $sectionPageUrl)) {
+            $sectionPageUrl = (string) \CHTTP::URN2URI($sectionPageUrl);
+        }
+
+        if ($sectionPageUrl === '') {
+            return;
+        }
+
+        global $APPLICATION;
+        $APPLICATION->AddHeadString(
+            '<link rel="canonical" href="' . htmlspecialcharsbx($sectionPageUrl) . '" />',
+            true
+        );
+    }
+
+    /**
+     * Resolves SECTION_PAGE_URL via CIBlockSection::GetNext() (computed field, not stored in DB).
+     */
+    public static function getIblockSectionPageUrl(int $iblockId, int $sectionId): string
+    {
+        if ($iblockId <= 0 || $sectionId <= 0 || !Loader::includeModule('iblock')) {
+            return '';
+        }
+
+        $rs = \CIBlockSection::GetList(
+            [],
+            [
+                'IBLOCK_ID' => $iblockId,
+                'ID' => $sectionId,
+                'GLOBAL_ACTIVE' => 'Y',
+            ],
+            false,
+            ['ID', 'IBLOCK_ID', 'CODE', 'EXTERNAL_ID', 'IBLOCK_SECTION_ID', 'SECTION_PAGE_URL']
+        );
+
+        $row = $rs->GetNext();
+        if (!is_array($row)) {
+            return '';
+        }
+
+        $sectionPageUrl = trim((string) ($row['SECTION_PAGE_URL'] ?? ''));
+        if ($sectionPageUrl === '' || str_contains($sectionPageUrl, '#')) {
+            return '';
+        }
+
+        return $sectionPageUrl;
+    }
+
+    /**
+     * Товары из завершённых заказов (статус F), по которым пользователь ещё не оставил отзыв.
+     * Порядок: от более нового заказа к более старому.
+     *
+     * @return list<array{id: int, name: string, picture: string, url: string}>
+     */
+    public static function getProductsAwaitingReview(int $userId, string $siteId = ''): array
+    {
+        if ($userId <= 0 || !defined('DNK_CATALOG_IBLOCK_ID') || (int) DNK_CATALOG_IBLOCK_ID <= 0) {
+            return [];
+        }
+
+        $siteId = trim($siteId);
+        if ($siteId === '' && defined('SITE_ID')) {
+            $siteId = (string) SITE_ID;
+        }
+        if ($siteId === '') {
+            return [];
+        }
+
+        if (
+            !Loader::includeModule('sale')
+            || !Loader::includeModule('iblock')
+            || !Loader::includeModule('catalog')
+        ) {
+            return [];
+        }
+
+        $elementIds = self::collectPurchasedCatalogElementIds($userId, $siteId);
+        if ($elementIds === []) {
+            return [];
+        }
+
+        $products = self::loadCatalogProductsForReview($elementIds);
+        if ($products === []) {
+            return [];
+        }
+
+        $reviewedPostIds = self::findReviewedBlogPostIds($userId, $products);
+
+        $awaiting = [];
+        foreach ($elementIds as $elementId) {
+            if (!isset($products[$elementId])) {
+                continue;
+            }
+
+            $product = $products[$elementId];
+            if ($product['post_id'] > 0 && isset($reviewedPostIds[$product['post_id']])) {
+                continue;
+            }
+
+            $awaiting[] = [
+                'id' => $elementId,
+                'name' => $product['name'],
+                'picture' => $product['picture'],
+                'url' => $product['url'],
+            ];
+        }
+
+        return $awaiting;
+    }
+
+    /**
+     * Уникальные ID элементов каталога из корзин завершённых заказов, от нового заказа к старому.
+     *
+     * @return list<int>
+     */
+    private static function collectPurchasedCatalogElementIds(int $userId, string $siteId): array
+    {
+        $rows = BasketTable::getList([
+            'select' => ['ID', 'PRODUCT_ID'],
+            'filter' => [
+                '=ORDER.USER_ID' => $userId,
+                '=ORDER.STATUS_ID' => self::FINISHED_ORDER_STATUS_ID,
+                '=ORDER.CANCELED' => 'N',
+                '=ORDER.LID' => $siteId,
+                '=MODULE' => 'catalog',
+                '>ORDER_ID' => 0,
+                '>PRODUCT_ID' => 0,
+            ],
+            'order' => [
+                'ORDER.DATE_INSERT' => 'DESC',
+                'ID' => 'ASC',
+            ],
+        ]);
+
+        $productIds = [];
+        while ($row = $rows->fetch()) {
+            $productId = (int) ($row['PRODUCT_ID'] ?? 0);
+            if ($productId > 0) {
+                $productIds[] = $productId;
+            }
+        }
+
+        if ($productIds === []) {
+            return [];
+        }
+
+        $parentsByOfferId = \CCatalogSku::getProductList(array_values(array_unique($productIds)));
+        if (!is_array($parentsByOfferId)) {
+            $parentsByOfferId = [];
+        }
+
+        $elementIds = [];
+        $seen = [];
+        foreach ($productIds as $productId) {
+            $elementId = (int) ($parentsByOfferId[$productId]['ID'] ?? $productId);
+            if ($elementId <= 0 || isset($seen[$elementId])) {
+                continue;
+            }
+
+            $seen[$elementId] = true;
+            $elementIds[] = $elementId;
+        }
+
+        return $elementIds;
+    }
+
+    /**
+     * Активные товары каталога с адресом карточки и ID поста блога отзывов.
+     *
+     * @param list<int> $elementIds
+     * @return array<int, array{name: string, picture: string, url: string, post_id: int}>
+     */
+    private static function loadCatalogProductsForReview(array $elementIds): array
+    {
+        $catalogIblockId = (int) DNK_CATALOG_IBLOCK_ID;
+        $certificateIblockId = defined('DNK_CERTIFICATE_CATALOG_IBLOCK_ID')
+            ? (int) DNK_CERTIFICATE_CATALOG_IBLOCK_ID
+            : 0;
+        if ($certificateIblockId > 0 && $certificateIblockId === $catalogIblockId) {
+            return [];
+        }
+
+        $res = \CIBlockElement::GetList(
+            [],
+            [
+                'IBLOCK_ID' => $catalogIblockId,
+                'ID' => $elementIds,
+                'ACTIVE' => 'Y',
+            ],
+            false,
+            false,
+            [
+                'ID',
+                'IBLOCK_ID',
+                'IBLOCK_SECTION_ID',
+                'CODE',
+                'EXTERNAL_ID',
+                'IBLOCK_CODE',
+                'IBLOCK_EXTERNAL_ID',
+                'IBLOCK_TYPE_ID',
+                'NAME',
+                'PREVIEW_PICTURE',
+                'DETAIL_PICTURE',
+                'DETAIL_PAGE_URL',
+                'PROPERTY_BLOG_POST_ID',
+            ]
+        );
+
+        $products = [];
+        while ($row = $res->GetNext(false)) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $elementId = (int) ($row['ID'] ?? 0);
+            $detailUrl = trim((string) ($row['DETAIL_PAGE_URL'] ?? ''));
+            if ($elementId <= 0 || $detailUrl === '' || str_contains($detailUrl, '#')) {
+                continue;
+            }
+
+            $pictureId = (int) ($row['PREVIEW_PICTURE'] ?? 0);
+            if ($pictureId <= 0) {
+                $pictureId = (int) ($row['DETAIL_PICTURE'] ?? 0);
+            }
+            $picture = $pictureId > 0 ? (string) \CFile::GetPath($pictureId) : '';
+
+            $products[$elementId] = [
+                'name' => trim((string) ($row['NAME'] ?? '')),
+                'picture' => $picture,
+                'url' => $detailUrl . self::REVIEW_COMMENT_ANCHOR,
+                'post_id' => (int) ($row['PROPERTY_BLOG_POST_ID_VALUE'] ?? 0),
+            ];
+        }
+
+        return $products;
+    }
+
+    /**
+     * ID постов блога, на которые пользователь уже оставил корневой отзыв.
+     *
+     * @param array<int, array{name: string, picture: string, url: string, post_id: int}> $products
+     * @return array<int, true>
+     */
+    private static function findReviewedBlogPostIds(int $userId, array $products): array
+    {
+        if (!Loader::includeModule('blog')) {
+            return [];
+        }
+
+        $postIds = [];
+        foreach ($products as $product) {
+            if ($product['post_id'] > 0) {
+                $postIds[$product['post_id']] = $product['post_id'];
+            }
+        }
+        if ($postIds === []) {
+            return [];
+        }
+
+        $comments = CommentTable::getList([
+            'select' => ['POST_ID'],
+            'filter' => [
+                '=AUTHOR_ID' => $userId,
+                '@POST_ID' => array_values($postIds),
+                [
+                    'LOGIC' => 'OR',
+                    ['=PARENT_ID' => null],
+                    ['=PARENT_ID' => 0],
+                ],
+            ],
+        ]);
+
+        $reviewed = [];
+        while ($comment = $comments->fetch()) {
+            $postId = (int) ($comment['POST_ID'] ?? 0);
+            if ($postId > 0) {
+                $reviewed[$postId] = true;
+            }
+        }
+
+        return $reviewed;
     }
 }

@@ -85,6 +85,9 @@ $dnkEnvDefault = static function (string $name, string $default) use ($dnkEnv): 
 
 define('DNK_CATALOG_IBLOCK_ID', $dnkEnvInt('DNK_CATALOG_IBLOCK_ID'));
 
+/** Инфоблок оттенков (свотчи SKU, dnk:sku.list / IMSHOP groupIdLinks). */
+define('DNK_SHADES_IBLOCK_ID', (int) $dnkEnvDefault('DNK_SHADES_IBLOCK_ID', '47'));
+
 /** Инфоблок узкого промо-баннера в шапке (CODE dnk_header_promo). */
 define('DNK_HEADER_PROMO_IBLOCK_ID', $dnkEnvInt('DNK_HEADER_PROMO_IBLOCK_ID'));
 

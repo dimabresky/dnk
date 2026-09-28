@@ -2,6 +2,7 @@
 
 use Bitrix\Main\EventManager;
 use Dnk\PhpInterface\BasketBonusEvents;
+use Dnk\PhpInterface\CheckoutOrderPropEvents;
 use Dnk\PhpInterface\BonusAccrualEvents;
 use Dnk\PhpInterface\BonusDisplayEvents;
 use Dnk\PhpInterface\HeaderPromoEvents;
@@ -10,6 +11,7 @@ use Dnk\PhpInterface\IblockProductBrandEvents;
 use Dnk\PhpInterface\IblockProductMarkerHitEvents;
 use Dnk\PhpInterface\IblockProductMarkerIsNewEvents;
 use Dnk\PhpInterface\OrderExportEvents;
+use Dnk\PhpInterface\OrderFioEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\BlogCommentConsentEvents;
 use Dnk\PhpInterface\ReviewBonusEvents;
@@ -19,11 +21,23 @@ use Bitrix\Main\UserConsent\Internals\ConsentTable;
 
 EventManager::getInstance()->addEventHandler(
     'sale',
+    'OnSaleOrderBeforeSaved',
+    [OrderFioEvents::class, 'onSaleOrderBeforeSaved']
+);
+
+EventManager::getInstance()->addEventHandler(
+    'sale',
     'OnSaleOrderSaved',
     [OrderExportEvents::class, 'onSaleOrderSaved']
 );
 
 BasketBonusEvents::register();
+
+EventManager::getInstance()->addEventHandler(
+    'sale',
+    'OnSaleComponentOrderResultPrepared',
+    [CheckoutOrderPropEvents::class, 'onSaleComponentOrderResultPrepared']
+);
 
 EventManager::getInstance()->addEventHandler(
     'aspro.bonus',

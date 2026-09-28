@@ -150,6 +150,17 @@
     return isNaN(n) ? 1 : n;
   }
 
+  /**
+   * Diginetica state methods must resolve to an Object even when empty.
+   * Empty PHP arrays JSON-encode as []; keep non-empty lists as-is.
+   */
+  function resolveState(result) {
+    if (result && typeof result === 'object' && (!Array.isArray(result) || result.length > 0)) {
+      return result;
+    }
+    return {};
+  }
+
   window.digiLayer = {
     __dnkReady: true,
 
@@ -162,7 +173,7 @@
     },
 
     cartState: function () {
-      return request('cartState');
+      return request('cartState').then(resolveState);
     },
 
     addToFavorites: function (offerId) {
@@ -174,7 +185,7 @@
     },
 
     favoritesState: function () {
-      return request('favoritesState');
+      return request('favoritesState').then(resolveState);
     },
 
     addToCompare: function (offerId) {
@@ -186,12 +197,12 @@
     },
 
     comparesState: function () {
-      return request('comparesState');
+      return request('comparesState').then(resolveState);
     },
 
     /** Alias from Diginetica docs table (compareState). */
     compareState: function () {
-      return request('compareState');
+      return request('compareState').then(resolveState);
     },
   };
 })(window);

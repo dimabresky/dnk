@@ -6,6 +6,7 @@ use Dnk\PhpInterface\BasketBonusService;
 use Dnk\PhpInterface\BonusAccrualEvents;
 use Dnk\PhpInterface\BonusDisplayEvents;
 use Dnk\PhpInterface\CertificateBuyPhoneAuth;
+use Dnk\PhpInterface\CheckoutOrderPropEvents;
 use Dnk\PhpInterface\CertificateRequestStatus;
 use Dnk\PhpInterface\BonusBalanceQueueAgent;
 use Dnk\PhpInterface\HeaderPromoEvents;
@@ -15,6 +16,7 @@ use Dnk\PhpInterface\IblockProductMarkerIsNewEvents;
 use Dnk\PhpInterface\BonusBalanceQueueTable;
 use Dnk\PhpInterface\BonusFetchAgent;
 use Dnk\PhpInterface\OrderExportEvents;
+use Dnk\PhpInterface\OrderFioEvents;
 use Dnk\PhpInterface\OrderExportQueueAgent;
 use Dnk\PhpInterface\OrderExportQueueTable;
 use Dnk\PhpInterface\FeedPictureAgent;
@@ -35,6 +37,9 @@ use Dnk\PhpInterface\UserConsentService;
 use Dnk\PhpInterface\UserRegisterExportQueueTable;
 use Dnk\PhpInterface\UserReauthorizeQueueTable;
 use Dnk\PhpInterface\DigiLayerService;
+use Dnk\PhpInterface\CatalogYmlFeedExporter;
+use Dnk\PhpInterface\DigineticaGlobalFeedExporter;
+use Dnk\PhpInterface\ImshopCatalogFeedExporter;
 use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\ReviewBonusQueueTable;
 use Dnk\PhpInterface\ReviewBonusQueueAgent;
@@ -52,6 +57,7 @@ Loader::registerAutoLoadClasses(null, [
     BasketBonusService::class => $classesPath . '/BasketBonusService.php',
     BasketBonusEvents::class => $classesPath . '/BasketBonusEvents.php',
     CertificateBuyPhoneAuth::class => $classesPath . '/CertificateBuyPhoneAuth.php',
+    CheckoutOrderPropEvents::class => $classesPath . '/CheckoutOrderPropEvents.php',
     CertificateRequestStatus::class => $classesPath . '/CertificateRequestStatus.php',
     BonusAccrualEvents::class => $classesPath . '/BonusAccrualEvents.php',
     BonusDisplayEvents::class => $classesPath . '/BonusDisplayEvents.php',
@@ -62,6 +68,7 @@ Loader::registerAutoLoadClasses(null, [
     OrderExportQueueTable::class => $classesPath . '/OrderExportQueueTable.php',
     OrderExportQueueAgent::class => $classesPath . '/OrderExportQueueAgent.php',
     OrderExportEvents::class => $classesPath . '/OrderExportEvents.php',
+    OrderFioEvents::class => $classesPath . '/OrderFioEvents.php',
     ProductExtendedReviewsAgent::class => $classesPath . '/ProductExtendedReviewsAgent.php',
     ProductFeedAgent::class => $classesPath . '/ProductFeedAgent.php',
     FacebookProductFeedAgent::class => $classesPath . '/FacebookProductFeedAgent.php',
@@ -83,6 +90,9 @@ Loader::registerAutoLoadClasses(null, [
     UserConsentEvents::class => $classesPath . '/UserConsentEvents.php',
     BlogCommentConsentEvents::class => $classesPath . '/BlogCommentConsentEvents.php',
     DigiLayerService::class => $classesPath . '/DigiLayerService.php',
+    CatalogYmlFeedExporter::class => $classesPath . '/CatalogYmlFeedExporter.php',
+    DigineticaGlobalFeedExporter::class => $classesPath . '/DigineticaGlobalFeedExporter.php',
+    ImshopCatalogFeedExporter::class => $classesPath . '/ImshopCatalogFeedExporter.php',
     ReviewBonusEvents::class => $classesPath . '/ReviewBonusEvents.php',
     ReviewBonusQueueTable::class => $classesPath . '/ReviewBonusQueueTable.php',
     ReviewBonusQueueAgent::class => $classesPath . '/ReviewBonusQueueAgent.php',

@@ -27,7 +27,10 @@ class DnkSkuListComponent extends CBitrixComponent
 
         $iblockId = (int) ($this->arParams['IBLOCK_ID'] ?? 0);
         $elementId = (int) ($this->arParams['ELEMENT_ID'] ?? 0);
-        $shadesIblockId = (int) ($this->arParams['SHADES_IBLOCK_ID'] ?? 49);
+        $shadesIblockId = (int) ($this->arParams['SHADES_IBLOCK_ID'] ?? 0);
+        if ($shadesIblockId <= 0 && defined('DNK_SHADES_IBLOCK_ID')) {
+            $shadesIblockId = (int) DNK_SHADES_IBLOCK_ID;
+        }
 
         if ($iblockId <= 0 || $elementId <= 0) {
             $this->arResult['ITEMS'] = [];

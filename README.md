@@ -71,7 +71,7 @@ git submodule update --init --recursive
 
 1. Установить Битрикс в соответствии с [документацией](https://dev.1c-bitrix.ru/).
 2. Восстановить конфигурацию подключения к БД: `bitrix/php_interface/dbconn.php`, `bitrix/.settings.php` (не коммитить секреты в публичный репозиторий).
-3. Настроить константы и интеграции в `local/php_interface/include/constants.php` и окружении под целевой сервер.
+3. Настроить константы и интеграции в `local/php_interface/include/constants.php` и окружении под целевой сервер. Для SKU-оттенков в `.env` можно задать `DNK_SHADES_IBLOCK_ID` (по умолчанию `47`).
 4. Инициализировать git submodules (см. выше).
 5. **Сертификаты:** в `.env` указывается `DNK_CERTIFICATE_CATALOG_IBLOCK_ID` — ID инфоблока номинальных сертификатов (`NOMINAL`, `DETAIL_PICTURE`). Инфоблок заявок: из CLI — `php local/tools/install_certificate_requests_iblock.php` (ID из `.env`) или с аргументом `<ID>`; из браузера под администратором — `/local/tools/install_certificate_requests_iblock.php?run=Y[&cert_iblock_id=<ID>]` (`$GLOBALS['USER']->IsAdmin()`). Добавьте `DNK_CERTIFICATE_REQUEST_IBLOCK_ID` по выводу скрипта. Для создания заявок от гостей выдайте нужной группе право добавления элементов в ИБ заявок. Уведомление менеджера по почте: тип события `CUSTOM_MAIL`, в `.env` задайте `DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID` — ID строки нужного почтового шаблона (параметры письма `#IBLOCK_ID#`, `#ID#`, `#DETAIL_INFO#`).
 6. Каталог `upload/` и кэши ядра обычно не хранятся в репозитории — см. `.gitignore`.

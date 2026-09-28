@@ -9,7 +9,7 @@ alwaysApply: true
 - Code should be written using Bitrix Framework functions and classes whenever possible.
 - Include classes by use instruction.
 - You should place all helper methods and functions in local/php_interface/include/classes/Utils.php
-- Custom Bitrix modules live in local/modules/ (dnk.stickers in-tree; sms.traffic and bx.imagewebp are git submodules)
+- Custom Bitrix modules live in local/modules/ (dnk.stickers in-tree; sms.traffic, bx.imagewebp and bx.imshop.integration are git submodules)
 - For catalog HIT stickers (NEW / «Новинка») check local/modules/dnk.stickers and its README
 - One-off install / migrate / agent runner scripts belong in local/tools/
 - Feature work: branch from dev, open a PR into dev; do not commit directly to dev or master
