@@ -9,7 +9,7 @@ use Bitrix\Sale\Order;
 use Bitrix\Sale\PropertyValue;
 
 /**
- * При создании заказа физлица заполняет служебное свойство FIO из NAME и LAST_NAME.
+ * При создании заказа физлица заполняет служебное свойство FIO: фамилия, затем имя.
  */
 final class OrderFioEvents
 {
@@ -40,8 +40,8 @@ final class OrderFioEvents
 
         $parts = array_filter(
             [
-                self::propertyText($properties->getItemByOrderPropertyCode(self::CODE_NAME)),
                 self::propertyText($properties->getItemByOrderPropertyCode(self::CODE_LAST_NAME)),
+                self::propertyText($properties->getItemByOrderPropertyCode(self::CODE_NAME)),
             ],
             static fn (string $part): bool => $part !== ''
         );
