@@ -10,7 +10,7 @@ use CBlogComment;
 use CBlogPost;
 
 /**
- * Обработчик OnAfterCommentAdd: при публикации товарного отзыва ставит пользователя
+ * Обработчик OnCommentAdd: при добавлении товарного отзыва ставит пользователя
  * в очередь на POST начисления бонусов (ReviewBonusQueueTable).
  */
 final class ReviewBonusEvents
@@ -19,8 +19,9 @@ final class ReviewBonusEvents
 
     /**
      * @param int|string $commentId
+     * @param array<string, mixed> $fields
      */
-    public static function onAfterCommentAdd($commentId): void
+    public static function onCommentAdd($commentId, array $fields = []): void
     {
         $commentId = (int)$commentId;
         if ($commentId <= 0) {
@@ -28,7 +29,7 @@ final class ReviewBonusEvents
         }
 
         $comment = CBlogComment::GetByID($commentId);
-        if (!$comment || !$comment = $comment->Fetch()) {
+        if (!is_array($comment)) {
             return;
         }
 
@@ -38,7 +39,7 @@ final class ReviewBonusEvents
         }
 
         $blogPost = CBlogPost::GetByID($postId);
-        if (!$blogPost || !$blogPost = $blogPost->Fetch()) {
+        if (!is_array($blogPost)) {
             return;
         }
 
@@ -48,7 +49,7 @@ final class ReviewBonusEvents
         }
 
         $blog = CBlog::GetByID($blogId);
-        if (!$blog || !$blog = $blog->Fetch()) {
+        if (!is_array($blog)) {
             return;
         }
 
@@ -57,6 +58,9 @@ final class ReviewBonusEvents
         }
 
         $authorId = (int)($comment['AUTHOR_ID'] ?? 0);
+        if ($authorId <= 0) {
+            $authorId = (int)($fields['AUTHOR_ID'] ?? 0);
+        }
         if ($authorId <= 0) {
             return;
         }

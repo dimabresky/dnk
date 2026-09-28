@@ -17,7 +17,7 @@ use CBlogPost;
  * Интервал — DNK_REVIEW_BONUS_AGENT_INTERVAL (сек), периодический.
  *
  * В POST попадают только комментарии с ID больше LAST_COMMENT_ID.
- * После запроса метка сдвигается и те же отзывы больше не отправляются.
+ * Метка сдвигается только после success: true, неуспешный запрос эти отзывы не закрывает.
  */
 final class ReviewBonusQueueAgent
 {
@@ -147,21 +147,19 @@ final class ReviewBonusQueueAgent
         $sendResult = self::sendPayload($endpoint, $body);
         $now = new DateTime();
         foreach ($clients as $client) {
-            $fields = [
-                'LAST_COMMENT_ID' => $client['maxCommentId'],
-                'ATTEMPTS' => 0,
-                'DATE_UPDATE' => $now,
-            ];
-            if ($sendResult['ok']) {
-                $fields['STATUS'] = ReviewBonusQueueTable::STATUS_SENT;
-                $fields['DATE_LAST_SENT'] = $now;
-                $fields['LAST_ERROR'] = null;
-            } else {
-                $fields['STATUS'] = ReviewBonusQueueTable::STATUS_ERROR;
-                $fields['LAST_ERROR'] = mb_substr($sendResult['error'], 0, 500);
+            if (!$sendResult['ok']) {
+                self::fail($client['id'], $client['attempts'], $maxAttempts, $sendResult['error']);
+                continue;
             }
 
-            ReviewBonusQueueTable::update($client['id'], $fields);
+            ReviewBonusQueueTable::update($client['id'], [
+                'LAST_COMMENT_ID' => $client['maxCommentId'],
+                'STATUS' => ReviewBonusQueueTable::STATUS_SENT,
+                'DATE_LAST_SENT' => $now,
+                'ATTEMPTS' => 0,
+                'LAST_ERROR' => null,
+                'DATE_UPDATE' => $now,
+            ]);
         }
 
         return $return;

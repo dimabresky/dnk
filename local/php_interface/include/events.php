@@ -178,8 +178,8 @@ EventManager::getInstance()->addEventHandlerCompatible(
 
 EventManager::getInstance()->addEventHandlerCompatible(
     'blog',
-    'OnAfterCommentAdd',
-    [ReviewBonusEvents::class, 'onAfterCommentAdd'],
+    'OnCommentAdd',
+    [ReviewBonusEvents::class, 'onCommentAdd'],
     false,
     100
 );

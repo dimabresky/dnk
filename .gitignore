@@ -113,6 +113,9 @@
 # --- Imshop docs (local only) ---
 /local/imshopdocs/
 
+# --- Local Bitrix MCP secrets ---
+/local/bitrix-mcp-server/config.php
+
 # --- IDE / OS ---
 .idea/
 .vscode/
