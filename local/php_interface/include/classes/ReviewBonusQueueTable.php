@@ -37,6 +37,8 @@ class ReviewBonusQueueTable extends DataManager
                 ->configureDefaultValue(0),
             (new TextField('LAST_ERROR'))
                 ->configureNullable(true),
+            (new IntegerField('LAST_COMMENT_ID'))
+                ->configureNullable(true),
             (new DatetimeField('DATE_LAST_SENT'))
                 ->configureNullable(true),
             (new DatetimeField('DATE_INSERT'))

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Dnk\PhpInterface;
 
-use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\Loader;
+use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\Web\HttpClient;
 use CBlog;
 use CBlogComment;
@@ -15,6 +15,9 @@ use CBlogPost;
  * Агент крона: обработка очереди начисления бонусов за отзывы.
  * Регистрация в админке: \Dnk\PhpInterface\ReviewBonusQueueAgent::runReviewBonusQueueAgent();
  * Интервал — DNK_REVIEW_BONUS_AGENT_INTERVAL (сек), периодический.
+ *
+ * В POST попадают только комментарии с ID больше LAST_COMMENT_ID.
+ * После запроса метка сдвигается и те же отзывы больше не отправляются.
  */
 final class ReviewBonusQueueAgent
 {
@@ -50,78 +53,125 @@ final class ReviewBonusQueueAgent
         }
 
         $result = ReviewBonusQueueTable::getList([
-            'select' => ['ID', 'USER_ID', 'ATTEMPTS', 'DATE_LAST_SENT'],
+            'select' => ['ID', 'USER_ID', 'ATTEMPTS', 'LAST_COMMENT_ID'],
             'filter' => ['=STATUS' => ReviewBonusQueueTable::STATUS_PENDING],
             'order' => ['ID' => 'ASC'],
             'limit' => $batch,
         ]);
 
+        $rows = [];
         while ($row = $result->fetch()) {
+            $rows[] = $row;
+        }
+        if ($rows === []) {
+            return $return;
+        }
+
+        $blogId = self::resolveCatalogBlogId();
+        if ($blogId === null) {
+            foreach ($rows as $row) {
+                self::fail((int)$row['ID'], (int)$row['ATTEMPTS'], $maxAttempts, 'blog_not_found');
+            }
+
+            return $return;
+        }
+
+        $postIds = self::collectPostIds($blogId);
+        if ($postIds === []) {
+            foreach ($rows as $row) {
+                self::fail((int)$row['ID'], (int)$row['ATTEMPTS'], $maxAttempts, 'no_blog_posts');
+            }
+
+            return $return;
+        }
+
+        /** @var list<array{id: int, attempts: int, phone: string, reviewsCount: int, maxCommentId: int}> $clients */
+        $clients = [];
+        foreach ($rows as $row) {
             $id = (int)$row['ID'];
             $userId = (int)$row['USER_ID'];
             $attempts = (int)$row['ATTEMPTS'];
+            $lastCommentId = (int)($row['LAST_COMMENT_ID'] ?? 0);
 
-            $phone = Utils::resolveUserPhoneDigitsForBonus($userId);
-            if ($phone === null || $phone === '') {
+            $phone = self::resolvePhone($userId);
+            if ($phone === '') {
                 self::fail($id, $attempts, $maxAttempts, 'no_phone');
                 continue;
             }
 
-            $blogId = self::resolveCatalogBlogId();
-            if ($blogId === null) {
-                self::fail($id, $attempts, $maxAttempts, 'blog_not_found');
-                continue;
-            }
-
-            $postIds = self::collectPostIds($blogId);
-            if ($postIds === []) {
-                self::fail($id, $attempts, $maxAttempts, 'no_blog_posts');
-                continue;
-            }
-
-            $reviewsCount = self::countReviews($postIds, $userId, $row['DATE_LAST_SENT'] ?? null);
-            if ($reviewsCount === 0) {
+            $reviews = self::collectNewReviews($postIds, $userId, $lastCommentId);
+            if ($reviews['count'] === 0) {
                 ReviewBonusQueueTable::update($id, [
                     'STATUS' => ReviewBonusQueueTable::STATUS_SENT,
                     'DATE_UPDATE' => new DateTime(),
                 ]);
-
                 continue;
             }
 
-            $payload = [
-                'date_upload' => date('Y-m-d'),
-                'clients' => [
-                    [
-                        'phone' => $phone,
-                        'reviews_count' => $reviewsCount,
-                    ],
-                ],
+            $clients[] = [
+                'id' => $id,
+                'attempts' => $attempts,
+                'phone' => $phone,
+                'reviewsCount' => $reviews['count'],
+                'maxCommentId' => $reviews['maxId'],
             ];
+        }
 
-            $body = json_encode($payload, JSON_UNESCAPED_UNICODE);
-            if ($body === false) {
-                self::fail($id, $attempts, $maxAttempts, 'json_encode_failed');
-                continue;
+        if ($clients === []) {
+            return $return;
+        }
+
+        $payloadClients = [];
+        foreach ($clients as $client) {
+            $payloadClients[] = [
+                'phone' => $client['phone'],
+                'reviews_count' => $client['reviewsCount'],
+            ];
+        }
+
+        $body = json_encode(
+            [
+                'date_upload' => date('Y-m-d'),
+                'clients' => $payloadClients,
+            ],
+            JSON_UNESCAPED_UNICODE
+        );
+        if ($body === false) {
+            foreach ($clients as $client) {
+                self::fail($client['id'], $client['attempts'], $maxAttempts, 'json_encode_failed');
             }
 
-            $sendResult = self::sendPayload($endpoint, $body);
+            return $return;
+        }
+
+        $sendResult = self::sendPayload($endpoint, $body);
+        $now = new DateTime();
+        foreach ($clients as $client) {
+            $fields = [
+                'LAST_COMMENT_ID' => $client['maxCommentId'],
+                'ATTEMPTS' => 0,
+                'DATE_UPDATE' => $now,
+            ];
             if ($sendResult['ok']) {
-                ReviewBonusQueueTable::update($id, [
-                    'STATUS' => ReviewBonusQueueTable::STATUS_SENT,
-                    'DATE_LAST_SENT' => new DateTime(),
-                    'ATTEMPTS' => 0,
-                    'LAST_ERROR' => null,
-                    'DATE_UPDATE' => new DateTime(),
-                ]);
-
-                continue;
+                $fields['STATUS'] = ReviewBonusQueueTable::STATUS_SENT;
+                $fields['DATE_LAST_SENT'] = $now;
+                $fields['LAST_ERROR'] = null;
+            } else {
+                $fields['STATUS'] = ReviewBonusQueueTable::STATUS_ERROR;
+                $fields['LAST_ERROR'] = mb_substr($sendResult['error'], 0, 500);
             }
 
-            self::fail($id, $attempts, $maxAttempts, $sendResult['error']);
+            ReviewBonusQueueTable::update($client['id'], $fields);
         }
 
         return $return;
+    }
+
+    private static function resolvePhone(int $userId): string
+    {
+        $client = Utils::buildOrderExportClientBlock($userId);
+
+        return trim((string)($client['phone'] ?? ''));
     }
 
     private static function resolveCatalogBlogId(): ?int
@@ -160,9 +210,13 @@ final class ReviewBonusQueueAgent
     }
 
     /**
+     * Опубликованные корневые отзывы пользователя, которые ещё не входили в POST.
+     *
      * @param int[] $postIds
+     *
+     * @return array{count: int, maxId: int}
      */
-    private static function countReviews(array $postIds, int $userId, ?string $dateLastSent): int
+    private static function collectNewReviews(array $postIds, int $userId, int $lastCommentId): array
     {
         $filter = [
             '@POST_ID' => $postIds,
@@ -170,12 +224,12 @@ final class ReviewBonusQueueAgent
             '=PUBLISH_STATUS' => 'P',
             '=PARENT_ID' => 0,
         ];
-
-        if ($dateLastSent !== null) {
-            $filter['>DATE_CREATE'] = $dateLastSent;
+        if ($lastCommentId > 0) {
+            $filter['>ID'] = $lastCommentId;
         }
 
         $count = 0;
+        $maxId = $lastCommentId;
         $res = CBlogComment::GetList(
             ['ID' => 'ASC'],
             $filter,
@@ -183,11 +237,19 @@ final class ReviewBonusQueueAgent
             false,
             ['ID']
         );
-        while ($res->Fetch()) {
+        while ($comment = $res->Fetch()) {
+            $commentId = (int)($comment['ID'] ?? 0);
+            if ($commentId <= 0) {
+                continue;
+            }
+
             ++$count;
+            if ($commentId > $maxId) {
+                $maxId = $commentId;
+            }
         }
 
-        return $count;
+        return ['count' => $count, 'maxId' => $maxId];
     }
 
     private static function fail(int $id, int $attempts, int $maxAttempts, string $error): void
@@ -229,15 +291,55 @@ final class ReviewBonusQueueAgent
         }
 
         $status = $http->getStatus();
-        if ($status >= 200 && $status < 300) {
-            return ['ok' => true, 'error' => ''];
+        $responseStr = is_string($response) ? $response : '';
+        if ($status < 200 || $status >= 300) {
+            $err = 'HTTP ' . $status;
+            if ($responseStr !== '') {
+                $err .= ': ' . mb_substr($responseStr, 0, 500);
+            }
+
+            return ['ok' => false, 'error' => $err];
         }
 
-        $err = 'HTTP ' . $status;
-        if (is_string($response) && $response !== '') {
-            $err .= ': ' . mb_substr($response, 0, 500);
+        $decoded = json_decode($responseStr, true);
+        if (!is_array($decoded)) {
+            return ['ok' => false, 'error' => 'invalid_json'];
         }
 
-        return ['ok' => false, 'error' => $err];
+        if (($decoded['success'] ?? false) !== true) {
+            return ['ok' => false, 'error' => self::formatApiError($decoded)];
+        }
+
+        return ['ok' => true, 'error' => ''];
+    }
+
+    /**
+     * @param array<string, mixed> $decoded
+     */
+    private static function formatApiError(array $decoded): string
+    {
+        $error = trim((string)($decoded['error'] ?? ''));
+        if ($error === '') {
+            $error = 'success_false';
+        }
+
+        $details = $decoded['details'] ?? null;
+        if (!is_array($details)) {
+            return $error;
+        }
+
+        $parts = [];
+        foreach ($details as $detail) {
+            $text = trim((string)$detail);
+            if ($text !== '') {
+                $parts[] = $text;
+            }
+        }
+
+        if ($parts === []) {
+            return $error;
+        }
+
+        return $error . ': ' . implode('; ', $parts);
     }
 }

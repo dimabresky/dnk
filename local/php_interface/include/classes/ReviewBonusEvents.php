@@ -74,6 +74,7 @@ final class ReviewBonusEvents
                 return;
             }
 
+            // LAST_COMMENT_ID не сбрасываем: уже переданные отзывы в новый POST не попадают.
             ReviewBonusQueueTable::update((int)$existing['ID'], [
                 'STATUS' => ReviewBonusQueueTable::STATUS_PENDING,
                 'ATTEMPTS' => 0,
