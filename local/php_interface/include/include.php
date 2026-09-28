@@ -16,6 +16,7 @@ use Dnk\PhpInterface\IblockProductMarkerIsNewEvents;
 use Dnk\PhpInterface\BonusBalanceQueueTable;
 use Dnk\PhpInterface\BonusFetchAgent;
 use Dnk\PhpInterface\OrderExportEvents;
+use Dnk\PhpInterface\OrderFioEvents;
 use Dnk\PhpInterface\OrderExportQueueAgent;
 use Dnk\PhpInterface\OrderExportQueueTable;
 use Dnk\PhpInterface\FeedPictureAgent;
@@ -64,6 +65,7 @@ Loader::registerAutoLoadClasses(null, [
     OrderExportQueueTable::class => $classesPath . '/OrderExportQueueTable.php',
     OrderExportQueueAgent::class => $classesPath . '/OrderExportQueueAgent.php',
     OrderExportEvents::class => $classesPath . '/OrderExportEvents.php',
+    OrderFioEvents::class => $classesPath . '/OrderFioEvents.php',
     ProductExtendedReviewsAgent::class => $classesPath . '/ProductExtendedReviewsAgent.php',
     ProductFeedAgent::class => $classesPath . '/ProductFeedAgent.php',
     FacebookProductFeedAgent::class => $classesPath . '/FacebookProductFeedAgent.php',

@@ -11,11 +11,18 @@ use Dnk\PhpInterface\IblockProductBrandEvents;
 use Dnk\PhpInterface\IblockProductMarkerHitEvents;
 use Dnk\PhpInterface\IblockProductMarkerIsNewEvents;
 use Dnk\PhpInterface\OrderExportEvents;
+use Dnk\PhpInterface\OrderFioEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\BlogCommentConsentEvents;
 use Dnk\PhpInterface\UserConsentEvents;
 use Dnk\PhpInterface\ProfileBirthdayEvents;
 use Bitrix\Main\UserConsent\Internals\ConsentTable;
+
+EventManager::getInstance()->addEventHandler(
+    'sale',
+    'OnSaleOrderBeforeSaved',
+    [OrderFioEvents::class, 'onSaleOrderBeforeSaved']
+);
 
 EventManager::getInstance()->addEventHandler(
     'sale',
