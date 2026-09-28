@@ -40,6 +40,9 @@ use Dnk\PhpInterface\DigiLayerService;
 use Dnk\PhpInterface\CatalogYmlFeedExporter;
 use Dnk\PhpInterface\DigineticaGlobalFeedExporter;
 use Dnk\PhpInterface\ImshopCatalogFeedExporter;
+use Dnk\PhpInterface\ReviewBonusEvents;
+use Dnk\PhpInterface\ReviewBonusQueueTable;
+use Dnk\PhpInterface\ReviewBonusQueueAgent;
 use Dnk\PhpInterface\Utils;
 
 $includeDir = __DIR__;
@@ -90,6 +93,9 @@ Loader::registerAutoLoadClasses(null, [
     CatalogYmlFeedExporter::class => $classesPath . '/CatalogYmlFeedExporter.php',
     DigineticaGlobalFeedExporter::class => $classesPath . '/DigineticaGlobalFeedExporter.php',
     ImshopCatalogFeedExporter::class => $classesPath . '/ImshopCatalogFeedExporter.php',
+    ReviewBonusEvents::class => $classesPath . '/ReviewBonusEvents.php',
+    ReviewBonusQueueTable::class => $classesPath . '/ReviewBonusQueueTable.php',
+    ReviewBonusQueueAgent::class => $classesPath . '/ReviewBonusQueueAgent.php',
 ]);
 
 
