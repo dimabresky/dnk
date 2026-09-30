@@ -7,5 +7,5 @@ $MESS ['BPC_ERROR_NO_URL'] = "Please enter the address (URL)";
 $MESS ['BPC_ERROR_NO_TITLE'] = "Please enter the title";
 $MESS ['BPC_ERROR_NO_COMMENT_PERM'] = "Not enough rights to comment";
 $MESS ['BPC_ERROR_AUTH_TO_COMMENT'] = "Sign in to leave a review";
-$MESS ['NO_COMMENT_TEXT'] = "Fill one of the fields: advantages, disadvantages, comment";
+$MESS ['NO_COMMENT_TEXT'] = "Enter review text — at least 5 characters.";
 ?>

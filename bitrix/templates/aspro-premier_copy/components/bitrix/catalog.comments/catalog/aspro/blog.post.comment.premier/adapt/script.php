@@ -400,6 +400,14 @@ function submitComment() {
     BX.onCustomEvent('onSubmitForm', [eventdata]);
 }
 
+function reviewPlainText(value) {
+    return String(value || '')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;|&#160;/gi, ' ')
+        .replace(/\u00a0/g, ' ')
+        .trim();
+}
+
 function prepareFormInfo(obForm, bCommentRequired) {
     let isValid = true;
 
@@ -439,21 +447,25 @@ function prepareFormInfo(obForm, bCommentRequired) {
         resultCommentText += `<uniqid>${oid}</uniqid>`;
     }
 
-    if (bCommentRequired && !resultCommentText) {
+    var plainLength = reviewPlainText(virtues.val()).length
+        + reviewPlainText(limitations.val()).length
+        + reviewPlainText(comment.val()).length;
+    if ((!edit_id && plainLength < 5) || (bCommentRequired && !resultCommentText)) {
+        isValid = false;
         const $label = form.find('.form__text-field:visible:first label:not(.error)');
+        const anchor = $label[0] || form.find('label[for="comment"]')[0];
         const $error = form.find('.comments-error');
-        if (!$error.length) {
+        if (!$error.length && anchor) {
             const error = BX.create({
                 tag: 'label',
                 text: "<?=GetMessage('NO_COMMENT_TEXT');?>",
                 attrs: {
                     class: 'error comments-error',
-                    for: 'virtues'
+                    for: 'comment'
                 },
             });
-            BX.insertAfter(error, $label[0]);
+            BX.insertAfter(error, anchor);
         }
-        isValid = false;
     }
 
     isValid = isValid && $(obForm).valid();
@@ -722,14 +734,15 @@ $('.blog-add-comment .btn').on('click', function() {
     }
 });
 
-<?if (isset($arParams['REVIEW_COMMENT_REQUIRED']) && $arParams['REVIEW_COMMENT_REQUIRED'] === 'Y'):?>
-    $(document).on('paste, change, keyup', '.form.blog-comment-fields textarea', function() {
-        let value = $(this).val();
-        if (value.length) {
-            $(this).closest('.blog-comment__form').find('.comments-error').remove();
-        }
-    });
-<?endif;?>
+$(document).on('paste change keyup', '.form.blog-comment-fields textarea', function() {
+    var $form = $(this).closest('form');
+    var plainLength = reviewPlainText($form.find('[name=virtues]').val()).length
+        + reviewPlainText($form.find('[name=limitations]').val()).length
+        + reviewPlainText($form.find('[name=comment]').val()).length;
+    if (plainLength >= 5) {
+        $(this).closest('.blog-comment__form').find('.comments-error').remove();
+    }
+});
 
 <?if (!$arResult['CanUserComment']):?>
     <?php
