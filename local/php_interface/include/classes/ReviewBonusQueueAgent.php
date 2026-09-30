@@ -218,9 +218,9 @@ final class ReviewBonusQueueAgent
     {
         $filter = [
             '@POST_ID' => $postIds,
-            '=AUTHOR_ID' => $userId,
-            '=PUBLISH_STATUS' => 'P',
-            '=PARENT_ID' => 0,
+            'AUTHOR_ID' => $userId,
+            'PUBLISH_STATUS' => 'P',
+            'PARENT_ID' => false,
         ];
         if ($lastCommentId > 0) {
             $filter['>ID'] = $lastCommentId;
