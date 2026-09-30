@@ -10,8 +10,8 @@ use CBlogComment;
 use CBlogPost;
 
 /**
- * Обработчик OnCommentAdd: при добавлении товарного отзыва ставит пользователя
- * в очередь на POST начисления бонусов (ReviewBonusQueueTable).
+ * Ставит автора опубликованного корневого отзыва каталога в очередь
+ * на POST начисления бонусов (ReviewBonusQueueTable).
  */
 final class ReviewBonusEvents
 {
@@ -23,6 +23,30 @@ final class ReviewBonusEvents
      */
     public static function onCommentAdd($commentId, array $fields = []): void
     {
+        self::enqueuePublishedReview($commentId, $fields);
+    }
+
+    /**
+     * Очередь только при смене статуса на опубликованный, не при правке текста.
+     *
+     * @param int|string $commentId
+     * @param array<string, mixed> $fields
+     */
+    public static function onCommentUpdate($commentId, array $fields = []): void
+    {
+        if (($fields['PUBLISH_STATUS'] ?? '') !== BLOG_PUBLISH_STATUS_PUBLISH) {
+            return;
+        }
+
+        self::enqueuePublishedReview($commentId, $fields);
+    }
+
+    /**
+     * @param int|string $commentId
+     * @param array<string, mixed> $fields
+     */
+    private static function enqueuePublishedReview($commentId, array $fields): void
+    {
         $commentId = (int)$commentId;
         if ($commentId <= 0) {
             return;
@@ -30,6 +54,14 @@ final class ReviewBonusEvents
 
         $comment = CBlogComment::GetByID($commentId);
         if (!is_array($comment)) {
+            return;
+        }
+
+        if (($comment['PUBLISH_STATUS'] ?? '') !== BLOG_PUBLISH_STATUS_PUBLISH) {
+            return;
+        }
+
+        if (!self::isRootComment($comment)) {
             return;
         }
 
@@ -95,5 +127,18 @@ final class ReviewBonusEvents
             'ATTEMPTS' => 0,
             'DATE_INSERT' => $now,
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $comment
+     */
+    private static function isRootComment(array $comment): bool
+    {
+        $parentId = $comment['PARENT_ID'] ?? null;
+        if ($parentId === null || $parentId === '') {
+            return true;
+        }
+
+        return (int)$parentId === 0;
     }
 }

@@ -183,3 +183,11 @@ EventManager::getInstance()->addEventHandlerCompatible(
     false,
     100
 );
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'blog',
+    'OnCommentUpdate',
+    [ReviewBonusEvents::class, 'onCommentUpdate'],
+    false,
+    100
+);
