@@ -14,6 +14,7 @@ use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\OrderFioEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\BlogCommentConsentEvents;
+use Dnk\PhpInterface\ImshopPickupEvents;
 use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\UserConsentEvents;
 use Dnk\PhpInterface\ProfileBirthdayEvents;
@@ -190,4 +191,10 @@ EventManager::getInstance()->addEventHandlerCompatible(
     [ReviewBonusEvents::class, 'onCommentUpdate'],
     false,
     100
+);
+
+EventManager::getInstance()->addEventHandler(
+    'bx.imshop.integration',
+    'onPickupLocationsBuild',
+    [ImshopPickupEvents::class, 'onPickupLocationsBuild']
 );
