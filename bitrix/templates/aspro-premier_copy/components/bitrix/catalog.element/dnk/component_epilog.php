@@ -8,6 +8,8 @@ use Bitrix\Main\Localization\Loc;
 Loc::loadMessages(__FILE__);
 global $arTheme, $APPLICATION;
 
+$APPLICATION->AddHeadString('<meta name="product" content="Digi Product Page">', true);
+
 $arExtensions = ['fancybox', 'detail', 'swiper', 'swiper_events', 'rounded_columns', 'viewed', 'gallery', 'fancybox', 'stores_amount'];
 
 if ($arParams['SHOW_RATING']) {

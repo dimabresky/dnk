@@ -32,6 +32,7 @@ $bShowLeftBlock = ('Y' == $arTheme['LEFT_BLOCK_CATALOG_SECTIONS']['VALUE'] && !d
 
 $APPLICATION->SetPageProperty('MENU', 'N');
 $APPLICATION->AddViewContent('right_block_class', 'catalog_page ');
+$APPLICATION->AddHeadString('<meta name="category" content="Digi Category Page">', true);
 ?>
 
 <?if (TSolution::checkAjaxRequest()) { ?>
