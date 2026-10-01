@@ -176,16 +176,6 @@ final class ImshopPickupEvents
             return '';
         }
 
-        if (ctype_digit($locationCode)) {
-            $location = LocationTable::getRowById((int) $locationCode);
-            if (is_array($location)) {
-                $code = trim((string) ($location['CODE'] ?? ''));
-                if ($code !== '') {
-                    $locationCode = $code;
-                }
-            }
-        }
-
         $rows = LocationTable::getList([
             'filter' => [
                 '=CODE' => $locationCode,
