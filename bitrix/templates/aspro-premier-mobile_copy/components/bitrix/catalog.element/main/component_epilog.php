@@ -8,6 +8,8 @@ use Bitrix\Main\Localization\Loc;
 Loc::loadMessages(__FILE__);
 global $arTheme, $APPLICATION;
 
+$APPLICATION->AddHeadString('<meta name="product" content="Digi Product Page">', true);
+
 $arExtensions = [
     'bottom_icons_panel',
     'detail',
