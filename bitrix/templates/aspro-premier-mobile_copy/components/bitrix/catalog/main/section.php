@@ -32,6 +32,7 @@ $arRegion = TSolution\Regionality::getCurrentRegion();
 $APPLICATION->SetPageProperty('MENU', 'N');
 $APPLICATION->SetPageProperty('TITLE_CLASS', 'no-flex-title');
 $APPLICATION->AddViewContent('right_block_class', 'catalog_page ');
+$APPLICATION->AddHeadString('<meta name="category" content="Digi Category Page">', true);
 ?>
 
 <?if (TSolution::checkAjaxRequest()) {?>
