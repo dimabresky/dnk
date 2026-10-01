@@ -40,7 +40,10 @@ use Dnk\PhpInterface\DigiLayerService;
 use Dnk\PhpInterface\CatalogYmlFeedExporter;
 use Dnk\PhpInterface\DigineticaGlobalFeedExporter;
 use Dnk\PhpInterface\ImshopCatalogFeedExporter;
+use Dnk\PhpInterface\ImshopBelpostPickup;
+use Dnk\PhpInterface\ImshopEuropostPickup;
 use Dnk\PhpInterface\ImshopPickupEvents;
+use Dnk\PhpInterface\ImshopPostalPickup;
 use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\ReviewBonusQueueTable;
 use Dnk\PhpInterface\ReviewBonusQueueAgent;
@@ -94,6 +97,9 @@ Loader::registerAutoLoadClasses(null, [
     CatalogYmlFeedExporter::class => $classesPath . '/CatalogYmlFeedExporter.php',
     DigineticaGlobalFeedExporter::class => $classesPath . '/DigineticaGlobalFeedExporter.php',
     ImshopCatalogFeedExporter::class => $classesPath . '/ImshopCatalogFeedExporter.php',
+    ImshopPostalPickup::class => $classesPath . '/ImshopPostalPickup.php',
+    ImshopEuropostPickup::class => $classesPath . '/ImshopEuropostPickup.php',
+    ImshopBelpostPickup::class => $classesPath . '/ImshopBelpostPickup.php',
     ImshopPickupEvents::class => $classesPath . '/ImshopPickupEvents.php',
     ReviewBonusEvents::class => $classesPath . '/ReviewBonusEvents.php',
     ReviewBonusQueueTable::class => $classesPath . '/ReviewBonusQueueTable.php',
