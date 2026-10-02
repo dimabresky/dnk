@@ -20,6 +20,7 @@
 declare(strict_types=1);
 
 use Bitrix\Main\Loader;
+use Dnk\PhpInterface\BlogCommentTextEvents;
 use Dnk\PhpInterface\ProductExtendedReviewsAgent;
 use Dnk\PhpInterface\Utils;
 
@@ -624,9 +625,6 @@ $buildCommentFields = static function (
     }
 
     $postText = trim((string) ($comment['post_text'] ?? ''));
-    if ($postText === '') {
-        $postText = '<comment></comment>';
-    }
 
     $fields = [
         'BLOG_ID' => $blogId,
@@ -696,6 +694,7 @@ $stats = [
     'skipped_not_found' => 0,
     'skipped_ambiguous' => 0,
     'skipped_orphan_reply' => 0,
+    'skipped_short_text' => 0,
     'skipped_error' => 0,
 ];
 $touchedElementIds = [];
@@ -727,6 +726,16 @@ while ($pending !== [] && $progress) {
         }
 
         $progress = true;
+
+        $postText = trim((string) ($comment['post_text'] ?? ''));
+        if (BlogCommentTextEvents::isTextTooShort($postText)) {
+            ++$stats['skipped_short_text'];
+            $warnings[] = "Skip comment {$oldId}: review text is shorter than 5 characters";
+            if ($oldId > 0 && isset($importedOldIds[$oldId])) {
+                $oldToNew[$oldId] = (int) $importedOldIds[$oldId];
+            }
+            continue;
+        }
 
         $mlOnliner = (string) ($comment['product']['ml_onliner'] ?? '');
         $match = Utils::findCatalogElementIdByImportCode($args['iblock'], $mlOnliner, $codeMap);
@@ -847,6 +856,7 @@ $dnkOut('Skipped empty ML_ONLINER: ' . $stats['skipped_no_onliner'] . "\n");
 $dnkOut('Skipped product not found: ' . $stats['skipped_not_found'] . "\n");
 $dnkOut('Skipped ambiguous code: ' . $stats['skipped_ambiguous'] . "\n");
 $dnkOut('Skipped orphan replies: ' . $stats['skipped_orphan_reply'] . "\n");
+$dnkOut('Skipped short text: ' . $stats['skipped_short_text'] . "\n");
 $dnkOut('Skipped errors: ' . $stats['skipped_error'] . "\n");
 $dnkOut('Catalog import codes found: ' . count($codeMap['found']) . "\n");
 $dnkOut('Catalog import codes ambiguous: ' . count($codeMap['ambiguous']) . "\n");

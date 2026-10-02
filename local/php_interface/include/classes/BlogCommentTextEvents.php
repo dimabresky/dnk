@@ -59,6 +59,11 @@ final class BlogCommentTextEvents
         return false;
     }
 
+    public static function isTextTooShort(string $postText): bool
+    {
+        return self::plainLength($postText) < self::MIN_PLAIN_LENGTH;
+    }
+
     /**
      * @param array<string, mixed> $fields
      */
