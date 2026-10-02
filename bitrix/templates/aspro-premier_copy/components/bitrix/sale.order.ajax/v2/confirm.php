@@ -1,5 +1,6 @@
 <? if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 
+use Bitrix\Main\Application;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Sale\Order;
 use Bitrix\Sale\PaySystem\BaseServiceHandler;
@@ -62,8 +63,17 @@ if ($arParams["SET_TITLE"] == "Y")
 							$paymentUrl = (string)($arPaySystem['PAYMENT_URL'] ?? '');
 							$isBePaidCheckout = mb_stripos($actionFile, 'bepaid') !== false
 								&& ($psMode === 'checkout' || $paymentUrl !== '');
+							$bePaidRequest = Application::getInstance()->getContext()->getRequest();
+							$bePaidReturnStatus = (string)$bePaidRequest->get('status');
+							$bePaidReturnToken = (string)$bePaidRequest->get('token');
+							$bePaidReturnUid = (string)$bePaidRequest->get('uid');
+							$bePaidReferer = (string)$bePaidRequest->getServer()->get('HTTP_REFERER');
+							$isBePaidReturn = str_contains($bePaidReferer, 'bepaid.by')
+								|| ($bePaidReturnStatus !== '' && ($bePaidReturnToken !== '' || $bePaidReturnUid !== ''));
+							$gatewayAlreadyPaid = (string)($payment['PS_STATUS'] ?? '') === 'Y'
+								|| (string)($payment['PS_STATUS_CODE'] ?? '') === 'successful';
 
-							if ($isBePaidCheckout)
+							if ($isBePaidCheckout && !$isBePaidReturn && !$gatewayAlreadyPaid)
 							{
 								$bePaidRedirectUrl = $paymentUrl;
 								if ($bePaidRedirectUrl === '' && $psMode === 'checkout')
@@ -131,9 +141,7 @@ if ($arParams["SET_TITLE"] == "Y")
 										<? endif ?>
 										<? if ($bePaidRedirectUrl !== ''): ?>
 											<script>
-												if (document.referrer.indexOf('bepaid.by') === -1) {
-													window.location.replace('<?=CUtil::JSEscape($bePaidRedirectUrl)?>');
-												}
+												window.location.replace('<?=CUtil::JSEscape($bePaidRedirectUrl)?>');
 											</script>
 										<? endif ?>
 									</td>
