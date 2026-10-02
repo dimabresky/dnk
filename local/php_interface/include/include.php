@@ -31,6 +31,7 @@ use Dnk\PhpInterface\ProfileBirthdayEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\UserRegisterExportQueueAgent;
 use Dnk\PhpInterface\BlogCommentConsentEvents;
+use Dnk\PhpInterface\BlogCommentTextEvents;
 use Dnk\PhpInterface\UserConsentEvents;
 use Dnk\PhpInterface\UserConsentRevokeTable;
 use Dnk\PhpInterface\UserConsentService;
@@ -93,6 +94,7 @@ Loader::registerAutoLoadClasses(null, [
     UserConsentService::class => $classesPath . '/UserConsentService.php',
     UserConsentEvents::class => $classesPath . '/UserConsentEvents.php',
     BlogCommentConsentEvents::class => $classesPath . '/BlogCommentConsentEvents.php',
+    BlogCommentTextEvents::class => $classesPath . '/BlogCommentTextEvents.php',
     DigiLayerService::class => $classesPath . '/DigiLayerService.php',
     CatalogYmlFeedExporter::class => $classesPath . '/CatalogYmlFeedExporter.php',
     DigineticaGlobalFeedExporter::class => $classesPath . '/DigineticaGlobalFeedExporter.php',
