@@ -363,7 +363,6 @@ function submitComment() {
     BX('post-button').focus();
     BX('post-button').disabled = true;
     obForm = BX('form_comment');
-    const bCommentRequired = <?=isset($arParams['REVIEW_COMMENT_REQUIRED']) && $arParams['REVIEW_COMMENT_REQUIRED'] === 'N' ? 'false' : 'true';?>;
     <?if ($arParams['AJAX_POST'] == 'Y'):?>
         if (BX('edit_id').value > 0) {
             val = BX('edit_id').value;
@@ -379,7 +378,7 @@ function submitComment() {
 
         BX.onCustomEvent('comment-send-aspro');
 
-        if (!prepareFormInfo(obForm, bCommentRequired)) {
+        if (!prepareFormInfo(obForm)) {
             BX('post-button').disabled = false;
             return false;
         }
@@ -408,7 +407,7 @@ function reviewPlainText(value) {
         .trim();
 }
 
-function prepareFormInfo(obForm, bCommentRequired) {
+function prepareFormInfo(obForm) {
     let isValid = true;
 
     var form = $(obForm);
@@ -420,9 +419,6 @@ function prepareFormInfo(obForm, bCommentRequired) {
     var limitations = form.find('[name=limitations]');
     var virtues = form.find('[name=virtues]');
     var rating = form.find('[name=rating]');
-    var edit_id = form.find('[name=edit_id]') ?
-        parseInt(form.find('[name=edit_id]').val()) :
-        false;
     var parent_id = form.find('[name=parentId]') ?
         parseInt(form.find('[name=parentId]').val()) :
         false;
@@ -443,14 +439,12 @@ function prepareFormInfo(obForm, bCommentRequired) {
     }
     if (comment.val()) {
         resultCommentText += `<comment>${comment.val().replace(/(<([^>]+)>)/gi, "")}</comment>`;
-    } else if ((!bCommentRequired || edit_id) && !parent_id) {
-        resultCommentText += `<uniqid>${oid}</uniqid>`;
     }
 
     var plainLength = reviewPlainText(virtues.val()).length
         + reviewPlainText(limitations.val()).length
         + reviewPlainText(comment.val()).length;
-    if ((!edit_id && plainLength < 5) || (bCommentRequired && !resultCommentText)) {
+    if (plainLength < 5) {
         isValid = false;
         const $label = form.find('.form__text-field:visible:first label:not(.error)');
         const anchor = $label[0] || form.find('label[for="comment"]')[0];
@@ -466,6 +460,8 @@ function prepareFormInfo(obForm, bCommentRequired) {
             });
             BX.insertAfter(error, anchor);
         }
+    } else if (!comment.val() && !parent_id) {
+        resultCommentText += `<uniqid>${oid}</uniqid>`;
     }
 
     isValid = isValid && $(obForm).valid();

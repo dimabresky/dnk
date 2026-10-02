@@ -14,6 +14,7 @@ use Dnk\PhpInterface\OrderExportEvents;
 use Dnk\PhpInterface\OrderFioEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\BlogCommentConsentEvents;
+use Dnk\PhpInterface\BlogCommentTextEvents;
 use Dnk\PhpInterface\ImshopPickupEvents;
 use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\UserConsentEvents;
@@ -175,6 +176,22 @@ EventManager::getInstance()->addEventHandlerCompatible(
     [BlogCommentConsentEvents::class, 'onBeforeCommentAdd'],
     false,
     50
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'blog',
+    'OnBeforeCommentAdd',
+    [BlogCommentTextEvents::class, 'onBeforeCommentAdd'],
+    false,
+    80
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'blog',
+    'OnBeforeCommentUpdate',
+    [BlogCommentTextEvents::class, 'onBeforeCommentUpdate'],
+    false,
+    80
 );
 
 EventManager::getInstance()->addEventHandlerCompatible(
