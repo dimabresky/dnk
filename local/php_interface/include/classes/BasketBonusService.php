@@ -594,12 +594,81 @@ final class BasketBonusService
     }
 
     /**
+     * Spend limit for an in-memory order. Does not save the order or the bonus balance.
+     *
+     * Unsaved basket rows have no id, and aspro:bonus.calculate indexes rows by that id.
+     * Temporary ids stay in memory only.
+     *
+     * @return array{canSpend: float, lines: array<int, float>}|null
+     */
+    public static function quote(Order $order, float $requestedPayed): ?array
+    {
+        if (!self::ensureModules()) {
+            return null;
+        }
+
+        $userId = (int)$order->getUserId();
+        if ($userId <= 0 || BonusUser::getBalance($userId) <= 0) {
+            return null;
+        }
+
+        $basket = $order->getBasket();
+        if ($basket === null || $basket->isEmpty()) {
+            return null;
+        }
+
+        $cartSum = self::getBasketProductsSum($basket);
+        if ($cartSum <= 0) {
+            return null;
+        }
+
+        self::assignTemporaryBasketIds($basket);
+
+        $requested = $requestedPayed > 0 ? $requestedPayed : 0.0;
+        $props = BonusOrder::getGruppedPropsByCode($order->getPropertyCollection());
+        if (!empty($props[BonusOrder::PROPERTY_BONUS_PAYMENT]['ORDER_PROPS_ID'])) {
+            $prop = $order->getPropertyCollection()->getItemByOrderPropertyId(
+                (int)$props[BonusOrder::PROPERTY_BONUS_PAYMENT]['ORDER_PROPS_ID']
+            );
+            $prop?->setValue($requested);
+        }
+
+        $payBonus = self::includeBonusUses($order, $userId, $cartSum);
+        if ($payBonus === null) {
+            return null;
+        }
+
+        $canSpend = (float)($payBonus['MAX_ORDER_PAY'] ?? 0);
+        if ($canSpend <= 0) {
+            return null;
+        }
+
+        $lines = [];
+        foreach ($payBonus['ITEMS'] ?? [] as $bonusItem) {
+            if (!is_array($bonusItem)) {
+                continue;
+            }
+
+            $basketItemId = (int)($bonusItem['BASKET_ITEM_ID'] ?? 0);
+            $lineSpend = (float)($bonusItem['DISPLAYED_BONUSES_WITH_QUANTITY'] ?? 0);
+            if ($basketItemId <= 0 || $lineSpend <= 0) {
+                continue;
+            }
+
+            $lines[$basketItemId] = $lineSpend;
+        }
+
+        return [
+            'canSpend' => $canSpend,
+            'lines' => $lines,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     private static function calculatePayBonus(int $userId, float $requestedPayed, ?BasketBase $basket = null): ?array
     {
-        global $APPLICATION;
-
         $sourceBasket = $basket ?? self::loadBasket();
         if ($sourceBasket === null || $sourceBasket->isEmpty()) {
             return null;
@@ -628,37 +697,7 @@ final class BasketBonusService
             $prop?->setValue($requestedPayed > 0 ? $requestedPayed : 0);
         }
 
-        $orderParams = [
-            'SITE_ID' => $siteId,
-            'USER_ID' => $userId,
-            'ORDER_SUM' => $cartSum,
-            'CART_SUM' => $cartSum,
-            'DELIVERY_SUM' => 0,
-            'PERSON_TYPE_ID' => $order->getPersonTypeId(),
-            'CURRENCY' => $order->getCurrency(),
-            'DISCOUNT' => 0,
-            'PAYMENTS' => [],
-            'DELIVERY' => [],
-        ];
-
-        $payBonus = $APPLICATION->IncludeComponent(
-            'aspro:bonus.uses',
-            '',
-            [
-                'BASKET_ORDER' => $order->getBasket(),
-            ] + $orderParams,
-            null,
-            ['HIDE_ICONS' => 'Y']
-        );
-
-        if (!is_array($payBonus) || empty($payBonus['ITEMS'])) {
-            return null;
-        }
-
-        $payBonus['PAY_DELIVERY'] = 0;
-        $payBonus['NEW_DELIVERY_PRICE'] = 0;
-
-        return $payBonus;
+        return self::includeBonusUses($order, $userId, $cartSum);
     }
 
     /**
@@ -815,6 +854,63 @@ final class BasketBonusService
         $item->setField('PRICE', $resultPrice['DISCOUNT_PRICE']);
         $item->setField('BASE_PRICE', $resultPrice['BASE_PRICE']);
         $item->setField('DISCOUNT_PRICE', $resultPrice['DISCOUNT']);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function includeBonusUses(Order $order, int $userId, float $cartSum): ?array
+    {
+        global $APPLICATION;
+
+        $payBonus = $APPLICATION->IncludeComponent(
+            'aspro:bonus.uses',
+            '',
+            [
+                'BASKET_ORDER' => $order->getBasket(),
+                'SITE_ID' => (string)$order->getSiteId(),
+                'USER_ID' => $userId,
+                'ORDER_SUM' => $cartSum,
+                'CART_SUM' => $cartSum,
+                'DELIVERY_SUM' => 0,
+                'PERSON_TYPE_ID' => $order->getPersonTypeId(),
+                'CURRENCY' => $order->getCurrency(),
+                'DISCOUNT' => 0,
+                'PAYMENTS' => [],
+                'DELIVERY' => [],
+            ],
+            null,
+            ['HIDE_ICONS' => 'Y']
+        );
+
+        if (!is_array($payBonus) || empty($payBonus['ITEMS'])) {
+            return null;
+        }
+
+        $payBonus['PAY_DELIVERY'] = 0;
+        $payBonus['NEW_DELIVERY_PRICE'] = 0;
+
+        return $payBonus;
+    }
+
+    private static function assignTemporaryBasketIds(BasketBase $basket): void
+    {
+        $nextId = 1;
+        foreach ($basket as $item) {
+            $id = (int)$item->getId();
+            if ($id >= $nextId) {
+                $nextId = $id + 1;
+            }
+        }
+
+        foreach ($basket as $item) {
+            if ((int)$item->getId() > 0) {
+                continue;
+            }
+
+            $item->setFieldNoDemand('ID', $nextId);
+            $nextId++;
+        }
     }
 
     private static function getBasketProductsSum(BasketBase $basket): float
