@@ -215,3 +215,10 @@ EventManager::getInstance()->addEventHandler(
     'onPickupLocationsBuild',
     [ImshopPickupEvents::class, 'onPickupLocationsBuild']
 );
+
+if (
+    \Bitrix\Main\Config\Option::get('bx.imshop.integration', 'status_handler', 'N') !== 'Y'
+    && \Bitrix\Main\Loader::includeModule('bx.imshop.integration')
+) {
+    \Bx\Imshop\Integration\Sale\OrderStatusSync::installHandler();
+}
