@@ -47,7 +47,7 @@ final class ImshopStoresAgent
             ],
             false,
             false,
-            ['ID', 'NAME', 'IBLOCK_SECTION_ID']
+            ['ID', 'IBLOCK_ID', 'NAME', 'IBLOCK_SECTION_ID']
         );
         if (!is_object($dbList)) {
             return [];
