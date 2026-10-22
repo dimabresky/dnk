@@ -41,6 +41,7 @@ use Dnk\PhpInterface\DigiLayerService;
 use Dnk\PhpInterface\CatalogYmlFeedExporter;
 use Dnk\PhpInterface\DigineticaGlobalFeedExporter;
 use Dnk\PhpInterface\ImshopCatalogFeedExporter;
+use Dnk\PhpInterface\ImshopStoresAgent;
 use Dnk\PhpInterface\ImshopBelpostPickup;
 use Dnk\PhpInterface\ImshopEuropostPickup;
 use Dnk\PhpInterface\ImshopPickupEvents;
@@ -99,6 +100,7 @@ Loader::registerAutoLoadClasses(null, [
     CatalogYmlFeedExporter::class => $classesPath . '/CatalogYmlFeedExporter.php',
     DigineticaGlobalFeedExporter::class => $classesPath . '/DigineticaGlobalFeedExporter.php',
     ImshopCatalogFeedExporter::class => $classesPath . '/ImshopCatalogFeedExporter.php',
+    ImshopStoresAgent::class => $classesPath . '/ImshopStoresAgent.php',
     ImshopPostalPickup::class => $classesPath . '/ImshopPostalPickup.php',
     ImshopEuropostPickup::class => $classesPath . '/ImshopEuropostPickup.php',
     ImshopBelpostPickup::class => $classesPath . '/ImshopBelpostPickup.php',
