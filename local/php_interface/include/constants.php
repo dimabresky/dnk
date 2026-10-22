@@ -211,6 +211,9 @@ define(
     )
 );
 
+/** Интервал агента карты магазинов IMSHOP (секунды, для регистрации в админке). */
+define('DNK_IMSHOP_STORES_AGENT_INTERVAL', (int) $dnkEnvDefault('DNK_IMSHOP_STORES_AGENT_INTERVAL', '3600'));
+
 /** Интервал агента генерации FEED_PICTURE (секунды, для регистрации в админке). */
 define('DNK_FEED_PICTURE_AGENT_INTERVAL', (int)$dnkEnvDefault('DNK_FEED_PICTURE_AGENT_INTERVAL', '60'));
 
