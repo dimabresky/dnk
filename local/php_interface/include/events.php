@@ -222,3 +222,16 @@ if (
 ) {
     \Bx\Imshop\Integration\Sale\OrderStatusSync::installHandler();
 }
+
+if (\Bitrix\Main\Loader::includeModule('awz.dlvronestore')) {
+    EventManager::getInstance()->addEventHandlerCompatible(
+        'sale',
+        'OnSaleComponentOrderCreated',
+        [\Awz\Dlvronestore\Handlers::class, 'onSaleComponentOrderCreated']
+    );
+    EventManager::getInstance()->addEventHandler(
+        'sale',
+        'OnSaleOrderBeforeSaved',
+        [\Awz\Dlvronestore\Handlers::class, 'onSaleOrderBeforeSaved']
+    );
+}
