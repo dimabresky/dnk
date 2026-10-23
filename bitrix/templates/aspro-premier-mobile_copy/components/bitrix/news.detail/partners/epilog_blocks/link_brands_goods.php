@@ -18,6 +18,9 @@ $bLinkedCatalog = in_array('catalog', $GLOBALS["SHOW_TYPE_ITEMS"]);
 	$catalogIBlockID = TSolution::GetFrontParametrValue('CATALOG_IBLOCK_ID');
 	$bCheckAjaxBlock = TSolution::checkRequestBlock("goods-list-inner");
 	$isAjax = (TSolution::checkAjaxRequest() && $bCheckAjaxBlock ) ? 'Y' : 'N';
+	if (isset($_GET['ajax_get_filter']) && $_GET['ajax_get_filter'] === 'Y') {
+		$isAjax = 'N';
+	}
 
 	$arItemsFilter = array(
 		'PROPERTY_'.$arParams['LINK_GOODS_PROP_CODE'] => $arResult['ID'],
@@ -60,7 +63,8 @@ $bLinkedCatalog = in_array('catalog', $GLOBALS["SHOW_TYPE_ITEMS"]);
 				<?if ($arItems):?>
 					<?
 					$GLOBALS['preFilterBrand'] = $arItemsFilter;
-					
+					$arParams['FILTER_VIEW'] = 'COMPACT';
+
 					include_once('catalog/sort.php');
 
 					switch ($display) {
@@ -105,6 +109,21 @@ $bLinkedCatalog = in_array('catalog', $GLOBALS["SHOW_TYPE_ITEMS"]);
 									)
 								)
 							]);?>
+
+						<?if (!empty($bLinkedCatalog)):?>
+							<!--noindex-->
+							<?if (!empty($GLOBALS[$filterName])):?>
+								<script class="smart-filter-filter" data-skip-moving="true">
+									var filter = <?=\Bitrix\Main\Web\Json::encode($GLOBALS[$filterName]);?>
+								</script>
+							<?endif;?>
+							<?if (!empty($arAvailableSort[$sortKey]['SORT'])):?>
+								<script class="smart-filter-sort" data-skip-moving="true">
+									var sort = <?=\Bitrix\Main\Web\Json::encode([$arAvailableSort[$sortKey]['SORT'] => strtoupper($order)]);?>
+								</script>
+							<?endif;?>
+							<!--/noindex-->
+						<?endif;?>
 
 						<?if ($isAjax === 'Y'):?>
 							<?die();?>
