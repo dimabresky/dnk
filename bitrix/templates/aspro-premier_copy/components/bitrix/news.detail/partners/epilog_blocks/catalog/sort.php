@@ -146,7 +146,21 @@ $arDelUrlParams = array('sort', 'order', 'control_ajax', 'ajax_get_filter', 'lin
 <div class="filter-panel sort_header view_<?=$display?> flexbox flexbox--direction-row flexbox--justify-between ">
 	<div class="filter-panel__part-left">
 		<div class="line-block line-block--gap line-block--gap-8 filter-panel__main-info flexbox--justify-between-to-600 line-block--flex-wrap">
-			
+			<?global $arTheme;?>
+			<?if (($arTheme['SHOW_SMARTFILTER']['VALUE'] ?? 'Y') !== 'N'):?>
+				<?$bActiveFilter = TSolution\Functions::checkActiveFilterPage([
+					'GLOBAL_FILTER' => $filterName,
+				]);?>
+				<div class="filter-panel__filter <?=($arParams['FILTER_VIEW'] == 'COMPACT' ? 'visible-767' : 'visible-991');?>">
+					<div class="dark_link dropdown-select">
+						<button type="button" class="btn--no-btn-appearance dropdown-select__title font_14 fill-dark-light bordered rounded-x bx-filter-title filter_title <?=($bActiveFilter ? 'active-filter' : '')?>">
+							<?=TSolution::showSpriteIconSvg(SITE_TEMPLATE_PATH.'/images/svg/catalog/item_icons.svg#filter', 'mr mr--12', ['WIDTH' => 13, 'HEIGHT' => 12]);?>
+							<span class="dropdown-select__title-text"><?=\Bitrix\Main\Localization\Loc::getMessage('CATALOG_SMART_FILTER_TITLE');?></span>
+						</button>
+					</div>
+				</div>
+			<?endif;?>
+
 			<?if ($arAvailableSort):?>
 				<?ob_start();?>
 
@@ -229,6 +243,6 @@ $arDelUrlParams = array('sort', 'order', 'control_ajax', 'ajax_get_filter', 'lin
 		]);?>
 	<?endif;?>
 </div>
-<?TSolution\Extensions::init(['filter_panel', 'dropdown_select']);?>
+<?TSolution\Extensions::init(['filter_panel', 'dropdown_select', 'smart_filter']);?>
 <!-- /noindex -->
 <?endif;?>
