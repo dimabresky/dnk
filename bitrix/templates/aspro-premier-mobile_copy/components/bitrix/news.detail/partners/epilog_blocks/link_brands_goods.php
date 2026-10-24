@@ -18,7 +18,11 @@ $bLinkedCatalog = in_array('catalog', $GLOBALS["SHOW_TYPE_ITEMS"]);
 	$catalogIBlockID = TSolution::GetFrontParametrValue('CATALOG_IBLOCK_ID');
 	$bCheckAjaxBlock = TSolution::checkRequestBlock("goods-list-inner");
 	$isAjax = (TSolution::checkAjaxRequest() && $bCheckAjaxBlock ) ? 'Y' : 'N';
-	if (isset($_GET['ajax_get_filter']) && $_GET['ajax_get_filter'] === 'Y') {
+	if (
+		isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+		strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' &&
+		isset($_GET['ajax_get_filter']) && $_GET['ajax_get_filter'] === 'Y'
+	) {
 		$isAjax = 'N';
 	}
 
@@ -62,10 +66,20 @@ $bLinkedCatalog = in_array('catalog', $GLOBALS["SHOW_TYPE_ITEMS"]);
 			<div class="js-load-wrapper ajax-pagination-wrapper <?=$APPLICATION->ShowViewContent("section_additional_class");?>" data-class="goods-list-inner">
 				<?if ($arItems):?>
 					<?
-					$GLOBALS['preFilterBrand'] = $arItemsFilter;
+					$GLOBALS['preFilterBrand'] = TSolution\Regionality::mergeSmartPreFilterWithRegionFilter($arItemsFilter);
 					$arParams['FILTER_VIEW'] = 'COMPACT';
 
 					include_once('catalog/sort.php');
+
+					if (!is_array($GLOBALS[$filterName] ?? null)) {
+						$GLOBALS[$filterName] = [];
+					}
+					foreach ($arItemsFilter as $filterKey => $filterValue) {
+						if (is_int($filterKey) || array_key_exists($filterKey, $GLOBALS[$filterName])) {
+							continue;
+						}
+						$GLOBALS[$filterName][$filterKey] = $filterValue;
+					}
 
 					switch ($display) {
 						case 'price':
