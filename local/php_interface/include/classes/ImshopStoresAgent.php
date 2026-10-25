@@ -46,8 +46,7 @@ final class ImshopStoresAgent
                 'ACTIVE_DATE' => 'Y',
             ],
             false,
-            false,
-            ['ID', 'IBLOCK_ID', 'NAME', 'IBLOCK_SECTION_ID']
+            false
         );
         if (!is_object($dbList)) {
             return [];
