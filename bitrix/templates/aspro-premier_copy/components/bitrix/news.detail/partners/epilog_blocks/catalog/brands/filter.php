@@ -18,6 +18,8 @@ $APPLICATION->IncludeComponent(
 		'IBLOCK_TYPE' => $catalogIblockType,
 		'IBLOCK_ID' => $catalogIBlockID,
 		'SECTION_ID' => '',
+		'SHOW_ALL_WO_SECTION' => 'Y',
+		'INCLUDE_SUBSECTIONS' => 'N',
 		'PREFILTER_NAME' => 'preFilterBrand',
 		'FILTER_NAME' => $filterName,
 		'PRICE_CODE' => ($arParams['USE_FILTER_PRICE'] ?? 'N') === 'Y' ? $arParams['FILTER_PRICE_CODE'] : $arParams['PRICE_CODE'],
