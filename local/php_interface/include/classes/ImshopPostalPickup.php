@@ -55,6 +55,10 @@ abstract class ImshopPostalPickup
         $id = trim((string) ($row['PVZ_ID'] ?? ''));
         $title = self::plainText((string) ($prm['name'] ?? ''));
         $address = self::plainText((string) ($prm['full_address'] ?? ''));
+        if ($address === '') {
+            // Европочта пишет адрес в name, ключа full_address в PRM нет.
+            $address = $title;
+        }
         $city = self::plainText((string) ($row['TOWN'] ?? ''));
         $lat = trim((string) ($prm['latitude'] ?? ''));
         $lon = trim((string) ($prm['longitude'] ?? ''));
