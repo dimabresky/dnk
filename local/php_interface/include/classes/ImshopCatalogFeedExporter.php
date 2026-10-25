@@ -24,6 +24,16 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
         'STOCK' => 'Скидка',
     ];
 
+    /**
+     * @var array<string, array{textColor: string, bgColor: string}>
+     */
+    private const BADGE_COLORS = [
+        'НОВИНКА' => ['textColor' => '#fff', 'bgColor' => '#32cb41'],
+        'Хит' => ['textColor' => '#fff', 'bgColor' => '#ff7455'],
+        'Скидка' => ['textColor' => '#fff', 'bgColor' => '#8B0000'],
+        'Спецпредложение' => ['textColor' => '#fff', 'bgColor' => '#ff7455'],
+    ];
+
     private const GROUP_ID_LINKS_PARAM_NAMES = [
         Utils::SKU_VARIANT_MODE_SHADE => 'Оттенок',
         Utils::SKU_VARIANT_MODE_VOLUME => 'Объем',
@@ -579,7 +589,13 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
 
         $tags = [];
         foreach (array_keys($labels) as $label) {
-            $tags[] = '<badge>' . self::escapeXml($label) . '</badge>';
+            $colors = self::BADGE_COLORS[$label] ?? null;
+            $attrs = '';
+            if (is_array($colors)) {
+                $attrs = ' textColor="' . self::escapeXml($colors['textColor']) . '"'
+                    . ' bgColor="' . self::escapeXml($colors['bgColor']) . '"';
+            }
+            $tags[] = '<badge' . $attrs . '>' . self::escapeXml($label) . '</badge>';
         }
 
         return $tags;
