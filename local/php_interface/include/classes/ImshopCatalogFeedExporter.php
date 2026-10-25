@@ -29,6 +29,23 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
         Utils::SKU_VARIANT_MODE_VOLUME => 'Объем',
     ];
 
+    private const COLLAPSIBLE_TEXT_SECTIONS = [
+        'SPOSOB_PRIMENENIYA' => 'Примечание',
+        'SOSTAV_1' => 'Состав',
+    ];
+
+    private const CHARACTERISTIC_PROPERTY_CODES = [
+        'BREND',
+        'CML2_ARTICLE',
+        'OBEM_FLAKONA',
+        'CML2_MANUFACTURER',
+        'STRANA_IZGOTOVLENIYA',
+        'NOMINALNYY_OBEM',
+        'IMPORTER',
+        'OTTENOK',
+        'PODKHODIT_DLYA',
+    ];
+
     private string $currency = self::DEFAULT_CURRENCY;
 
     /**
@@ -215,9 +232,9 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
             $lines[] = '        <barcode>' . self::escapeXml($barcode) . '</barcode>';
         }
 
-        $description = $this->resolveDescription($fields);
-        if ($description !== '') {
-            $lines[] = '        <description><![CDATA[' . self::sanitizeCdata($description) . ']]></description>';
+        $collapsibleDescription = $this->buildCollapsibleDescription($fields, $props);
+        if ($collapsibleDescription !== '') {
+            $lines[] = $collapsibleDescription;
         }
 
         foreach ($this->buildBadgeTags($props) as $badgeLine) {
@@ -360,29 +377,147 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
 
     /**
      * @param array<string, mixed> $fields
+     * @param array<string, mixed> $props
      */
-    private function resolveDescription(array $fields): string
+    private function buildCollapsibleDescription(array $fields, array $props): string
     {
-        $detail = $this->toPlainText((string) ($fields['~DETAIL_TEXT'] ?? $fields['DETAIL_TEXT'] ?? ''));
-        if ($detail !== '') {
-            return $detail;
+        $sections = [];
+
+        $description = $this->htmlToMarkdown((string) ($fields['~DETAIL_TEXT'] ?? $fields['DETAIL_TEXT'] ?? ''));
+        if ($description === '') {
+            $description = $this->htmlToMarkdown((string) ($fields['~PREVIEW_TEXT'] ?? $fields['PREVIEW_TEXT'] ?? ''));
+        }
+        if ($description !== '') {
+            $sections[] = ['title' => 'Описание', 'text' => $description];
         }
 
-        return $this->toPlainText((string) ($fields['~PREVIEW_TEXT'] ?? $fields['PREVIEW_TEXT'] ?? ''));
+        foreach (self::COLLAPSIBLE_TEXT_SECTIONS as $code => $title) {
+            $text = implode(', ', $this->propertyValues(is_array($props[$code] ?? null) ? $props[$code] : null));
+            if ($text !== '') {
+                $sections[] = ['title' => $title, 'text' => $text];
+            }
+        }
+
+        $characteristics = $this->buildCharacteristicsMarkdown($props);
+        if ($characteristics !== '') {
+            $sections[] = ['title' => 'Характеристики', 'text' => $characteristics];
+        }
+
+        if ($sections === []) {
+            return '';
+        }
+
+        $lines = ['        <collapsibleDescription>'];
+        foreach ($sections as $section) {
+            $lines[] = '          <section>';
+            $lines[] = '            <title>' . self::escapeXml($section['title']) . '</title>';
+            $lines[] = '            <text><![CDATA[' . self::sanitizeCdata($section['text']) . ']]></text>';
+            $lines[] = '          </section>';
+        }
+        $lines[] = '        </collapsibleDescription>';
+
+        return implode("\n", $lines);
     }
 
-    private function toPlainText(string $raw): string
+    /**
+     * h/p/ul/li/strong/b/bold → markdown, остальные теги снимаются.
+     * br → перевод строки, иначе соседние строки слипаются.
+     */
+    private function htmlToMarkdown(string $raw): string
     {
         $raw = trim($raw);
         if ($raw === '') {
             return '';
         }
 
+        $raw = preg_replace('#<br\b[^>]*>#i', "\n", $raw) ?? $raw;
+        $raw = $this->replaceMatchedTags(
+            $raw,
+            '#<(strong|b|bold)\b[^>]*>((?:(?!</?\1\b).)*)</\1>#isu',
+            static function (array $m): string {
+                $text = trim(strip_tags($m[2]));
+
+                return $text === '' ? '' : '**' . $text . '**';
+            }
+        );
+        $raw = $this->replaceMatchedTags(
+            $raw,
+            '#<li\b[^>]*>((?:(?!</?li\b).)*)</li>#isu',
+            static function (array $m): string {
+                $item = trim(preg_replace('/\s+/u', ' ', strip_tags($m[1])) ?? '');
+
+                return $item === '' ? '' : "\n- " . $item;
+            }
+        );
+        $raw = preg_replace('#</?ul\b[^>]*>#i', "\n\n", $raw) ?? $raw;
+        $raw = preg_replace_callback(
+            '#<h([1-6])\b[^>]*>(.*?)</h\1>#isu',
+            static function (array $m): string {
+                $text = trim(preg_replace('/\s+/u', ' ', strip_tags($m[2])) ?? '');
+                if ($text === '') {
+                    return "\n";
+                }
+
+                return "\n" . str_repeat('#', (int) $m[1]) . ' ' . $text . "\n\n";
+            },
+            $raw
+        ) ?? $raw;
+        $raw = preg_replace('#</p>#i', "\n\n", $raw) ?? $raw;
+        $raw = preg_replace('#<p\b[^>]*>#i', '', $raw) ?? $raw;
+
         $plain = html_entity_decode(strip_tags($raw), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $plain = preg_replace('/[ \t]+/u', ' ', $plain) ?? $plain;
-        $plain = preg_replace('/\R{3,}/u', "\n\n", $plain) ?? $plain;
+        $plain = str_replace("\u{00A0}", ' ', $plain);
+        $normalized = [];
+        foreach (preg_split('/\R/u', $plain) ?: [] as $line) {
+            $normalized[] = trim(preg_replace('/[ \t]+/u', ' ', $line) ?? $line);
+        }
+        $plain = implode("\n", $normalized);
+        $plain = preg_replace("/\n{3,}/", "\n\n", $plain) ?? $plain;
+        $plain = preg_replace("/\n\n(?=- )/", "\n", $plain) ?? $plain;
 
         return trim($plain);
+    }
+
+    /**
+     * @param callable(array<int, string>): string $replace
+     */
+    private function replaceMatchedTags(string $raw, string $pattern, callable $replace): string
+    {
+        $previous = null;
+        while ($previous !== $raw) {
+            $previous = $raw;
+            $replaced = preg_replace_callback($pattern, $replace, $raw);
+            if (!is_string($replaced)) {
+                break;
+            }
+            $raw = $replaced;
+        }
+
+        return $raw;
+    }
+
+    /**
+     * @param array<string, mixed> $props
+     */
+    private function buildCharacteristicsMarkdown(array $props): string
+    {
+        $lines = [];
+        foreach (self::CHARACTERISTIC_PROPERTY_CODES as $code) {
+            $property = $props[$code] ?? null;
+            if (!is_array($property)) {
+                continue;
+            }
+
+            $name = trim((string) ($property['NAME'] ?? ''));
+            $value = trim(preg_replace('/\s+/u', ' ', implode(', ', $this->propertyValues($property))) ?? '');
+            if ($name === '' || $value === '') {
+                continue;
+            }
+
+            $lines[] = '- ' . $name . ': **' . str_replace('*', '\\*', $value) . '**';
+        }
+
+        return implode("\n", $lines);
     }
 
     /**
