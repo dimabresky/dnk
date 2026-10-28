@@ -51,9 +51,9 @@
 	grid-template-columns: 1fr;
 }
 
-.header__top-part {
+/*.header__top-part {
 	display: none;
-}
+}*/
 
 .auth__bottom-action .forgot {
 	display: none;
