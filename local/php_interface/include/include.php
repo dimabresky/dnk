@@ -38,6 +38,7 @@ use Dnk\PhpInterface\UserConsentService;
 use Dnk\PhpInterface\UserRegisterExportQueueTable;
 use Dnk\PhpInterface\UserReauthorizeQueueTable;
 use Dnk\PhpInterface\DigiLayerService;
+use Dnk\PhpInterface\CatalogLinkRegionAgent;
 use Dnk\PhpInterface\CatalogYmlFeedExporter;
 use Dnk\PhpInterface\DigineticaGlobalFeedExporter;
 use Dnk\PhpInterface\ImshopCatalogFeedExporter;
@@ -97,6 +98,7 @@ Loader::registerAutoLoadClasses(null, [
     BlogCommentConsentEvents::class => $classesPath . '/BlogCommentConsentEvents.php',
     BlogCommentTextEvents::class => $classesPath . '/BlogCommentTextEvents.php',
     DigiLayerService::class => $classesPath . '/DigiLayerService.php',
+    CatalogLinkRegionAgent::class => $classesPath . '/CatalogLinkRegionAgent.php',
     CatalogYmlFeedExporter::class => $classesPath . '/CatalogYmlFeedExporter.php',
     DigineticaGlobalFeedExporter::class => $classesPath . '/DigineticaGlobalFeedExporter.php',
     ImshopCatalogFeedExporter::class => $classesPath . '/ImshopCatalogFeedExporter.php',
