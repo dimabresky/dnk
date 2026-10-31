@@ -23,7 +23,8 @@ class DnkBannerCountdownComponent extends CBitrixComponent
     public function executeComponent()
     {
         $datetime = $this->arParams['DATETIME'];
-        if ($datetime === '' || !MakeTimeStamp($datetime)) {
+        $endTs = $datetime !== '' ? (int) MakeTimeStamp($datetime) : 0;
+        if ($endTs <= 0) {
             return;
         }
 
@@ -39,6 +40,7 @@ class DnkBannerCountdownComponent extends CBitrixComponent
 
         $this->arResult = [
             'DATETIME' => $datetime,
+            'END_TS' => $endTs * 1000,
             'TITLE' => $this->arParams['TITLE'],
             'PICTURE' => $picture,
             'COLOR' => '#' . strtolower($color),

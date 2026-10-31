@@ -241,6 +241,11 @@ if ($arResult['HAS_SLIDE_BANNERS']) {
                             }
 
                             $needShowBG = $bOnlyImage;
+                            $csDateRaw = $arItem['PROPERTIES']['CS_DATETIME']['VALUE'] ?? '';
+                            $csDate = is_array($csDateRaw) ? trim((string) reset($csDateRaw)) : trim((string) $csDateRaw);
+                            if ($csDate !== '') {
+                                $bannerSlideClasses[] = 'banners-big__slide--countdown';
+                            }
                             $bannerSlideClasses = implode(' ', $bannerSlideClasses);
                             $bannerItemClasses = implode(' ', $bannerItemClasses);
                             $bannerInnerClasses = implode(' ', $bannerInnerClasses);
@@ -381,10 +386,8 @@ if ($arResult['HAS_SLIDE_BANNERS']) {
                                     <?endif;?>
                                 </div>
                                 <?
-                                $csDateRaw = $arItem['PROPERTIES']['CS_DATETIME']['VALUE'] ?? '';
-                                $csDate = is_array($csDateRaw) ? trim((string) reset($csDateRaw)) : trim((string) $csDateRaw);
                                 if ($csDate !== ''):
-                                    $csTitleRaw = $arItem['PROPERTIES']['CS_TITLE']['VALUE'] ?? '';
+                                    $csTitleRaw = $arItem['PROPERTIES']['CS_STRING']['VALUE'] ?? '';
                                     $csTitle = is_array($csTitleRaw) ? trim((string) ($csTitleRaw['TEXT'] ?? '')) : trim((string) $csTitleRaw);
                                     $csPictureId = $arItem['PROPERTIES']['CS_PICTURE']['VALUE'] ?? 0;
                                     if (is_array($csPictureId)) {

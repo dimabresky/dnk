@@ -4,9 +4,7 @@
   var pluginsReady = false;
   var pluginsLoading = false;
 
-  var labels = ['лет', 'месяцев', 'недель', 'дней', 'часов', 'минут', 'секунд'];
-  var labels1 = ['год', 'месяц', 'неделя', 'день', 'час', 'минута', 'секунда'];
-  var labels2 = ['года', 'месяца', 'недели', 'дня', 'часа', 'минуты', 'секунды'];
+  var loadAttempts = 0;
 
   var layout = ''
     + '<span class="dnk-banner-countdown__unit">'
@@ -27,16 +25,32 @@
     + '</span>';
 
   function parseEnd(value) {
-    if (!value) {
+    var ts = Number(value);
+    if (!ts) {
       return null;
     }
 
-    var date = new Date(String(value).replace(/(\d+)\.(\d+)\.(\d+)/, '$3/$2/$1'));
+    var date = new Date(ts);
     if (isNaN(date.getTime())) {
       return null;
     }
 
     return date;
+  }
+
+  function messageList(code) {
+    var value = BX.message(code);
+    return value && value.length ? value : [];
+  }
+
+  function isVisibleDuplicate(el) {
+    var slide = el.closest('.swiper-slide');
+    if (!slide || !slide.classList.contains('swiper-slide-duplicate')) {
+      return true;
+    }
+
+    return slide.classList.contains('swiper-slide-active')
+      || slide.classList.contains('swiper-slide-duplicate-active');
   }
 
   function whichLabels(amount) {
@@ -58,12 +72,10 @@
   function regionalOptions() {
     var base = ($.countdown.regionalOptions && $.countdown.regionalOptions.ru) || {};
     var regional = $.extend({}, base);
-    regional.labels = labels;
-    regional.labels1 = labels1;
-    regional.labels2 = labels2;
-    if (typeof regional.whichLabels !== 'function') {
-      regional.whichLabels = whichLabels;
-    }
+    regional.labels = messageList('DNK_BANNER_COUNTDOWN_LABELS');
+    regional.labels1 = messageList('DNK_BANNER_COUNTDOWN_LABELS1');
+    regional.labels2 = messageList('DNK_BANNER_COUNTDOWN_LABELS2');
+    regional.whichLabels = whichLabels;
 
     return regional;
   }
@@ -73,7 +85,7 @@
       return true;
     }
 
-    if (!window.jQuery || !$.fn.countdown) {
+    if (!window.jQuery || !$.fn.countdown || !isVisibleDuplicate(el)) {
       return false;
     }
 
@@ -140,7 +152,7 @@
   }
 
   function loadPlugins() {
-    if (pluginsLoading || pluginsReady) {
+    if (pluginsLoading || pluginsReady || loadAttempts >= 2) {
       return;
     }
 
@@ -149,14 +161,14 @@
     }
 
     pluginsLoading = true;
+    loadAttempts += 1;
 
     BX.Aspro.Loader.once({
       appear: ['.dnk-banner-countdown'],
       add: {
         js: [
           arAsproOptions.SITE_TEMPLATE_PATH + '/js/jquery.plugin.min.js',
-          arAsproOptions.SITE_TEMPLATE_PATH + '/js/jquery.countdown.min.js',
-          arAsproOptions.SITE_TEMPLATE_PATH + '/js/jquery.countdown-ru.min.js'
+          arAsproOptions.SITE_TEMPLATE_PATH + '/js/jquery.countdown.min.js'
         ]
       }
     }).then(function () {
@@ -164,6 +176,7 @@
       scan();
     }).catch(function () {
       pluginsLoading = false;
+      window.setTimeout(loadPlugins, 1000);
     });
   }
 

@@ -8,7 +8,15 @@ foreach ($arResult['ITEMS'] as $arItem) {
 	if ($bannerTheme !== '' && (string) ($arItem['TYPE_BANNER'] ?? '') !== $bannerTheme) {
 		continue;
 	}
-	if (is_array($arItem['PROPERTIES'] ?? null) && array_key_exists('CS_DATETIME', $arItem['PROPERTIES'])) {
+	$props = is_array($arItem['PROPERTIES'] ?? null) ? $arItem['PROPERTIES'] : [];
+	$hasAll = true;
+	foreach (['CS_DATETIME', 'CS_STRING', 'CS_PICTURE', 'CS_COLOR_CODE'] as $code) {
+		if (!array_key_exists($code, $props)) {
+			$hasAll = false;
+			break;
+		}
+	}
+	if ($hasAll) {
 		continue;
 	}
 	$id = (int) ($arItem['ID'] ?? 0);
@@ -27,7 +35,7 @@ if ($missingIds) {
 	$res = CIBlockElement::GetList([], $filter, false, false, [
 		'ID',
 		'PROPERTY_CS_DATETIME',
-		'PROPERTY_CS_TITLE',
+		'PROPERTY_CS_STRING',
 		'PROPERTY_CS_PICTURE',
 		'PROPERTY_CS_COLOR_CODE',
 	]);
@@ -35,7 +43,7 @@ if ($missingIds) {
 		$id = (int) $row['ID'];
 		$propsById[$id] = [
 			'CS_DATETIME' => ['VALUE' => $row['PROPERTY_CS_DATETIME_VALUE'] ?? ''],
-			'CS_TITLE' => ['VALUE' => $row['PROPERTY_CS_TITLE_VALUE'] ?? ''],
+			'CS_STRING' => ['VALUE' => $row['PROPERTY_CS_STRING_VALUE'] ?? ''],
 			'CS_PICTURE' => ['VALUE' => $row['PROPERTY_CS_PICTURE_VALUE'] ?? ''],
 			'CS_COLOR_CODE' => ['VALUE' => $row['PROPERTY_CS_COLOR_CODE_VALUE'] ?? ''],
 		];
