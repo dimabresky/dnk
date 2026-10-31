@@ -1,6 +1,16 @@
 <?
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 
+$countdownAdminOnlyId = 6815;
+
+if ($countdownAdminOnlyId > 0 && !$USER->IsAdmin()) {
+	foreach ($arResult['ITEMS'] as $key => $arItem) {
+		if ((int) ($arItem['ID'] ?? 0) === $countdownAdminOnlyId) {
+			unset($arResult['ITEMS'][$key]);
+		}
+	}
+}
+
 $bannerTheme = (string) ($arParams['BANNER_TYPE_THEME'] ?? '');
 $missingIds = [];
 $iblockId = 0;
@@ -10,7 +20,7 @@ foreach ($arResult['ITEMS'] as $arItem) {
 	}
 	$props = is_array($arItem['PROPERTIES'] ?? null) ? $arItem['PROPERTIES'] : [];
 	$hasAll = true;
-	foreach (['CS_DATETIME', 'CS_STRING', 'CS_PICTURE', 'CS_COLOR_CODE'] as $code) {
+	foreach (['CS_DATETIME', 'CS_STRING', 'CS_SUB_STRING', 'CS_PICTURE', 'CS_COLOR_CODE', 'CS_TIMER_COLOR_CODE', 'CS_TIMER_PHONE_COLOR_CODE', 'CS_TIMER_SHADOW_CODE'] as $code) {
 		if (!array_key_exists($code, $props)) {
 			$hasAll = false;
 			break;
@@ -36,16 +46,24 @@ if ($missingIds) {
 		'ID',
 		'PROPERTY_CS_DATETIME',
 		'PROPERTY_CS_STRING',
+		'PROPERTY_CS_SUB_STRING',
 		'PROPERTY_CS_PICTURE',
 		'PROPERTY_CS_COLOR_CODE',
+		'PROPERTY_CS_TIMER_COLOR_CODE',
+		'PROPERTY_CS_TIMER_PHONE_COLOR_CODE',
+		'PROPERTY_CS_TIMER_SHADOW_CODE',
 	]);
 	while ($row = $res->Fetch()) {
 		$id = (int) $row['ID'];
 		$propsById[$id] = [
 			'CS_DATETIME' => ['VALUE' => $row['PROPERTY_CS_DATETIME_VALUE'] ?? ''],
 			'CS_STRING' => ['VALUE' => $row['PROPERTY_CS_STRING_VALUE'] ?? ''],
+			'CS_SUB_STRING' => ['VALUE' => $row['PROPERTY_CS_SUB_STRING_VALUE'] ?? ''],
 			'CS_PICTURE' => ['VALUE' => $row['PROPERTY_CS_PICTURE_VALUE'] ?? ''],
 			'CS_COLOR_CODE' => ['VALUE' => $row['PROPERTY_CS_COLOR_CODE_VALUE'] ?? ''],
+			'CS_TIMER_COLOR_CODE' => ['VALUE' => $row['PROPERTY_CS_TIMER_COLOR_CODE_VALUE'] ?? ''],
+			'CS_TIMER_PHONE_COLOR_CODE' => ['VALUE' => $row['PROPERTY_CS_TIMER_PHONE_COLOR_CODE_VALUE'] ?? ''],
+			'CS_TIMER_SHADOW_CODE' => ['VALUE' => $row['PROPERTY_CS_TIMER_SHADOW_CODE_VALUE'] ?? ''],
 		];
 	}
 	foreach ($arResult['ITEMS'] as &$arItem) {

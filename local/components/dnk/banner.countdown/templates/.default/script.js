@@ -3,26 +3,7 @@
   var watched = new WeakMap();
   var pluginsReady = false;
   var pluginsLoading = false;
-
   var loadAttempts = 0;
-
-  var layout = ''
-    + '<span class="dnk-banner-countdown__unit">'
-    + '<span class="dnk-banner-countdown__value font_48">{dnn}</span>'
-    + '<span class="dnk-banner-countdown__label font_13">{dl}</span>'
-    + '</span>'
-    + '<span class="dnk-banner-countdown__unit">'
-    + '<span class="dnk-banner-countdown__value font_48">{hnn}</span>'
-    + '<span class="dnk-banner-countdown__label font_13">{hl}</span>'
-    + '</span>'
-    + '<span class="dnk-banner-countdown__unit">'
-    + '<span class="dnk-banner-countdown__value font_48">{mnn}</span>'
-    + '<span class="dnk-banner-countdown__label font_13">{ml}</span>'
-    + '</span>'
-    + '<span class="dnk-banner-countdown__unit">'
-    + '<span class="dnk-banner-countdown__value font_48">{snn}</span>'
-    + '<span class="dnk-banner-countdown__label font_13">{sl}</span>'
-    + '</span>';
 
   function parseEnd(value) {
     var ts = Number(value);
@@ -53,39 +34,12 @@
       || slide.classList.contains('swiper-slide-duplicate-active');
   }
 
-  function whichLabels(amount) {
-    var units = amount % 10;
-    var tens = Math.floor((amount % 100) / 10);
-    if (amount === 1) {
-      return 1;
-    }
-    if (units >= 2 && units <= 4 && tens !== 1) {
-      return 2;
-    }
-    if (units === 1 && tens !== 1) {
-      return 1;
-    }
-
-    return 0;
-  }
-
-  function regionalOptions() {
-    var base = ($.countdown.regionalOptions && $.countdown.regionalOptions.ru) || {};
-    var regional = $.extend({}, base);
-    regional.labels = messageList('DNK_BANNER_COUNTDOWN_LABELS');
-    regional.labels1 = messageList('DNK_BANNER_COUNTDOWN_LABELS1');
-    regional.labels2 = messageList('DNK_BANNER_COUNTDOWN_LABELS2');
-    regional.whichLabels = whichLabels;
-
-    return regional;
-  }
-
   function arm(el) {
     if (seen.has(el)) {
       return true;
     }
 
-    if (!window.jQuery || !$.fn.countdown || !isVisibleDuplicate(el)) {
+    if (!window.FlipClock || !FlipClock.flipClock || !isVisibleDuplicate(el)) {
       return false;
     }
 
@@ -102,13 +56,26 @@
       return true;
     }
 
+    var labels = messageList('DNK_BANNER_COUNTDOWN_LABELS');
+
     try {
-      $(items).countdown($.extend({
-        until: dateTo,
-        format: 'dHMS',
-        padZeroes: true,
-        layout: layout
-      }, regionalOptions()));
+      FlipClock.flipClock({
+        parent: items,
+        face: FlipClock.elapsedTime({
+          to: dateTo,
+          format: '[DD]:[hh]:[mm]:[ss]'
+        }),
+        theme: FlipClock.theme({
+          dividers: ':',
+          labels: [
+            [labels[3] || ''],
+            [labels[4] || ''],
+            [labels[5] || ''],
+            [labels[6] || '']
+          ],
+          css: FlipClock.css()
+        })
+      });
     } catch (e) {
       return false;
     }
@@ -156,7 +123,12 @@
       return;
     }
 
-    if (!window.BX || !BX.Aspro || !BX.Aspro.Loader || !window.arAsproOptions) {
+    if (!window.BX || !BX.Aspro || !BX.Aspro.Loader) {
+      return;
+    }
+
+    var src = BX.message('DNK_BANNER_COUNTDOWN_LIB');
+    if (!src) {
       return;
     }
 
@@ -166,10 +138,7 @@
     BX.Aspro.Loader.once({
       appear: ['.dnk-banner-countdown'],
       add: {
-        js: [
-          arAsproOptions.SITE_TEMPLATE_PATH + '/js/jquery.plugin.min.js',
-          arAsproOptions.SITE_TEMPLATE_PATH + '/js/jquery.countdown.min.js'
-        ]
+        js: [src]
       }
     }).then(function () {
       pluginsReady = true;

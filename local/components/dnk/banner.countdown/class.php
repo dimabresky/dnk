@@ -13,8 +13,12 @@ class DnkBannerCountdownComponent extends CBitrixComponent
     {
         $arParams['DATETIME'] = trim((string) ($arParams['DATETIME'] ?? ''));
         $arParams['TITLE'] = trim((string) ($arParams['TITLE'] ?? ''));
+        $arParams['SUBTITLE'] = trim((string) ($arParams['SUBTITLE'] ?? ''));
         $arParams['PICTURE'] = trim((string) ($arParams['PICTURE'] ?? ''));
         $arParams['COLOR'] = trim((string) ($arParams['COLOR'] ?? ''));
+        $arParams['TIMER_COLOR'] = trim((string) ($arParams['TIMER_COLOR'] ?? ''));
+        $arParams['TIMER_BG'] = trim((string) ($arParams['TIMER_BG'] ?? ''));
+        $arParams['TIMER_SHADOW'] = trim((string) ($arParams['TIMER_SHADOW'] ?? ''));
         $arParams['CACHE_TYPE'] = 'N';
 
         return $arParams;
@@ -24,13 +28,8 @@ class DnkBannerCountdownComponent extends CBitrixComponent
     {
         $datetime = $this->arParams['DATETIME'];
         $endTs = $datetime !== '' ? (int) MakeTimeStamp($datetime) : 0;
-        if ($endTs <= 0) {
+        if ($endTs <= time()) {
             return;
-        }
-
-        $color = ltrim($this->arParams['COLOR'], '#');
-        if (!preg_match('/^[0-9a-fA-F]{6}$/', $color)) {
-            $color = 'ffffff';
         }
 
         $picture = $this->arParams['PICTURE'];
@@ -42,8 +41,12 @@ class DnkBannerCountdownComponent extends CBitrixComponent
             'DATETIME' => $datetime,
             'END_TS' => $endTs * 1000,
             'TITLE' => $this->arParams['TITLE'],
+            'SUBTITLE' => $this->arParams['SUBTITLE'],
             'PICTURE' => $picture,
-            'COLOR' => '#' . strtolower($color),
+            'COLOR' => $this->arParams['COLOR'],
+            'TIMER_COLOR' => $this->arParams['TIMER_COLOR'],
+            'TIMER_BG' => $this->arParams['TIMER_BG'],
+            'TIMER_SHADOW' => $this->arParams['TIMER_SHADOW'],
         ];
 
         $this->includeComponentTemplate();

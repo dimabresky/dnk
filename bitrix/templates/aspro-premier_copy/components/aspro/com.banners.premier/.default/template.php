@@ -387,19 +387,29 @@ if ($arResult['HAS_SLIDE_BANNERS']) {
                                 </div>
                                 <?
                                 if ($csDate !== ''):
-                                    $csTitleRaw = $arItem['PROPERTIES']['CS_STRING']['VALUE'] ?? '';
-                                    $csTitle = is_array($csTitleRaw) ? trim((string) ($csTitleRaw['TEXT'] ?? '')) : trim((string) $csTitleRaw);
+                                    $csText = static function ($value): string {
+                                        if (is_array($value)) {
+                                            $value = $value['TEXT'] ?? reset($value);
+                                        }
+
+                                        return trim((string) $value);
+                                    };
+                                    $csTitle = $csText($arItem['PROPERTIES']['CS_STRING']['VALUE'] ?? '');
+                                    $csSubtitle = $csText($arItem['PROPERTIES']['CS_SUB_STRING']['VALUE'] ?? '');
                                     $csPictureId = $arItem['PROPERTIES']['CS_PICTURE']['VALUE'] ?? 0;
                                     if (is_array($csPictureId)) {
                                         $csPictureId = reset($csPictureId);
                                     }
                                     $csPicture = (int) $csPictureId > 0 ? (string) CFile::GetPath((int) $csPictureId) : '';
-                                    $csColor = trim((string) ($arItem['PROPERTIES']['CS_COLOR_CODE']['VALUE'] ?? ''));
                                     $APPLICATION->IncludeComponent('dnk:banner.countdown', '', [
                                         'DATETIME' => $csDate,
                                         'TITLE' => $csTitle,
+                                        'SUBTITLE' => $csSubtitle,
                                         'PICTURE' => $csPicture,
-                                        'COLOR' => $csColor,
+                                        'COLOR' => $csText($arItem['PROPERTIES']['CS_COLOR_CODE']['VALUE'] ?? ''),
+                                        'TIMER_COLOR' => $csText($arItem['PROPERTIES']['CS_TIMER_COLOR_CODE']['VALUE'] ?? ''),
+                                        'TIMER_BG' => $csText($arItem['PROPERTIES']['CS_TIMER_PHONE_COLOR_CODE']['VALUE'] ?? ''),
+                                        'TIMER_SHADOW' => $csText($arItem['PROPERTIES']['CS_TIMER_SHADOW_CODE']['VALUE'] ?? ''),
                                         'CACHE_TYPE' => 'N',
                                     ], false, ['HIDE_ICONS' => 'Y']);
                                 endif;

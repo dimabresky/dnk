@@ -23,8 +23,8 @@
 
 .dnk-banner-countdown__img {
   display: block;
-  max-width: 160px;
-  max-height: 120px;
+  max-width: 320px;
+  max-height: 240px;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -34,38 +34,44 @@
   display: none;
 }
 
+.dnk-banner-countdown__title,
+.dnk-banner-countdown__subtitle {
+  margin: 0;
+  color: inherit;
+}
+
 .dnk-banner-countdown__items {
-  display: flex;
+  flex-shrink: 0;
+  max-width: none;
+}
+
+.dnk-banner-countdown .flip-clock {
   justify-content: center;
-  gap: 16px;
+  width: max-content;
+  font-size: 3rem;
 }
 
-.dnk-banner-countdown__unit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 4rem;
+.dnk-banner-countdown .flip-clock .flip-clock-card {
+  color: var(--dnk-timer-color, #ccc);
+  box-shadow: var(--dnk-timer-shadow, 0 1.5px 3px rgba(0, 0, 0, 0.24), 0 3px 8px rgba(0, 0, 0, 0.05));
 }
 
-.dnk-banner-countdown__label {
-  letter-spacing: 0.04em;
-  opacity: 0.9;
+.dnk-banner-countdown .flip-clock .flip-clock-card .flip-clock-card-item-inner .top,
+.dnk-banner-countdown .flip-clock .flip-clock-card .flip-clock-card-item-inner .bottom {
+  background: var(--dnk-timer-bg, #333);
 }
 
 @media (max-width: 767px) {
   .dnk-banner-countdown__box {
-    gap: 8px;
-  }
-
-  .dnk-banner-countdown__items {
-    gap: 8px;
-  }
-
-  .dnk-banner-countdown__unit {
-    min-width: 3rem;
+    gap: 6px;
   }
 
   .dnk-banner-countdown__img {
-    max-height: 72px;
+    max-width: 160px;
+    max-height: 110px;
+  }
+
+  .dnk-banner-countdown .flip-clock {
+    font-size: 1.3rem;
   }
 }
