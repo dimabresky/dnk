@@ -1,0 +1,77 @@
+.banners-big__slide--countdown {
+  position: relative;
+}
+
+.dnk-banner-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.dnk-banner-countdown__box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 90%;
+}
+
+.dnk-banner-countdown__img {
+  display: block;
+  max-width: 320px;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.dnk-banner-countdown__img:not([src]) {
+  display: none;
+}
+
+.dnk-banner-countdown__title,
+.dnk-banner-countdown__subtitle {
+  margin: 0;
+  color: inherit;
+}
+
+.dnk-banner-countdown__items {
+  flex-shrink: 0;
+  max-width: none;
+}
+
+.dnk-banner-countdown .flip-clock {
+  justify-content: center;
+  width: max-content;
+  font-size: 3rem;
+}
+
+.dnk-banner-countdown .flip-clock .flip-clock-card {
+  color: var(--dnk-timer-color, #ccc);
+  box-shadow: var(--dnk-timer-shadow, 0 1.5px 3px rgba(0, 0, 0, 0.24), 0 3px 8px rgba(0, 0, 0, 0.05));
+}
+
+.dnk-banner-countdown .flip-clock .flip-clock-card .flip-clock-card-item-inner .top,
+.dnk-banner-countdown .flip-clock .flip-clock-card .flip-clock-card-item-inner .bottom {
+  background: var(--dnk-timer-bg, #333);
+}
+
+@media (max-width: 767px) {
+  .dnk-banner-countdown__box {
+    gap: 6px;
+  }
+
+  .dnk-banner-countdown__img {
+    max-width: 160px;
+    max-height: 110px;
+  }
+
+  .dnk-banner-countdown .flip-clock {
+    font-size: 1.3rem;
+  }
+}
