@@ -70,10 +70,12 @@
 
   function arm(el) {
     if (seen.has(el)) {
-      return;
+      return true;
     }
 
-    seen.add(el);
+    if (!window.jQuery || !$.fn.countdown) {
+      return false;
+    }
 
     var img = el.querySelector('img[data-src]');
     if (img) {
@@ -83,16 +85,25 @@
 
     var items = el.querySelector('.dnk-banner-countdown__items');
     var dateTo = parseEnd(el.getAttribute('data-end'));
-    if (!items || !dateTo || !$.fn.countdown) {
-      return;
+    if (!items || !dateTo) {
+      seen.add(el);
+      return true;
     }
 
-    $(items).countdown({
-      until: dateTo,
-      format: 'dHMS',
-      padZeroes: true,
-      layout: layout
-    }, regionalOptions());
+    try {
+      $(items).countdown($.extend({
+        until: dateTo,
+        format: 'dHMS',
+        padZeroes: true,
+        layout: layout
+      }, regionalOptions()));
+    } catch (e) {
+      return false;
+    }
+
+    seen.add(el);
+
+    return true;
   }
 
   function watch(el) {
@@ -106,8 +117,13 @@
           return;
         }
 
+        if (!arm(entry.target)) {
+          observer.unobserve(entry.target);
+          watched.delete(entry.target);
+          return;
+        }
+
         observer.unobserve(entry.target);
-        arm(entry.target);
       });
     }, { root: null, rootMargin: '200px', threshold: 0 });
 
@@ -155,6 +171,9 @@
     loadPlugins();
     scan();
   });
-  BX.addCustomEvent('onSlideChanges', scan);
+  BX.addCustomEvent('onSlideChanges', function () {
+    loadPlugins();
+    scan();
+  });
   BX.ready(loadPlugins);
 })();
