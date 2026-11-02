@@ -29,24 +29,11 @@ ob_end_clean();?>
 	</div>
 <?endif;?>
 <?
-$hideEnumId = 0;
 if ($arParams['FILTER_NAME'] !== '') {
-	$hideProp = \Dnk\PhpInterface\Utils::getIblockPropertyByCode((int) $arParams['IBLOCK_ID'], 'NOT_SHOW_ON_LIST');
-	if ($hideProp && ($hideProp['PROPERTY_TYPE'] ?? '') === 'L') {
-		$enumRes = \CIBlockPropertyEnum::GetList([], ['PROPERTY_ID' => (int) $hideProp['ID']]);
-		while ($enum = $enumRes->Fetch()) {
-			if ($enum['XML_ID'] === 'Y' || $enum['VALUE'] === 'Y') {
-				$hideEnumId = (int) $enum['ID'];
-				break;
-			}
-		}
-	}
-}
-if ($hideEnumId > 0) {
 	$GLOBALS[$arParams['FILTER_NAME']] = (array) ($GLOBALS[$arParams['FILTER_NAME']] ?? []);
 	$GLOBALS[$arParams['FILTER_NAME']][] = [
 		'LOGIC' => 'OR',
-		['!PROPERTY_NOT_SHOW_ON_LIST' => $hideEnumId],
+		['!PROPERTY_NOT_SHOW_ON_LIST_VALUE' => 'Y'],
 		['PROPERTY_NOT_SHOW_ON_LIST' => false],
 	];
 }
