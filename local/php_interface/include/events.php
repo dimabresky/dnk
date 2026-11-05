@@ -16,6 +16,7 @@ use Dnk\PhpInterface\OrderFioEvents;
 use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\BlogCommentConsentEvents;
 use Dnk\PhpInterface\BlogCommentTextEvents;
+use Dnk\PhpInterface\ImshopAvailabilityEvents;
 use Dnk\PhpInterface\ImshopPickupEvents;
 use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\UserConsentEvents;
@@ -225,6 +226,12 @@ EventManager::getInstance()->addEventHandlerCompatible(
     [ReviewBonusEvents::class, 'onCommentUpdate'],
     false,
     100
+);
+
+EventManager::getInstance()->addEventHandler(
+    'bx.imshop.integration',
+    'onAvailabilityWarehousesBuild',
+    [ImshopAvailabilityEvents::class, 'onAvailabilityWarehousesBuild']
 );
 
 EventManager::getInstance()->addEventHandler(
