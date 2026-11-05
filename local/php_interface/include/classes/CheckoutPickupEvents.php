@@ -22,7 +22,7 @@ final class CheckoutPickupEvents
      *
      * @var list<int>
      */
-    private const PICKUP_DELIVERY_IDS = [];
+    private const PICKUP_DELIVERY_IDS = [2];
 
     /**
      * @param mixed $order
