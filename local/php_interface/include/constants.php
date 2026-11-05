@@ -73,6 +73,22 @@ $dnkEnvInt = static function (string $name) use ($dnkEnv): int {
     return (int)$value;
 };
 
+$dnkEnvIntList = static function (string $name) use ($dnkEnv): array {
+    $parts = preg_split('/\s*,\s*/', trim($dnkEnv($name))) ?: [];
+    $ids = [];
+    foreach ($parts as $part) {
+        if ($part === '' || filter_var($part, FILTER_VALIDATE_INT) === false || (int) $part <= 0) {
+            throw new RuntimeException(sprintf(
+                'Required environment variable "%s" must be a comma-separated list of positive integers.',
+                $name
+            ));
+        }
+        $ids[(int) $part] = (int) $part;
+    }
+
+    return array_values($ids);
+};
+
 $dnkEnvDefault = static function (string $name, string $default) use ($dnkEnv): string {
     try {
         $value = $dnkEnv($name);
@@ -99,6 +115,9 @@ define('DNK_CERTIFICATE_CATALOG_IBLOCK_ID', $dnkEnvInt('DNK_CERTIFICATE_CATALOG_
 
 /** Инфоблок точек самовывоза (магазины: ADDRESS, PHONE, SCHEDULE, MAP). */
 define('DNK_PICKUP_STORES_IBLOCK_ID', $dnkEnvInt('DNK_PICKUP_STORES_IBLOCK_ID'));
+
+/** Id служб самовывоза в чекауте, через запятую. */
+define('DNK_PICKUP_DELIVERY_IDS', $dnkEnvIntList('DNK_PICKUP_DELIVERY_IDS'));
 
 /** ID почтового шаблона (событие CUSTOM_MAIL): уведомление менеджера о новой заявке на сертификаты. */
 define('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID', $dnkEnvInt('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID'));

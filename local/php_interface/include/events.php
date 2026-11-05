@@ -44,8 +44,8 @@ EventManager::getInstance()->addEventHandler(
 
 EventManager::getInstance()->addEventHandler(
     'sale',
-    'OnSaleComponentOrderCreated',
-    [CheckoutPickupEvents::class, 'onSaleComponentOrderCreated'],
+    'OnSaleComponentOrderJsData',
+    [CheckoutPickupEvents::class, 'onSaleComponentOrderJsData'],
     false,
     500
 );

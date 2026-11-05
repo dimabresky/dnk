@@ -5,208 +5,172 @@ declare(strict_types=1);
 namespace Dnk\PhpInterface;
 
 use Bitrix\Main\Loader;
-use Bitrix\Sale\Delivery\ExtraServices\Manager as ExtraServicesManager;
-use Bitrix\Sale\Delivery\Services\Base as DeliveryService;
-use Bitrix\Sale\Delivery\Services\EmptyDeliveryService;
-use Bitrix\Sale\Delivery\Services\Manager as DeliveryManager;
-use Bitrix\Sale\Order;
-use Bitrix\Sale\Shipment;
 
 /**
- * Убирает самовывоз из чекаута, если для карты не осталось складов выдачи.
+ * Убирает самовывоз из выбора доставки, если в итоговом списке складов пусто.
  */
 final class CheckoutPickupEvents
 {
     /**
-     * id профиля «Самовывоз», который видит чекаут.
-     *
-     * @var list<int>
-     */
-    private const PICKUP_DELIVERY_IDS = [2];
-
-    /**
-     * @param mixed $order
-     * @param mixed $arUserResult
-     * @param mixed $request
+     * @param array<string, mixed> $arResult
      * @param mixed $arParams
-     * @param mixed $arResult
-     * @param mixed $arDeliveryServiceAll
-     * @param mixed $arPaySystemServiceAll
      */
-    public static function onSaleComponentOrderCreated(
-        $order,
-        &$arUserResult,
-        $request,
-        &$arParams,
-        &$arResult,
-        &$arDeliveryServiceAll,
-        &$arPaySystemServiceAll,
-    ): void {
-        if (!$order instanceof Order || !is_array($arUserResult) || !is_array($arDeliveryServiceAll)) {
+    public static function onSaleComponentOrderJsData(&$arResult, &$arParams): void
+    {
+        // shortcut: total stays on the removed delivery until the next checkout ajax; saveOrderAjax does not fire this event, reprice here if an order must not save that id.
+        if (!is_array($arResult) || !isset($arResult['JS_DATA']['DELIVERY']) || !is_array($arResult['JS_DATA']['DELIVERY'])) {
             return;
         }
 
-        $siteId = (string) $order->getSiteId();
-        $removed = [];
-        foreach ($arDeliveryServiceAll as $deliveryId => $service) {
-            $deliveryId = (int) $deliveryId;
-            if (!in_array($deliveryId, self::PICKUP_DELIVERY_IDS, true)) {
+        $storeList = $arResult['JS_DATA']['STORE_LIST'] ?? [];
+        if (!is_array($storeList)) {
+            $storeList = [];
+        }
+
+        $regionStoreIds = self::regionStoreIds();
+        $removedChecked = false;
+
+        foreach (DNK_PICKUP_DELIVERY_IDS as $pickupId) {
+            $pickupId = (int) $pickupId;
+            if (!self::dropDelivery($arResult, $pickupId, $storeList, $regionStoreIds)) {
                 continue;
             }
-            if (self::visibleStoreIds($deliveryId, $siteId) !== []) {
-                continue;
-            }
-
-            unset($arDeliveryServiceAll[$deliveryId]);
-            $removed[$deliveryId] = true;
+            $removedChecked = true;
         }
 
-        if ($removed === []) {
-            return;
+        if ($removedChecked) {
+            self::checkFirstRemaining($arResult);
         }
-
-        $shipment = self::currentShipment($order);
-        if (!$shipment instanceof Shipment || !isset($removed[(int) $shipment->getDeliveryId()])) {
-            return;
-        }
-
-        self::replaceShipment($order, $shipment, $arDeliveryServiceAll, $arUserResult);
     }
 
     /**
-     * @return list<int>
+     * @param array<string, mixed> $arResult
+     * @param array<int|string, mixed> $storeList
+     * @param array<int, true>|null $regionStoreIds
      */
-    private static function visibleStoreIds(int $deliveryId, string $siteId): array
+    private static function dropDelivery(array &$arResult, int $pickupId, array $storeList, ?array $regionStoreIds): bool
     {
-        $configured = self::configuredStoreIds($deliveryId);
-        if ($configured === [] || !Loader::includeModule('catalog')) {
-            return [];
+        $jsKey = self::deliveryKey($arResult['JS_DATA']['DELIVERY'], $pickupId);
+        if ($jsKey === null) {
+            return false;
         }
 
-        $visible = [];
-        $rows = \CCatalogStore::GetList(
-            [],
-            [
-                'ACTIVE' => 'Y',
-                'ID' => $configured,
-                'ISSUING_CENTER' => 'Y',
-                '+SITE_ID' => $siteId,
-            ],
-            false,
-            false,
-            ['ID']
-        );
-        while ($row = $rows->Fetch()) {
-            $storeId = (int) ($row['ID'] ?? 0);
-            if ($storeId > 0) {
-                $visible[] = $storeId;
+        $delivery = $arResult['JS_DATA']['DELIVERY'][$jsKey];
+        $configured = is_array($delivery) ? ($delivery['STORE'] ?? []) : [];
+        if (!is_array($configured)) {
+            $configured = [];
+        }
+
+        if (self::hasVisibleStore($configured, $storeList, $regionStoreIds)) {
+            return false;
+        }
+
+        $wasChecked = is_array($delivery) && ($delivery['CHECKED'] ?? '') === 'Y';
+        unset($arResult['JS_DATA']['DELIVERY'][$jsKey]);
+
+        if (isset($arResult['DELIVERY']) && is_array($arResult['DELIVERY'])) {
+            $resultKey = self::deliveryKey($arResult['DELIVERY'], $pickupId);
+            if ($resultKey !== null) {
+                unset($arResult['DELIVERY'][$resultKey]);
             }
         }
 
-        return $visible;
+        return $wasChecked;
     }
 
     /**
-     * @return list<int>
+     * @param array<int|string, mixed> $deliveries
      */
-    private static function configuredStoreIds(int $deliveryId): array
+    private static function deliveryKey(array $deliveries, int $pickupId): int|string|null
     {
-        $stores = ExtraServicesManager::getStoresList($deliveryId);
-        if (!is_array($stores)) {
-            return [];
+        if (array_key_exists($pickupId, $deliveries)) {
+            return $pickupId;
         }
 
-        $ids = [];
-        foreach ($stores as $storeId) {
-            if (is_numeric($storeId) && (int) $storeId > 0) {
-                $ids[] = (int) $storeId;
-            }
-        }
-
-        return $ids;
-    }
-
-    private static function currentShipment(Order $order): ?Shipment
-    {
-        foreach ($order->getShipmentCollection() as $shipment) {
-            if (!$shipment->isSystem()) {
-                return $shipment;
-            }
+        $stringId = (string) $pickupId;
+        if (array_key_exists($stringId, $deliveries)) {
+            return $stringId;
         }
 
         return null;
     }
 
     /**
-     * @param array<int, DeliveryService> $services
-     * @param array<string, mixed> $arUserResult
+     * @param array<int|string, mixed> $configured
+     * @param array<int|string, mixed> $storeList
+     * @param array<int, true>|null $regionStoreIds
      */
-    private static function replaceShipment(Order $order, Shipment $shipment, array $services, array &$arUserResult): void
+    private static function hasVisibleStore(array $configured, array $storeList, ?array $regionStoreIds): bool
     {
-        $delivery = reset($services);
-        if ($delivery instanceof DeliveryService) {
-            self::assignDelivery($order, $shipment, $delivery, $arUserResult);
+        foreach ($configured as $storeId) {
+            if (!is_numeric($storeId) || (int) $storeId <= 0) {
+                continue;
+            }
 
-            return;
+            $storeId = (int) $storeId;
+            if (!array_key_exists($storeId, $storeList) && !array_key_exists((string) $storeId, $storeList)) {
+                continue;
+            }
+            if ($regionStoreIds !== null && !isset($regionStoreIds[$storeId])) {
+                continue;
+            }
+
+            return true;
         }
 
-        self::assignEmpty($order, $shipment, $arUserResult);
+        return false;
     }
 
     /**
-     * @param array<string, mixed> $arUserResult
+     * @return array<int, true>|null
      */
-    private static function assignDelivery(
-        Order $order,
-        Shipment $shipment,
-        DeliveryService $delivery,
-        array &$arUserResult,
-    ): void {
-        $deliveryId = (int) $delivery->getId();
-        $name = $delivery->isProfile() ? $delivery->getNameWithParent() : $delivery->getName();
-
-        $order->isStartField();
-        $shipment->setFields([
-            'DELIVERY_ID' => $deliveryId,
-            'DELIVERY_NAME' => $name,
-            'CURRENCY' => $order->getCurrency(),
-        ]);
-        $arUserResult['DELIVERY_ID'] = $deliveryId;
-
-        $storeIds = self::configuredStoreIds($deliveryId);
-        $buyerStore = (int) ($arUserResult['BUYER_STORE'] ?? 0);
-        if ($storeIds !== [] && !in_array($buyerStore, $storeIds, true)) {
-            $buyerStore = $storeIds[0];
+    private static function regionStoreIds(): ?array
+    {
+        if (!Loader::includeModule('aspro.premier') || !class_exists(\CPremierRegionality::class)) {
+            return null;
         }
-        if ($storeIds === []) {
-            $buyerStore = 0;
-        }
-        $arUserResult['BUYER_STORE'] = $buyerStore;
-        $shipment->setStoreId($buyerStore);
 
-        $order->getShipmentCollection()->calculateDelivery();
-        $order->doFinalAction(true);
+        $region = \CPremierRegionality::getCurrentRegion();
+        if (!is_array($region) || empty($region['LIST_STORES']) || !is_array($region['LIST_STORES'])) {
+            return null;
+        }
+        if (reset($region['LIST_STORES']) === 'component') {
+            return null;
+        }
+
+        $ids = [];
+        foreach ($region['LIST_STORES'] as $storeId) {
+            if (is_numeric($storeId) && (int) $storeId > 0) {
+                $ids[(int) $storeId] = true;
+            }
+        }
+
+        return $ids;
     }
 
     /**
-     * @param array<string, mixed> $arUserResult
+     * @param array<string, mixed> $arResult
      */
-    private static function assignEmpty(Order $order, Shipment $shipment, array &$arUserResult): void
+    private static function checkFirstRemaining(array &$arResult): void
     {
-        $service = DeliveryManager::getById(EmptyDeliveryService::getEmptyDeliveryServiceId());
-        if (!is_array($service)) {
-            return;
-        }
+        foreach (['JS_DATA', null] as $bucket) {
+            $deliveries = $bucket === null ? ($arResult['DELIVERY'] ?? null) : ($arResult['JS_DATA']['DELIVERY'] ?? null);
+            if (!is_array($deliveries) || $deliveries === []) {
+                continue;
+            }
 
-        $deliveryId = (int) ($service['ID'] ?? 0);
-        $order->isStartField();
-        $shipment->setFields([
-            'DELIVERY_ID' => $deliveryId,
-            'DELIVERY_NAME' => (string) ($service['NAME'] ?? ''),
-            'CURRENCY' => $order->getCurrency(),
-        ]);
-        $arUserResult['DELIVERY_ID'] = $deliveryId;
-        $arUserResult['BUYER_STORE'] = 0;
-        $shipment->setStoreId(0);
+            foreach ($deliveries as $delivery) {
+                if (is_array($delivery) && ($delivery['CHECKED'] ?? '') === 'Y') {
+                    continue 2;
+                }
+            }
+
+            $firstKey = array_key_first($deliveries);
+            if ($bucket === null) {
+                $arResult['DELIVERY'][$firstKey]['CHECKED'] = 'Y';
+            } else {
+                $arResult['JS_DATA']['DELIVERY'][$firstKey]['CHECKED'] = 'Y';
+            }
+        }
     }
 }
