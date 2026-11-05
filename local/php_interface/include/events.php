@@ -3,6 +3,7 @@
 use Bitrix\Main\EventManager;
 use Dnk\PhpInterface\BasketBonusEvents;
 use Dnk\PhpInterface\CheckoutOrderPropEvents;
+use Dnk\PhpInterface\CheckoutPickupEvents;
 use Dnk\PhpInterface\BonusAccrualEvents;
 use Dnk\PhpInterface\BonusDisplayEvents;
 use Dnk\PhpInterface\HeaderPromoEvents;
@@ -39,6 +40,14 @@ EventManager::getInstance()->addEventHandler(
     'sale',
     'OnSaleComponentOrderResultPrepared',
     [CheckoutOrderPropEvents::class, 'onSaleComponentOrderResultPrepared']
+);
+
+EventManager::getInstance()->addEventHandler(
+    'sale',
+    'OnSaleComponentOrderCreated',
+    [CheckoutPickupEvents::class, 'onSaleComponentOrderCreated'],
+    false,
+    500
 );
 
 EventManager::getInstance()->addEventHandler(
