@@ -110,7 +110,8 @@ final class CheckoutPickupEvents
             }
 
             $storeId = (int) $storeId;
-            if (!array_key_exists($storeId, $storeList) && !array_key_exists((string) $storeId, $storeList)) {
+            $inStoreList = array_key_exists($storeId, $storeList) || array_key_exists((string) $storeId, $storeList);
+            if (!$inStoreList && ($storeList !== [] || $regionStoreIds === null)) {
                 continue;
             }
             if ($regionStoreIds !== null && !isset($regionStoreIds[$storeId])) {
