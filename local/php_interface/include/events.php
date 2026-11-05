@@ -51,6 +51,14 @@ EventManager::getInstance()->addEventHandler(
 );
 
 EventManager::getInstance()->addEventHandler(
+    'sale',
+    'OnSaleComponentOrderResultPrepared',
+    [CheckoutPickupEvents::class, 'onSaleComponentOrderResultPrepared'],
+    false,
+    500
+);
+
+EventManager::getInstance()->addEventHandler(
     'aspro.bonus',
     'beforeCreateAddByOrder',
     [BonusAccrualEvents::class, 'onBeforeCreateAddByOrder']
