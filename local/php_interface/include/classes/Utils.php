@@ -703,6 +703,42 @@ final class Utils
     }
 
     /**
+     * Уровень и сумма до следующего уровня из UF_LEVEL и UF_NEXT_LEVEL_COST.
+     * null, если UF_LEVEL пустой или не 1, 2, 3, 5.
+     *
+     * @return array{
+     *     level: int,
+     *     name: string,
+     *     next_name: string|null,
+     *     next_level_cost: float|null
+     * }|null
+     */
+    public static function getUserUfLoyaltyDisplayData(int $userId): ?array
+    {
+        $level = self::getUserBonusClientLevel($userId);
+        if ($level === null) {
+            return null;
+        }
+
+        $name = self::BONUS_CLIENT_LEVEL_NAMES[$level] ?? '';
+        if ($name === '') {
+            return null;
+        }
+
+        $nextLevelId = [1 => 2, 2 => 3][$level] ?? null;
+        $nextName = is_int($nextLevelId) ? (self::BONUS_CLIENT_LEVEL_NAMES[$nextLevelId] ?? '') : '';
+        $nextCost = $nextName !== '' ? self::getUserNextLevelCost($userId) : null;
+        $showNext = $nextName !== '' && $nextCost !== null && $nextCost > 0.0;
+
+        return [
+            'level' => $level,
+            'name' => $name,
+            'next_name' => $showNext ? $nextName : null,
+            'next_level_cost' => $showNext ? $nextCost : null,
+        ];
+    }
+
+    /**
      * Уровень клиента по уровневой группе Bitrix (9, 10, 11, 12) или null, если группы нет.
      */
     private static function resolveUserBonusClientLevelFromGroups(int $userId): ?int

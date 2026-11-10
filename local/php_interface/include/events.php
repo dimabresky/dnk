@@ -18,6 +18,7 @@ use Dnk\PhpInterface\BlogCommentConsentEvents;
 use Dnk\PhpInterface\BlogCommentTextEvents;
 use Dnk\PhpInterface\ImshopAvailabilityEvents;
 use Dnk\PhpInterface\ImshopPickupEvents;
+use Dnk\PhpInterface\ImshopUserEvents;
 use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\UserConsentEvents;
 use Dnk\PhpInterface\ProfileBirthdayEvents;
@@ -238,6 +239,12 @@ EventManager::getInstance()->addEventHandler(
     'bx.imshop.integration',
     'onPickupLocationsBuild',
     [ImshopPickupEvents::class, 'onPickupLocationsBuild']
+);
+
+EventManager::getInstance()->addEventHandler(
+    'bx.imshop.integration',
+    'onUserProfileBuild',
+    [ImshopUserEvents::class, 'onUserProfileBuild']
 );
 
 if (
