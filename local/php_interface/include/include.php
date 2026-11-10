@@ -48,6 +48,7 @@ use Dnk\PhpInterface\ImshopBelpostPickup;
 use Dnk\PhpInterface\ImshopEuropostPickup;
 use Dnk\PhpInterface\ImshopAvailabilityEvents;
 use Dnk\PhpInterface\ImshopPickupEvents;
+use Dnk\PhpInterface\ImshopUserEvents;
 use Dnk\PhpInterface\ImshopPostalPickup;
 use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\ReviewBonusQueueTable;
@@ -111,6 +112,7 @@ Loader::registerAutoLoadClasses(null, [
     ImshopBelpostPickup::class => $classesPath . '/ImshopBelpostPickup.php',
     ImshopAvailabilityEvents::class => $classesPath . '/ImshopAvailabilityEvents.php',
     ImshopPickupEvents::class => $classesPath . '/ImshopPickupEvents.php',
+    ImshopUserEvents::class => $classesPath . '/ImshopUserEvents.php',
     ReviewBonusEvents::class => $classesPath . '/ReviewBonusEvents.php',
     ReviewBonusQueueTable::class => $classesPath . '/ReviewBonusQueueTable.php',
     ReviewBonusQueueAgent::class => $classesPath . '/ReviewBonusQueueAgent.php',
