@@ -8,7 +8,7 @@ use Bitrix\Main\Event;
 use Bitrix\Main\EventResult;
 
 /**
- * Дополняет профиль IMSHOP номером карты и уровнем из пользовательских полей.
+ * Дополняет профиль IMSHOP номером карты, уровнем и согласием на обработку данных.
  */
 final class ImshopUserEvents
 {
@@ -19,12 +19,13 @@ final class ImshopUserEvents
             return null;
         }
 
+        $userId = (int) $event->getParameter('USER_ID');
         $phone = preg_replace('/\D+/', '', (string) ($user['phone'] ?? '')) ?: '';
         if ($phone !== '') {
             $user['cardNumber'] = $phone;
         }
 
-        $loyalty = Utils::getUserUfLoyaltyDisplayData((int) $event->getParameter('USER_ID'));
+        $loyalty = Utils::getUserUfLoyaltyDisplayData($userId);
         if (is_array($loyalty)) {
             $program = [
                 'currentLevelTitle' => (string) $loyalty['name'],
@@ -39,6 +40,21 @@ final class ImshopUserEvents
             }
             $user['loyaltyProgram'] = $program;
         }
+
+        $user['agreements'] = [
+            [
+                'id' => '1',
+                'title' => 'Согласие на обработку персональных данных',
+                'purpose' => 'Стандартное соглашение на обработку персональных данных',
+                'dataUsed' => [],
+                'duration' => '',
+                'requiredFields' => [],
+                'checked' => UserConsentService::hasActiveConsent($userId, 1),
+                'dependencies' => [],
+                'fullTextUrl' => 'https://dnk.by/info/politika-konfidentsialnosti/',
+                'needReconsent' => false,
+            ],
+        ];
 
         return new EventResult(EventResult::SUCCESS, [
             'USER' => $user,
