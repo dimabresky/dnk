@@ -18,6 +18,7 @@ use Dnk\PhpInterface\BlogCommentConsentEvents;
 use Dnk\PhpInterface\BlogCommentTextEvents;
 use Dnk\PhpInterface\ImshopAvailabilityEvents;
 use Dnk\PhpInterface\ImshopPickupEvents;
+use Dnk\PhpInterface\ImshopOtpEvents;
 use Dnk\PhpInterface\ImshopUserEvents;
 use Dnk\PhpInterface\ReviewBonusEvents;
 use Dnk\PhpInterface\UserConsentEvents;
@@ -245,6 +246,12 @@ EventManager::getInstance()->addEventHandler(
     'bx.imshop.integration',
     'onUserProfileBuild',
     [ImshopUserEvents::class, 'onUserProfileBuild']
+);
+
+EventManager::getInstance()->addEventHandler(
+    'bx.imshop.integration',
+    'onOtpRegistrationDataBuild',
+    [ImshopOtpEvents::class, 'onOtpRegistrationDataBuild']
 );
 
 if (
