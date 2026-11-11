@@ -44,18 +44,6 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
         'SOSTAV_1' => 'Состав',
     ];
 
-    private const CHARACTERISTIC_PROPERTY_CODES = [
-        'BREND',
-        'CML2_ARTICLE',
-        'OBEM_FLAKONA',
-        'CML2_MANUFACTURER',
-        'STRANA_IZGOTOVLENIYA',
-        'NOMINALNYY_OBEM',
-        'IMPORTER',
-        'OTTENOK',
-        'PODKHODIT_DLYA',
-    ];
-
     private string $currency = self::DEFAULT_CURRENCY;
 
     /**
@@ -242,7 +230,12 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
             $lines[] = '        <barcode>' . self::escapeXml($barcode) . '</barcode>';
         }
 
-        $collapsibleDescription = $this->buildCollapsibleDescription($fields, $props);
+        $description = $this->productDescription($fields);
+        if ($description !== '') {
+            $lines[] = '        <richDescription><![CDATA[' . self::sanitizeCdata($description) . ']]></richDescription>';
+        }
+
+        $collapsibleDescription = $this->buildCollapsibleDescription($props);
         if ($collapsibleDescription !== '') {
             $lines[] = $collapsibleDescription;
         }
@@ -387,30 +380,29 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
 
     /**
      * @param array<string, mixed> $fields
-     * @param array<string, mixed> $props
      */
-    private function buildCollapsibleDescription(array $fields, array $props): string
+    private function productDescription(array $fields): string
     {
-        $sections = [];
-
         $description = $this->htmlToMarkdown((string) ($fields['~DETAIL_TEXT'] ?? $fields['DETAIL_TEXT'] ?? ''));
         if ($description === '') {
             $description = $this->htmlToMarkdown((string) ($fields['~PREVIEW_TEXT'] ?? $fields['PREVIEW_TEXT'] ?? ''));
         }
-        if ($description !== '') {
-            $sections[] = ['title' => 'Описание', 'text' => $description];
-        }
+
+        return $description;
+    }
+
+    /**
+     * @param array<string, mixed> $props
+     */
+    private function buildCollapsibleDescription(array $props): string
+    {
+        $sections = [];
 
         foreach (self::COLLAPSIBLE_TEXT_SECTIONS as $code => $title) {
             $text = implode(', ', $this->propertyValues(is_array($props[$code] ?? null) ? $props[$code] : null));
             if ($text !== '') {
                 $sections[] = ['title' => $title, 'text' => $text];
             }
-        }
-
-        $characteristics = $this->buildCharacteristicsMarkdown($props);
-        if ($characteristics !== '') {
-            $sections[] = ['title' => 'Характеристики', 'text' => $characteristics];
         }
 
         if ($sections === []) {
@@ -504,30 +496,6 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
         }
 
         return $raw;
-    }
-
-    /**
-     * @param array<string, mixed> $props
-     */
-    private function buildCharacteristicsMarkdown(array $props): string
-    {
-        $lines = [];
-        foreach (self::CHARACTERISTIC_PROPERTY_CODES as $code) {
-            $property = $props[$code] ?? null;
-            if (!is_array($property)) {
-                continue;
-            }
-
-            $name = trim((string) ($property['NAME'] ?? ''));
-            $value = trim(preg_replace('/\s+/u', ' ', implode(', ', $this->propertyValues($property))) ?? '');
-            if ($name === '' || $value === '') {
-                continue;
-            }
-
-            $lines[] = '- ' . $name . ': **' . str_replace('*', '\\*', $value) . '**';
-        }
-
-        return implode("\n", $lines);
     }
 
     /**
