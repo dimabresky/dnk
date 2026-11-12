@@ -10,7 +10,7 @@ use Bitrix\Sale\PriceMaths;
 use Bitrix\Sale\Shipment;
 
 /**
- * Убирает самовывоз из выбора доставки, если в итоговом списке складов пусто.
+ * При включённой региональности убирает самовывоз, если в итоговом списке складов пусто.
  */
 final class CheckoutPickupEvents
 {
@@ -20,6 +20,10 @@ final class CheckoutPickupEvents
      */
     public static function onSaleComponentOrderJsData(&$arResult, &$arParams): void
     {
+        if (!self::regionalityEnabled()) {
+            return;
+        }
+
         if (!is_array($arResult) || !isset($arResult['JS_DATA']['DELIVERY']) || !is_array($arResult['JS_DATA']['DELIVERY'])) {
             return;
         }
@@ -124,16 +128,19 @@ final class CheckoutPickupEvents
         return false;
     }
 
+    private static function regionalityEnabled(): bool
+    {
+        return Loader::includeModule('aspro.premier')
+            && class_exists(\CPremierRegionality::class)
+            && \CPremierRegionality::checkUseRegionality();
+    }
+
     /**
      * @return array<int, true>|null
      */
     private static function regionStoreIds(): ?array
     {
-        if (!Loader::includeModule('aspro.premier') || !class_exists(\CPremierRegionality::class)) {
-            return null;
-        }
-
-        if (!\CPremierRegionality::checkUseRegionality()) {
+        if (!self::regionalityEnabled()) {
             return null;
         }
 
@@ -193,7 +200,7 @@ final class CheckoutPickupEvents
     public static function onSaleComponentOrderResultPrepared($order, &$arUserResult, $request, &$arParams, &$arResult): void
     {
         // shortcut: saveOrderAjax does not fire this event; payment sum stays until the next checkout ajax posts the new delivery id.
-        if (!$order instanceof Order || !is_array($arResult)) {
+        if (!$order instanceof Order || !is_array($arResult) || !self::regionalityEnabled()) {
             return;
         }
 
