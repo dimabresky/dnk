@@ -189,6 +189,65 @@ final class CheckoutPickupEvents
     }
 
     /**
+     * На сохранении заказа компонент не строит список доставок заново.
+     * Если региональность уже исключила склады самовывоза, служба в запросе заменяется до записи заказа.
+     *
+     * @param mixed $order
+     * @param mixed $arUserResult
+     * @param mixed $request
+     * @param mixed $arParams
+     * @param mixed $arResult
+     * @param mixed $arDeliveryServiceAll
+     */
+    public static function onSaleComponentOrderCreated(
+        $order,
+        &$arUserResult,
+        $request,
+        &$arParams,
+        &$arResult,
+        &$arDeliveryServiceAll = null
+    ): void {
+        if (!$order instanceof Order || !self::regionalityEnabled() || !self::isSaveAction($request, $arParams)) {
+            return;
+        }
+
+        $shipment = self::currentShipment($order);
+        if ($shipment === null || !self::isPickupId((int) $shipment->getDeliveryId())) {
+            return;
+        }
+
+        $regionStoreIds = self::regionStoreIds();
+        if ($regionStoreIds === null) {
+            return;
+        }
+
+        $deliveryId = (int) $shipment->getDeliveryId();
+        if (self::hasVisibleStore(self::configuredStores($deliveryId), [], $regionStoreIds)) {
+            return;
+        }
+
+        $replacement = self::firstOtherDelivery($arDeliveryServiceAll, $deliveryId);
+        if ($replacement === null) {
+            return;
+        }
+
+        if (is_array($arUserResult)) {
+            $arUserResult['DELIVERY_ID'] = $replacement;
+        }
+
+        $shipment->setField('CUSTOM_PRICE_DELIVERY', 'N');
+        $shipment->setField('DISCOUNT_PRICE', 0);
+        $switched = $shipment->setField('DELIVERY_ID', $replacement);
+        if (!$switched->isSuccess()) {
+            return;
+        }
+
+        self::bindShipmentStore($shipment, $replacement, $arUserResult, $arResult);
+        $order->getShipmentCollection()->calculateDelivery();
+        $order->doFinalAction(true);
+    }
+
+    /**
      * Переключает отгрузку на службу, отмеченную после скрытия самовывоза, и переписывает сумму этого ответа.
      *
      * @param mixed $order
@@ -237,6 +296,8 @@ final class CheckoutPickupEvents
             return;
         }
 
+        self::bindShipmentStore($shipment, $checked['id'], $arUserResult, $arResult);
+
         $calculated = $order->getShipmentCollection()->calculateDelivery();
         if (!$calculated->isSuccess()) {
             self::writeRowPrice($arResult, $deliveries[$checked['key']]);
@@ -246,6 +307,112 @@ final class CheckoutPickupEvents
 
         $order->doFinalAction(true);
         self::writeOrderPrice($order, $arResult, $checked['id']);
+    }
+
+    /**
+     * @param mixed $request
+     * @param mixed $arParams
+     */
+    private static function isSaveAction($request, $arParams): bool
+    {
+        $variable = is_array($arParams) && is_string($arParams['ACTION_VARIABLE'] ?? null) && $arParams['ACTION_VARIABLE'] !== ''
+            ? $arParams['ACTION_VARIABLE']
+            : 'soa-action';
+        if (!is_object($request) || !method_exists($request, 'get')) {
+            return false;
+        }
+
+        $action = (string) $request->get($variable);
+        if ($action === '') {
+            $action = (string) $request->get('action');
+        }
+
+        return $action === 'saveOrderAjax';
+    }
+
+    private static function isPickupId(int $deliveryId): bool
+    {
+        if (!defined('DNK_PICKUP_DELIVERY_IDS') || !is_array(DNK_PICKUP_DELIVERY_IDS)) {
+            return false;
+        }
+
+        return in_array($deliveryId, array_map('intval', DNK_PICKUP_DELIVERY_IDS), true);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private static function configuredStores(int $deliveryId): array
+    {
+        $stores = \Bitrix\Sale\Delivery\ExtraServices\Manager::getStoresList($deliveryId);
+        if (!is_array($stores)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($stores as $storeId) {
+            if (is_numeric($storeId) && (int) $storeId > 0) {
+                $ids[] = (int) $storeId;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @param mixed $services
+     */
+    private static function firstOtherDelivery($services, int $currentId): ?int
+    {
+        if (!is_array($services)) {
+            return null;
+        }
+
+        foreach ($services as $id => $service) {
+            $deliveryId = is_object($service) && method_exists($service, 'getId') ? (int) $service->getId() : (int) $id;
+            if ($deliveryId <= 0 || $deliveryId === $currentId || self::isPickupId($deliveryId)) {
+                continue;
+            }
+
+            return $deliveryId;
+        }
+
+        return null;
+    }
+
+    private static function storeForDelivery(int $deliveryId): int
+    {
+        $regionStoreIds = self::regionStoreIds();
+        foreach (self::configuredStores($deliveryId) as $storeId) {
+            if ($regionStoreIds !== null && !isset($regionStoreIds[$storeId])) {
+                continue;
+            }
+
+            return $storeId;
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param mixed $arUserResult
+     * @param mixed $arResult
+     */
+    private static function bindShipmentStore(Shipment $shipment, int $deliveryId, &$arUserResult, &$arResult): void
+    {
+        $storeId = self::storeForDelivery($deliveryId);
+        $shipment->setStoreId($storeId);
+        if (is_array($arUserResult)) {
+            $arUserResult['BUYER_STORE'] = $storeId;
+        }
+        if (!is_array($arResult)) {
+            return;
+        }
+
+        $arResult['BUYER_STORE'] = $storeId;
+        if (isset($arResult['JS_DATA']) && is_array($arResult['JS_DATA'])) {
+            $arResult['JS_DATA']['BUYER_STORE'] = $storeId;
+        }
     }
 
     private static function currentShipment(Order $order): ?Shipment
