@@ -6,6 +6,7 @@ namespace Dnk\PhpInterface;
 
 use Bitrix\Main\Event;
 use Bitrix\Main\EventResult;
+use Bitrix\Main\Grid\Declension;
 
 /**
  * Дополняет профиль IMSHOP номером карты, уровнем и согласием на обработку данных.
@@ -25,6 +26,11 @@ final class ImshopUserEvents
             $user['cardNumber'] = $phone;
         }
 
+        $keptProgram = $user['loyaltyProgram'] ?? null;
+        unset($user['loyaltyProgram']);
+        $user['units'] = (new Declension('бонус', 'бонуса', 'бонусов'))
+            ->get((int) ($user['bonuses'] ?? 0));
+
         $loyalty = Utils::getUserUfLoyaltyDisplayData($userId);
         if (is_array($loyalty)) {
             $program = [
@@ -39,6 +45,8 @@ final class ImshopUserEvents
                     . $nextName;
             }
             $user['loyaltyProgram'] = $program;
+        } elseif (is_array($keptProgram)) {
+            $user['loyaltyProgram'] = $keptProgram;
         }
 
         $user['agreements'] = [
