@@ -116,6 +116,9 @@ define('DNK_CERTIFICATE_CATALOG_IBLOCK_ID', $dnkEnvInt('DNK_CERTIFICATE_CATALOG_
 /** Инфоблок точек самовывоза (магазины: ADDRESS, PHONE, SCHEDULE, MAP). */
 define('DNK_PICKUP_STORES_IBLOCK_ID', $dnkEnvInt('DNK_PICKUP_STORES_IBLOCK_ID'));
 
+/** Инфоблок бенефитов (CODE dnk_benefits). 0, пока ID не записан в .env. */
+define('DNK_BENEFITS_IBLOCK_ID', (int) $dnkEnvDefault('DNK_BENEFITS_IBLOCK_ID', '0'));
+
 /** Id служб самовывоза в чекауте, через запятую. */
 define('DNK_PICKUP_DELIVERY_IDS', $dnkEnvIntList('DNK_PICKUP_DELIVERY_IDS'));
 
