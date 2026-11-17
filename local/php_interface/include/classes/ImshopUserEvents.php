@@ -103,12 +103,37 @@ final class ImshopUserEvents
             ['ID', 'DETAIL_TEXT']
         );
         while ($row = $res->Fetch()) {
-            $text = (string) ($row['DETAIL_TEXT'] ?? '');
-            foreach (preg_split('/\R/u', $text) ?: [] as $line) {
-                $line = trim($line);
-                if ($line !== '') {
-                    $lines[] = $line;
-                }
+            foreach (self::benefitLines((string) ($row['DETAIL_TEXT'] ?? '')) as $line) {
+                $lines[] = $line;
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function benefitLines(string $text): array
+    {
+        $text = preg_replace('#<br\b[^>]*>#i', "\n", $text) ?? $text;
+        $text = preg_replace('#</p>#i', "\n", $text) ?? $text;
+        $text = preg_replace_callback(
+            '#<li\b[^>]*>((?:(?!</?li\b).)*)</li>#isu',
+            static function (array $match): string {
+                $item = trim(preg_replace('/\s+/u', ' ', strip_tags($match[1])) ?? '');
+
+                return $item === '' ? '' : "\n" . $item . "\n";
+            },
+            $text
+        ) ?? $text;
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        $lines = [];
+        foreach (preg_split('/\R/u', $text) ?: [] as $line) {
+            $line = trim(preg_replace('/[ \t]+/u', ' ', $line) ?? $line);
+            if ($line !== '') {
+                $lines[] = $line;
             }
         }
 
