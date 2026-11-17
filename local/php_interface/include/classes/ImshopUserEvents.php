@@ -7,6 +7,7 @@ namespace Dnk\PhpInterface;
 use Bitrix\Main\Event;
 use Bitrix\Main\EventResult;
 use Bitrix\Main\Grid\Declension;
+use Bitrix\Main\Loader;
 
 /**
  * Дополняет профиль IMSHOP номером карты, уровнем и согласием на обработку данных.
@@ -44,6 +45,10 @@ final class ImshopUserEvents
                     . ' BYN покупок до '
                     . $nextName;
             }
+            $benefits = self::loyaltyBenefits((int) $loyalty['level']);
+            if ($benefits !== []) {
+                $program['benefits'] = $benefits;
+            }
             $user['loyaltyProgram'] = $program;
         } elseif (is_array($keptProgram)) {
             $user['loyaltyProgram'] = $keptProgram;
@@ -67,5 +72,46 @@ final class ImshopUserEvents
         return new EventResult(EventResult::SUCCESS, [
             'USER' => $user,
         ]);
+    }
+
+    /**
+     * Строки DETAIL_TEXT элементов инфоблока бенефитов с этим уровнем.
+     *
+     * @return list<string>
+     */
+    private static function loyaltyBenefits(int $level): array
+    {
+        if (
+            $level <= 0
+            || !defined('DNK_BENEFITS_IBLOCK_ID')
+            || (int) DNK_BENEFITS_IBLOCK_ID <= 0
+            || !Loader::includeModule('iblock')
+        ) {
+            return [];
+        }
+
+        $lines = [];
+        $res = \CIBlockElement::GetList(
+            ['SORT' => 'ASC', 'ID' => 'ASC'],
+            [
+                'IBLOCK_ID' => (int) DNK_BENEFITS_IBLOCK_ID,
+                'ACTIVE' => 'Y',
+                'PROPERTY_LEVEL' => $level,
+            ],
+            false,
+            false,
+            ['ID', 'DETAIL_TEXT']
+        );
+        while ($row = $res->Fetch()) {
+            $text = (string) ($row['DETAIL_TEXT'] ?? '');
+            foreach (preg_split('/\R/u', $text) ?: [] as $line) {
+                $line = trim($line);
+                if ($line !== '') {
+                    $lines[] = $line;
+                }
+            }
+        }
+
+        return $lines;
     }
 }
