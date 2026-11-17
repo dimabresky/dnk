@@ -129,11 +129,9 @@ $existingIblock = CIBlock::GetList(
     ['CODE' => $iblockCode, 'CHECK_PERMISSIONS' => 'N']
 )->Fetch();
 if (is_array($existingIblock)) {
-    $out(sprintf(
-        "[skip] iblock %s already exists ID=%d\n",
-        $iblockCode,
-        (int) ($existingIblock['ID'] ?? 0)
-    ));
+    $existingId = (int) ($existingIblock['ID'] ?? 0);
+    $out("[skip] iblock {$iblockCode} already exists ID={$existingId}\n");
+    $out("Set .env DNK_BENEFITS_IBLOCK_ID={$existingId}\n");
     $finish();
     exit(0);
 }
@@ -172,5 +170,6 @@ if ($iblockId <= 0) {
 }
 
 $out("[ok] created iblock {$iblockCode} ID={$iblockId}\n");
+$out("Set .env DNK_BENEFITS_IBLOCK_ID={$iblockId}\n");
 $finish();
 exit(0);
