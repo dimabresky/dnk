@@ -2,7 +2,8 @@
 
 /**
  * Одноразовая установка: тип инфоблока «Программа лояльности» (dnk_loyalty)
- * и инфоблок «Бенефиты» (CODE dnk_benefits). Повторный запуск не дублирует.
+ * и инфоблок «Бенефиты» (CODE dnk_benefits) со свойством LEVEL.
+ * Повторный запуск не дублирует.
  *
  * CLI (из корня сайта):
  *   php local/tools/install_loyalty_benefits_iblock.php
@@ -129,47 +130,72 @@ $existingIblock = CIBlock::GetList(
     ['CODE' => $iblockCode, 'CHECK_PERMISSIONS' => 'N']
 )->Fetch();
 if (is_array($existingIblock)) {
-    $existingId = (int) ($existingIblock['ID'] ?? 0);
-    $out("[skip] iblock {$iblockCode} already exists ID={$existingId}\n");
-    $out("Set .env DNK_BENEFITS_IBLOCK_ID={$existingId}\n");
-    $finish();
-    exit(0);
-}
-
-$siteIds = [];
-$siteRes = CSite::GetList('sort', 'asc', ['ACTIVE' => 'Y']);
-while ($site = $siteRes->Fetch()) {
-    $lid = (string) ($site['LID'] ?? '');
-    if ($lid !== '') {
-        $siteIds[] = $lid;
+    $iblockId = (int) ($existingIblock['ID'] ?? 0);
+    $out("[skip] iblock {$iblockCode} already exists ID={$iblockId}\n");
+} else {
+    $siteIds = [];
+    $siteRes = CSite::GetList('sort', 'asc', ['ACTIVE' => 'Y']);
+    while ($site = $siteRes->Fetch()) {
+        $lid = (string) ($site['LID'] ?? '');
+        if ($lid !== '') {
+            $siteIds[] = $lid;
+        }
     }
-}
-if ($siteIds === []) {
-    $out("[error] no active sites\n");
-    $finish();
-    exit(1);
+    if ($siteIds === []) {
+        $out("[error] no active sites\n");
+        $finish();
+        exit(1);
+    }
+
+    $iblock = new CIBlock();
+    $iblockId = (int) $iblock->Add([
+        'ACTIVE' => 'Y',
+        'NAME' => 'Бенефиты',
+        'CODE' => $iblockCode,
+        'IBLOCK_TYPE_ID' => $typeId,
+        'SITE_ID' => $siteIds,
+        'SORT' => 500,
+        'LIST_PAGE_URL' => '',
+        'DETAIL_PAGE_URL' => '',
+        'INDEX_ELEMENT' => 'N',
+        'VERSION' => 2,
+    ]);
+    if ($iblockId <= 0) {
+        $out('[error] CIBlock::Add failed: ' . $iblock->LAST_ERROR . "\n");
+        $finish();
+        exit(1);
+    }
+
+    $out("[ok] created iblock {$iblockCode} ID={$iblockId}\n");
 }
 
-$iblock = new CIBlock();
-$iblockId = (int) $iblock->Add([
-    'ACTIVE' => 'Y',
-    'NAME' => 'Бенефиты',
-    'CODE' => $iblockCode,
-    'IBLOCK_TYPE_ID' => $typeId,
-    'SITE_ID' => $siteIds,
-    'SORT' => 500,
-    'LIST_PAGE_URL' => '',
-    'DETAIL_PAGE_URL' => '',
-    'INDEX_ELEMENT' => 'N',
-    'VERSION' => 2,
-]);
-if ($iblockId <= 0) {
-    $out('[error] CIBlock::Add failed: ' . $iblock->LAST_ERROR . "\n");
-    $finish();
-    exit(1);
+$existingProperty = CIBlockProperty::GetList([], [
+    'IBLOCK_ID' => $iblockId,
+    'CODE' => 'LEVEL',
+])->Fetch();
+if (is_array($existingProperty)) {
+    $out(sprintf("[skip] property LEVEL already exists ID=%d\n", (int) ($existingProperty['ID'] ?? 0)));
+} else {
+    $property = new CIBlockProperty();
+    // shortcut: у инфоблока нет типа «Целое число», N — «Число», заменить если появится integer user type
+    $propertyId = (int) $property->Add([
+        'IBLOCK_ID' => $iblockId,
+        'NAME' => 'Уровень',
+        'ACTIVE' => 'Y',
+        'SORT' => 100,
+        'CODE' => 'LEVEL',
+        'PROPERTY_TYPE' => 'N',
+        'MULTIPLE' => 'N',
+    ]);
+    if ($propertyId <= 0) {
+        $out('[error] CIBlockProperty::Add LEVEL failed: ' . $property->LAST_ERROR . "\n");
+        $finish();
+        exit(1);
+    }
+
+    $out("[ok] created property LEVEL ID={$propertyId}\n");
 }
 
-$out("[ok] created iblock {$iblockCode} ID={$iblockId}\n");
 $out("Set .env DNK_BENEFITS_IBLOCK_ID={$iblockId}\n");
 $finish();
 exit(0);
