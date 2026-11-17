@@ -816,6 +816,11 @@ abstract class CatalogYmlFeedExporter
         return [];
     }
 
+    protected function formatCategoryName(string $name): string
+    {
+        return $name;
+    }
+
     /**
      * Дополнительные атрибуты тега category.
      *
@@ -866,7 +871,7 @@ abstract class CatalogYmlFeedExporter
 
         foreach ($sections as $id => $section) {
             $parentId = (int) ($section['IBLOCK_SECTION_ID'] ?? 0);
-            $name = trim((string) ($section['~NAME'] ?? $section['NAME'] ?? ''));
+            $name = $this->formatCategoryName(trim((string) ($section['~NAME'] ?? $section['NAME'] ?? '')));
             if ($name === '') {
                 continue;
             }

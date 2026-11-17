@@ -116,6 +116,15 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
         return 'universalLink';
     }
 
+    protected function formatCategoryName(string $name): string
+    {
+        // shortcut: внутренние капс (SPF, BB) станут строчными, убрать когда названия разделов перестанут храниться капсом
+        $lower = mb_strtolower($name, 'UTF-8');
+
+        return mb_strtoupper(mb_substr($lower, 0, 1, 'UTF-8'), 'UTF-8')
+            . mb_substr($lower, 1, null, 'UTF-8');
+    }
+
     /**
      * @return list<string>
      */
