@@ -267,6 +267,10 @@
 	height: 20px;
 }
 
+.personal__main-private__wrapper--user-level .personal__main-private {
+	height: auto;
+	overflow: visible;
+}
 .personal__main-private__benefits {
 	margin: 12px 0 0;
 	padding: 0 0 0 18px;

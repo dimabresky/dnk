@@ -754,25 +754,47 @@ final class Utils
             return [];
         }
 
+        $iblockId = (int) DNK_BENEFITS_IBLOCK_ID;
         $lines = [];
         $res = \CIBlockElement::GetList(
             ['SORT' => 'ASC', 'ID' => 'ASC'],
             [
-                'IBLOCK_ID' => (int) DNK_BENEFITS_IBLOCK_ID,
+                'IBLOCK_ID' => $iblockId,
                 'ACTIVE' => 'Y',
-                'PROPERTY_LEVEL' => $level,
             ],
             false,
             false,
             ['ID', 'DETAIL_TEXT']
         );
         while ($row = $res->Fetch()) {
+            $elementId = (int) ($row['ID'] ?? 0);
+            if ($elementId <= 0 || !self::elementHasLevel($iblockId, $elementId, $level)) {
+                continue;
+            }
             foreach (self::benefitLines((string) ($row['DETAIL_TEXT'] ?? '')) as $line) {
                 $lines[] = $line;
             }
         }
 
         return $lines;
+    }
+
+    /**
+     * Числовое свойство LEVEL в фильтре GetList не находит значение 3, если оно лежит только в VALUE.
+     */
+    private static function elementHasLevel(int $iblockId, int $elementId, int $level): bool
+    {
+        $prop = \CIBlockElement::GetProperty($iblockId, $elementId, [], ['CODE' => 'LEVEL'])->Fetch();
+        if (!is_array($prop)) {
+            return false;
+        }
+
+        $raw = str_replace(',', '.', trim((string) ($prop['VALUE'] ?? '')));
+        if ($raw === '' || !is_numeric($raw)) {
+            return false;
+        }
+
+        return (int) $raw === $level;
     }
 
     /**

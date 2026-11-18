@@ -7,7 +7,8 @@ use Dnk\PhpInterface\Utils;
 $userId = (int)($arResult['USER_ID'] ?? 0);
 $levelData = Utils::getUserBonusClientLevelDisplayData($userId);
 $loyalty = Utils::getUserUfLoyaltyDisplayData($userId);
-$benefits = is_array($loyalty) ? Utils::getLoyaltyBenefitLines((int)$loyalty['level']) : [];
+$benefitLevel = is_array($loyalty) ? (int)$loyalty['level'] : (int)$levelData['level'];
+$benefits = Utils::getLoyaltyBenefitLines($benefitLevel);
 
 $levelName = htmlspecialcharsbx($levelData['name']);
 $showNextLevel = $levelData['show_next_level'];
