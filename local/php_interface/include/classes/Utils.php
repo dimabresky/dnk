@@ -739,6 +739,72 @@ final class Utils
     }
 
     /**
+     * Строки DETAIL_TEXT элементов инфоблока бенефитов с этим уровнем.
+     *
+     * @return list<string>
+     */
+    public static function getLoyaltyBenefitLines(int $level): array
+    {
+        if (
+            $level <= 0
+            || !defined('DNK_BENEFITS_IBLOCK_ID')
+            || (int) DNK_BENEFITS_IBLOCK_ID <= 0
+            || !Loader::includeModule('iblock')
+        ) {
+            return [];
+        }
+
+        $lines = [];
+        $res = \CIBlockElement::GetList(
+            ['SORT' => 'ASC', 'ID' => 'ASC'],
+            [
+                'IBLOCK_ID' => (int) DNK_BENEFITS_IBLOCK_ID,
+                'ACTIVE' => 'Y',
+                'PROPERTY_LEVEL' => $level,
+            ],
+            false,
+            false,
+            ['ID', 'DETAIL_TEXT']
+        );
+        while ($row = $res->Fetch()) {
+            foreach (self::benefitLines((string) ($row['DETAIL_TEXT'] ?? '')) as $line) {
+                $lines[] = $line;
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function benefitLines(string $text): array
+    {
+        $text = preg_replace('#<br\b[^>]*>#i', "\n", $text) ?? $text;
+        $text = preg_replace('#</p>#i', "\n", $text) ?? $text;
+        $text = preg_replace_callback(
+            '#<li\b[^>]*>((?:(?!</?li\b).)*)</li>#isu',
+            static function (array $match): string {
+                $item = trim(preg_replace('/\s+/u', ' ', strip_tags($match[1])) ?? '');
+
+                return $item === '' ? '' : "\n" . $item . "\n";
+            },
+            $text
+        ) ?? $text;
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        $lines = [];
+        foreach (preg_split('/\R/u', $text) ?: [] as $line) {
+            $line = trim(preg_replace('/[ \t]+/u', ' ', $line) ?? $line);
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
      * Уровень клиента по уровневой группе Bitrix (9, 10, 11, 12) или null, если группы нет.
      */
     private static function resolveUserBonusClientLevelFromGroups(int $userId): ?int
