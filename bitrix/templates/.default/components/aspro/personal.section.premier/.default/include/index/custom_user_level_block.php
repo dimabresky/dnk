@@ -6,6 +6,8 @@ use Dnk\PhpInterface\Utils;
 
 $userId = (int)($arResult['USER_ID'] ?? 0);
 $levelData = Utils::getUserBonusClientLevelDisplayData($userId);
+$loyalty = Utils::getUserUfLoyaltyDisplayData($userId);
+$benefits = is_array($loyalty) ? Utils::getLoyaltyBenefitLines((int)$loyalty['level']) : [];
 
 $levelName = htmlspecialcharsbx($levelData['name']);
 $showNextLevel = $levelData['show_next_level'];
@@ -29,6 +31,13 @@ if ($showNextLevel && $levelData['next_level_cost'] !== null) {
 						<div class="personal__main-private__subtitle font_clamp--16-14 color_666 mt mt--8">
 							<?=Loc::getMessage('SPS_USER_LEVEL_NEXT_LEVEL', ['#SUM#' => $nextLevelFormatted])?>
 						</div>
+					<?endif;?>
+					<?if ($benefits !== []):?>
+						<ul class="personal__main-private__benefits font_clamp--16-14 color_666">
+							<?foreach ($benefits as $benefit):?>
+								<li><?=htmlspecialcharsbx($benefit)?></li>
+							<?endforeach;?>
+						</ul>
 					<?endif;?>
 				</div>
 			</div>

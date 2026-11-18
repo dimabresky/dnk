@@ -266,3 +266,11 @@
 	width: 20px;
 	height: 20px;
 }
+
+.personal__main-private__benefits {
+	margin: 12px 0 0;
+	padding: 0 0 0 18px;
+}
+.personal__main-private__benefits li + li {
+	margin-top: 4px;
+}
