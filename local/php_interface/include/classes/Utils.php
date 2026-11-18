@@ -690,7 +690,7 @@ final class Utils
         $name = self::BONUS_CLIENT_LEVEL_NAMES[$level] ?? self::BONUS_CLIENT_LEVEL_NAMES[$defaultLevel] ?? '';
 
         $nextLevelCost = self::getUserNextLevelCost($userId);
-        $showNextLevel = $level !== self::BONUS_CLIENT_LEVEL_EMPLOYEE
+        $showNextLevel = ($level === 1 || $level === 2)
             && $nextLevelCost !== null
             && $nextLevelCost > 0.0;
 
