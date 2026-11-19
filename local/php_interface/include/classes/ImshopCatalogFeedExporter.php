@@ -40,7 +40,7 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
     ];
 
     private const COLLAPSIBLE_TEXT_SECTIONS = [
-        'SPOSOB_PRIMENENIYA' => 'Примечание',
+        'SPOSOB_PRIMENENIYA' => 'Применение',
         'SOSTAV_1' => 'Состав',
     ];
 
