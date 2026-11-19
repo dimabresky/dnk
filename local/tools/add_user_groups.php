@@ -28,6 +28,7 @@ if ($_SERVER['DOCUMENT_ROOT'] === false) {
 
 define('NO_KEEP_STATISTIC', true);
 define('NOT_CHECK_PERMISSIONS', true);
+set_time_limit(0);
 
 require $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
 
@@ -84,6 +85,7 @@ while (true) {
         'select' => ['USER_ID', 'GROUP_ID'],
     ]);
     while ($link = $linkRes->fetch()) {
+        // shortcut: row presence only, upgrade if groups 3/4 become time-limited
         $have[(int)$link['USER_ID']][(int)$link['GROUP_ID']] = true;
     }
 
