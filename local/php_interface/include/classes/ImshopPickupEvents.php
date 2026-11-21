@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace Dnk\PhpInterface;
 
+use Awz\Belpost\Helper as BelpostHelper;
+use Awz\Belpost\PvzTable as BelpostPvzTable;
+use Awz\Europost\Helper as EuropostHelper;
+use Awz\Europost\PvzTable as EuropostPvzTable;
 use Bitrix\Main\Event;
+use Bx\Imshop\Integration\Http\RequestException;
 use Bitrix\Main\EventResult;
 use Bitrix\Main\Loader;
 use Bitrix\Sale\Location\LocationTable;
+use Bitrix\Sale\Order;
 
 /**
- * Выбирает службу ПВЗ и отдаёт её точки в webhook доставок IMSHOP.
+ * Точки ПВЗ для webhook доставок IMSHOP и запись выбранной точки в заказ.
  */
 final class ImshopPickupEvents
 {
@@ -33,6 +39,95 @@ final class ImshopPickupEvents
             EventResult::SUCCESS,
             ['LOCATIONS' => $carrier::locations($town)]
         );
+    }
+
+    public static function onOrderBeforeSave(Event $event): void
+    {
+        $order = $event->getParameter('ORDER');
+        $payload = $event->getParameter('PAYLOAD');
+        if (!$order instanceof Order || !is_array($payload)) {
+            return;
+        }
+
+        $pickupId = trim((string) ($payload['pickupLocationId'] ?? ''));
+        if (!preg_match('/^(belpost|europost):(.+)$/', $pickupId, $match)) {
+            return;
+        }
+
+        $deliveryId = self::deliveryId($payload);
+        $pointId = trim($match[2]);
+        if ($deliveryId <= 0 || $pointId === '') {
+            throw new RequestException('Не удалось привязать ПВЗ', 200);
+        }
+
+        if ($match[1] === 'belpost') {
+            if (!ImshopBelpostPickup::supports($deliveryId)) {
+                throw new RequestException('ПВЗ не соответствует службе доставки', 200);
+            }
+            self::writePoint($order, $deliveryId, $pointId, 'awz.belpost', BelpostHelper::class, BelpostPvzTable::class);
+
+            return;
+        }
+
+        if (!ImshopEuropostPickup::supports($deliveryId)) {
+            throw new RequestException('ПВЗ не соответствует службе доставки', 200);
+        }
+        self::writePoint($order, $deliveryId, $pointId, 'awz.europost', EuropostHelper::class, EuropostPvzTable::class);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function deliveryId(array $payload): int
+    {
+        $value = trim((string) ($payload['delivery'] ?? ''));
+        if (str_starts_with($value, 'webhook/')) {
+            $value = substr($value, strlen('webhook/'));
+        }
+        if ($value === '' || !ctype_digit($value)) {
+            return 0;
+        }
+
+        return (int) $value;
+    }
+
+    /**
+     * @param class-string<BelpostHelper|EuropostHelper> $helper
+     * @param class-string<BelpostPvzTable|EuropostPvzTable> $table
+     */
+    private static function writePoint(
+        Order $order,
+        int $deliveryId,
+        string $pointId,
+        string $module,
+        string $helper,
+        string $table,
+    ): void {
+        if (!Loader::includeModule($module)) {
+            throw new RequestException('Модуль ПВЗ недоступен', 200);
+        }
+
+        $pointData = $table::getPvz($pointId);
+        if (!is_array($pointData)) {
+            throw new RequestException('ПВЗ не найден', 200);
+        }
+
+        $properties = $order->getPropertyCollection();
+        $point = $properties->getItemByOrderPropertyCode($helper::getPropPvzCode($deliveryId));
+        if ($point === null) {
+            throw new RequestException('В заказе нет свойства ПВЗ', 200);
+        }
+        $point->setValue($pointId);
+
+        $addressCode = $helper::getPropAddress($deliveryId);
+        if ($addressCode === '') {
+            return;
+        }
+
+        $address = $properties->getItemByOrderPropertyCode($addressCode);
+        if ($address !== null) {
+            $address->setValue($helper::formatPvzAddress($deliveryId, $pointData));
+        }
     }
 
     /**

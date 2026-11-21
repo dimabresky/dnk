@@ -122,6 +122,12 @@ define('DNK_BENEFITS_IBLOCK_ID', (int) $dnkEnvDefault('DNK_BENEFITS_IBLOCK_ID', 
 /** Id служб самовывоза в чекауте, через запятую. */
 define('DNK_PICKUP_DELIVERY_IDS', $dnkEnvIntList('DNK_PICKUP_DELIVERY_IDS'));
 
+/** Id служб ПВЗ Белпочты для IMSHOP, через запятую. */
+define('DNK_BELPOST_DELIVERY_IDS', $dnkEnvIntList('DNK_BELPOST_DELIVERY_IDS'));
+
+/** Id служб ПВЗ Европочты для IMSHOP, через запятую. */
+define('DNK_EUROPOST_DELIVERY_IDS', $dnkEnvIntList('DNK_EUROPOST_DELIVERY_IDS'));
+
 /** ID почтового шаблона (событие CUSTOM_MAIL): уведомление менеджера о новой заявке на сертификаты. */
 define('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID', $dnkEnvInt('DNK_CERTIFICATE_REQUEST_MAIL_TEMPLATE_ID'));
 
