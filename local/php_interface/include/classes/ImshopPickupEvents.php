@@ -53,21 +53,41 @@ final class ImshopPickupEvents
             return;
         }
 
-        $deliveryId = (int) ($payload['delivery'] ?? 0);
+        $deliveryId = self::deliveryId($payload);
         $pointId = trim($match[2]);
         if ($deliveryId <= 0 || $pointId === '') {
-            return;
+            throw new \RuntimeException('Не удалось привязать ПВЗ');
         }
 
-        if ($match[1] === 'belpost' && ImshopBelpostPickup::supports($deliveryId)) {
+        if ($match[1] === 'belpost') {
+            if (!ImshopBelpostPickup::supports($deliveryId)) {
+                throw new \RuntimeException('ПВЗ не соответствует службе доставки');
+            }
             self::writePoint($order, $deliveryId, $pointId, 'awz.belpost', BelpostHelper::class, BelpostPvzTable::class);
 
             return;
         }
 
-        if ($match[1] === 'europost' && ImshopEuropostPickup::supports($deliveryId)) {
-            self::writePoint($order, $deliveryId, $pointId, 'awz.europost', EuropostHelper::class, EuropostPvzTable::class);
+        if (!ImshopEuropostPickup::supports($deliveryId)) {
+            throw new \RuntimeException('ПВЗ не соответствует службе доставки');
         }
+        self::writePoint($order, $deliveryId, $pointId, 'awz.europost', EuropostHelper::class, EuropostPvzTable::class);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function deliveryId(array $payload): int
+    {
+        $value = trim((string) ($payload['delivery'] ?? ''));
+        if (str_starts_with($value, 'webhook/')) {
+            $value = substr($value, strlen('webhook/'));
+        }
+        if ($value === '' || !ctype_digit($value)) {
+            return 0;
+        }
+
+        return (int) $value;
     }
 
     /**
@@ -83,14 +103,20 @@ final class ImshopPickupEvents
         string $table,
     ): void {
         if (!Loader::includeModule($module)) {
-            return;
+            throw new \RuntimeException('Модуль ПВЗ недоступен');
+        }
+
+        $pointData = $table::getPvz($pointId);
+        if (!is_array($pointData)) {
+            throw new \RuntimeException('ПВЗ не найден');
         }
 
         $properties = $order->getPropertyCollection();
         $point = $properties->getItemByOrderPropertyCode($helper::getPropPvzCode($deliveryId));
-        if ($point !== null) {
-            $point->setValue($pointId);
+        if ($point === null) {
+            throw new \RuntimeException('В заказе нет свойства ПВЗ');
         }
+        $point->setValue($pointId);
 
         $addressCode = $helper::getPropAddress($deliveryId);
         if ($addressCode === '') {
@@ -98,12 +124,9 @@ final class ImshopPickupEvents
         }
 
         $address = $properties->getItemByOrderPropertyCode($addressCode);
-        $pointData = $table::getPvz($pointId);
-        if ($address === null || !is_array($pointData)) {
-            return;
+        if ($address !== null) {
+            $address->setValue($helper::formatPvzAddress($deliveryId, $pointData));
         }
-
-        $address->setValue($helper::formatPvzAddress($deliveryId, $pointData));
     }
 
     /**
