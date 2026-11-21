@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace Dnk\PhpInterface;
 
+use Awz\Belpost\Helper as BelpostHelper;
+use Awz\Belpost\PvzTable as BelpostPvzTable;
+use Awz\Europost\Helper as EuropostHelper;
+use Awz\Europost\PvzTable as EuropostPvzTable;
 use Bitrix\Main\Event;
 use Bitrix\Main\EventResult;
 use Bitrix\Main\Loader;
 use Bitrix\Sale\Location\LocationTable;
+use Bitrix\Sale\Order;
 
 /**
- * Выбирает службу ПВЗ и отдаёт её точки в webhook доставок IMSHOP.
+ * Точки ПВЗ для webhook доставок IMSHOP и запись выбранной точки в заказ.
  */
 final class ImshopPickupEvents
 {
@@ -33,6 +38,72 @@ final class ImshopPickupEvents
             EventResult::SUCCESS,
             ['LOCATIONS' => $carrier::locations($town)]
         );
+    }
+
+    public static function onOrderBeforeSave(Event $event): void
+    {
+        $order = $event->getParameter('ORDER');
+        $payload = $event->getParameter('PAYLOAD');
+        if (!$order instanceof Order || !is_array($payload)) {
+            return;
+        }
+
+        $pickupId = trim((string) ($payload['pickupLocationId'] ?? ''));
+        if (!preg_match('/^(belpost|europost):(.+)$/', $pickupId, $match)) {
+            return;
+        }
+
+        $deliveryId = (int) ($payload['delivery'] ?? 0);
+        $pointId = trim($match[2]);
+        if ($deliveryId <= 0 || $pointId === '') {
+            return;
+        }
+
+        if ($match[1] === 'belpost' && ImshopBelpostPickup::supports($deliveryId)) {
+            self::writePoint($order, $deliveryId, $pointId, 'awz.belpost', BelpostHelper::class, BelpostPvzTable::class);
+
+            return;
+        }
+
+        if ($match[1] === 'europost' && ImshopEuropostPickup::supports($deliveryId)) {
+            self::writePoint($order, $deliveryId, $pointId, 'awz.europost', EuropostHelper::class, EuropostPvzTable::class);
+        }
+    }
+
+    /**
+     * @param class-string<BelpostHelper|EuropostHelper> $helper
+     * @param class-string<BelpostPvzTable|EuropostPvzTable> $table
+     */
+    private static function writePoint(
+        Order $order,
+        int $deliveryId,
+        string $pointId,
+        string $module,
+        string $helper,
+        string $table,
+    ): void {
+        if (!Loader::includeModule($module)) {
+            return;
+        }
+
+        $properties = $order->getPropertyCollection();
+        $point = $properties->getItemByOrderPropertyCode($helper::getPropPvzCode($deliveryId));
+        if ($point !== null) {
+            $point->setValue($pointId);
+        }
+
+        $addressCode = $helper::getPropAddress($deliveryId);
+        if ($addressCode === '') {
+            return;
+        }
+
+        $address = $properties->getItemByOrderPropertyCode($addressCode);
+        $pointData = $table::getPvz($pointId);
+        if ($address === null || !is_array($pointData)) {
+            return;
+        }
+
+        $address->setValue($helper::formatPvzAddress($deliveryId, $pointData));
     }
 
     /**
