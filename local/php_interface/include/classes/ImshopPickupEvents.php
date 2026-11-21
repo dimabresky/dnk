@@ -9,6 +9,7 @@ use Awz\Belpost\PvzTable as BelpostPvzTable;
 use Awz\Europost\Helper as EuropostHelper;
 use Awz\Europost\PvzTable as EuropostPvzTable;
 use Bitrix\Main\Event;
+use Bx\Imshop\Integration\Http\RequestException;
 use Bitrix\Main\EventResult;
 use Bitrix\Main\Loader;
 use Bitrix\Sale\Location\LocationTable;
@@ -56,12 +57,12 @@ final class ImshopPickupEvents
         $deliveryId = self::deliveryId($payload);
         $pointId = trim($match[2]);
         if ($deliveryId <= 0 || $pointId === '') {
-            throw new \RuntimeException('Не удалось привязать ПВЗ');
+            throw new RequestException('Не удалось привязать ПВЗ', 200);
         }
 
         if ($match[1] === 'belpost') {
             if (!ImshopBelpostPickup::supports($deliveryId)) {
-                throw new \RuntimeException('ПВЗ не соответствует службе доставки');
+                throw new RequestException('ПВЗ не соответствует службе доставки', 200);
             }
             self::writePoint($order, $deliveryId, $pointId, 'awz.belpost', BelpostHelper::class, BelpostPvzTable::class);
 
@@ -69,7 +70,7 @@ final class ImshopPickupEvents
         }
 
         if (!ImshopEuropostPickup::supports($deliveryId)) {
-            throw new \RuntimeException('ПВЗ не соответствует службе доставки');
+            throw new RequestException('ПВЗ не соответствует службе доставки', 200);
         }
         self::writePoint($order, $deliveryId, $pointId, 'awz.europost', EuropostHelper::class, EuropostPvzTable::class);
     }
@@ -103,18 +104,18 @@ final class ImshopPickupEvents
         string $table,
     ): void {
         if (!Loader::includeModule($module)) {
-            throw new \RuntimeException('Модуль ПВЗ недоступен');
+            throw new RequestException('Модуль ПВЗ недоступен', 200);
         }
 
         $pointData = $table::getPvz($pointId);
         if (!is_array($pointData)) {
-            throw new \RuntimeException('ПВЗ не найден');
+            throw new RequestException('ПВЗ не найден', 200);
         }
 
         $properties = $order->getPropertyCollection();
         $point = $properties->getItemByOrderPropertyCode($helper::getPropPvzCode($deliveryId));
         if ($point === null) {
-            throw new \RuntimeException('В заказе нет свойства ПВЗ');
+            throw new RequestException('В заказе нет свойства ПВЗ', 200);
         }
         $point->setValue($pointId);
 
