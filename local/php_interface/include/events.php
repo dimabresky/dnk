@@ -250,6 +250,12 @@ EventManager::getInstance()->addEventHandler(
 
 EventManager::getInstance()->addEventHandler(
     'bx.imshop.integration',
+    'onOrderBeforeSave',
+    [ImshopPickupEvents::class, 'onOrderBeforeSave']
+);
+
+EventManager::getInstance()->addEventHandler(
+    'bx.imshop.integration',
     'onUserProfileBuild',
     [ImshopUserEvents::class, 'onUserProfileBuild']
 );
