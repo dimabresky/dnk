@@ -12,12 +12,9 @@ use Bitrix\Main\Loader;
  */
 final class ImshopEuropostPickup extends ImshopPostalPickup
 {
-    /** @var list<int> */
-    private const DELIVERY_IDS = [18, 16];
-
     public static function supports(int $deliveryId): bool
     {
-        return in_array($deliveryId, self::DELIVERY_IDS, true);
+        return in_array($deliveryId, DNK_EUROPOST_DELIVERY_IDS, true);
     }
 
     public static function locations(string $town): array
