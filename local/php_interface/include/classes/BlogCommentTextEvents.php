@@ -40,13 +40,9 @@ final class BlogCommentTextEvents
     public static function onBeforeCommentUpdate($id, array &$arFields): bool
     {
         // Only a posted form rating may change the UF. Callers that set it in $arFields keep their value.
-        $rating = Context::getCurrent()->getRequest()->getPost('rating');
+        $rating = self::postedRating();
         if ($rating !== null) {
-            if (is_array($rating)) {
-                $rating = reset($rating);
-            }
-            $rating = is_scalar($rating) ? (int) trim((string) $rating) : 0;
-            if ($rating >= 1 && $rating <= 5) {
+            if ($rating >= 1) {
                 $arFields['UF_ASPRO_COM_RATING'] = $rating;
             } else {
                 unset($arFields['UF_ASPRO_COM_RATING']);
@@ -74,9 +70,44 @@ final class BlogCommentTextEvents
         return false;
     }
 
+    /**
+     * @param int|string $id
+     * @param array<string, mixed> $arFields
+     */
+    public static function onCommentUpdate($id, array &$arFields): void
+    {
+        $rating = self::postedRating();
+        if ($rating === null || $rating < 1) {
+            return;
+        }
+
+        // CBlogComment::Update writes user fields from $arFields and can put the old score back.
+        $GLOBALS['USER_FIELD_MANAGER']->Update('BLOG_COMMENT', (int) $id, [
+            'UF_ASPRO_COM_RATING' => $rating,
+        ]);
+    }
+
     public static function isTextTooShort(string $postText): bool
     {
         return self::plainLength($postText) < self::MIN_PLAIN_LENGTH;
+    }
+
+    private static function postedRating(): ?int
+    {
+        $rating = Context::getCurrent()->getRequest()->getPost('rating');
+        if ($rating === null) {
+            return null;
+        }
+        if (is_array($rating)) {
+            $rating = reset($rating);
+        }
+        if (!is_scalar($rating)) {
+            return 0;
+        }
+
+        $rating = (int) trim((string) $rating);
+
+        return ($rating >= 1 && $rating <= 5) ? $rating : 0;
     }
 
     /**

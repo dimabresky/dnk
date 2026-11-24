@@ -379,6 +379,10 @@ function submitComment() {
     BX('post-button').focus();
     BX('post-button').disabled = true;
     obForm = BX('form_comment');
+    // editComment writes the button label into this hidden field; the component saves only when it stays Y.
+    if (obForm && obForm.post) {
+        obForm.post.value = 'Y';
+    }
     <?if ($arParams['AJAX_POST'] == 'Y'):?>
         if (BX('edit_id').value > 0) {
             val = BX('edit_id').value;
