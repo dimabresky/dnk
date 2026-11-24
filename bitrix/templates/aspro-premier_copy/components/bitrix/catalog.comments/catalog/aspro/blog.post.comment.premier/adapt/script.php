@@ -184,13 +184,15 @@ function editComment(key) {
     }
 
     var pFormCont = BX('form_c_del');
-    var parent = BX.findParent(BX('form_comment_' + key), {
+    var formSlot = BX('form_comment_' + key);
+    var parent = BX.findParent(formSlot, {
         "class": "blog-comment"
     });
-    var commentBlock = BX('blg-comment-' + key);
+    var commentBlock = parent ? parent.querySelector('.blog-comment__content') : null;
 
-    if (commentBlock === null) {
-        if (BX('blg-comment-' + key + 'old') !== null) {
+    if (!commentBlock) {
+        commentBlock = BX('blg-comment-' + key);
+        if (commentBlock === null && BX('blg-comment-' + key + 'old') !== null) {
             $('#blg-comment-' + key + 'old').attr('id', 'blg-comment-' + key);
             commentBlock = BX('blg-comment-' + key);
         }
@@ -430,17 +432,11 @@ function prepareFormInfo(obForm) {
     var comment = form.find('[name=comment]');
     var limitations = form.find('[name=limitations]');
     var virtues = form.find('[name=virtues]');
-    var rating = form.find('[name=rating]');
     var parent_id = form.find('[name=parentId]') ?
         parseInt(form.find('[name=parentId]').val()) :
         false;
     var oid = form.find('[name=OFFER_ID]').val();
     oid = String(oid).length ? oid : '';
-
-    var ratingVal = rating.closest('.votes_block').data('rating');
-    if (ratingVal) {
-        rating.val(ratingVal);
-    }
 
     var resultCommentText = '';
     if (virtues.val()) {
@@ -592,11 +588,21 @@ function setReviewRatingEnabled(form, enabled) {
     block.closest('.row.form').toggle(!!enabled);
 }
 
+function reviewRatingFromComment(commentBlock) {
+    var rating = commentBlock ? parseInt(commentBlock.getAttribute('data-rating'), 10) : 0;
+    if (rating >= 1 && rating <= 5) {
+        return rating;
+    }
+    var node = commentBlock ? commentBlock.querySelector('.blog-info__rating') : null;
+    var found = String(node ? node.textContent : '').match(/[1-5]/);
+    return found ? parseInt(found[0], 10) : 0;
+}
+
 function updateEditForm(commentBlock, pFormCont, parent) {
     clearForm(pFormCont);
     if (parent) {
         setReviewRatingEnabled(pFormCont, true);
-        var rating = commentBlock ? parseInt(commentBlock.getAttribute('data-rating'), 10) : 0;
+        var rating = reviewRatingFromComment(commentBlock);
         if (rating >= 1 && rating <= 5) {
             setReviewRating($(pFormCont).find('.votes_block'), rating);
         }
@@ -646,7 +652,7 @@ function clearForm(pFormCont) {
 
     var votesBlock = $(pFormCont).find('.votes_block');
 
-    votesBlock.data('rating', '');
+    votesBlock.removeData('rating');
 
     if (votesBlock.find('input[name=RATING]').length) {
         votesBlock.find('input[name=RATING]').val('');

@@ -295,6 +295,7 @@ $pathForAjax = $templateFolder;
                                             $eventHandlerID = AddEventHandler('main', 'system.field.edit.file', array('CBlogTools', 'blogUFfileEdit'));
                                             ?>
                                             <?foreach ($arResult["COMMENT_PROPERTIES"]["DATA"] as $FIELD_NAME => $arPostField):?>
+                                                <?if ($FIELD_NAME === 'UF_ASPRO_COM_RATING') { continue; }?>
                                                 <?if ($FIELD_NAME=='UF_BLOG_COMMENT_DOC'):?>
                                                     <a id="blog-upload-file" href="javascript:blogShowFile()"><?=GetMessage("BLOG_ADD_FILES");?></a>
                                                 <?endif;?>
