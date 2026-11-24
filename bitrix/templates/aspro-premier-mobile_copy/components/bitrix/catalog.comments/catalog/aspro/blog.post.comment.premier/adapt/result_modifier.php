@@ -86,6 +86,46 @@ while ($comment = $dbComment->Fetch()) {
     ++$arResult['REVIEWS_COUNT'];
 }
 
+$ratingById = [];
+$commentIds = [];
+$collectCommentIds = static function ($node) use (&$collectCommentIds, &$commentIds): void {
+    if (!is_array($node)) {
+        return;
+    }
+    if (isset($node['ID']) && (isset($node['POST_TEXT']) || isset($node['~POST_TEXT']))) {
+        $commentIds[] = (int) $node['ID'];
+
+        return;
+    }
+    foreach ($node as $child) {
+        if (is_array($child)) {
+            $collectCommentIds($child);
+        }
+    }
+};
+if (isset($arResult['CommentsResult']) && is_array($arResult['CommentsResult'])) {
+    $collectCommentIds($arResult['CommentsResult']);
+}
+if (isset($arResult['PagesComment']) && is_array($arResult['PagesComment'])) {
+    $collectCommentIds($arResult['PagesComment']);
+}
+$commentIds = array_values(array_unique(array_filter($commentIds)));
+if ($commentIds) {
+    $ratingRows = Bitrix\Main\Application::getConnection()->query(
+        'SELECT VALUE_ID, UF_ASPRO_COM_RATING FROM b_uts_blog_comment WHERE VALUE_ID IN (' . implode(',', $commentIds) . ')'
+    );
+    while ($row = $ratingRows->fetch()) {
+        $rowId = (int) ($row['VALUE_ID'] ?? $row['value_id'] ?? 0);
+        $rowRating = $row['UF_ASPRO_COM_RATING'] ?? $row['uf_aspro_com_rating'] ?? null;
+        if ($rowId > 0 && $rowRating) {
+            $ratingById[$rowId] = $rowRating;
+            if (isset($arDBComments[$rowId])) {
+                $arDBComments[$rowId]['UF_ASPRO_COM_RATING'] = $rowRating;
+            }
+        }
+    }
+}
+
 if ($arResult['PagesComment']) {
     $pagesCount = count($arResult['PagesComment']);
     $countOnPage = $arParams['COMMENTS_COUNT'];
@@ -160,5 +200,38 @@ if ($arResult['PagesComment']) {
             $arResult['COMMENT_ERROR'] = GetMessage('FILTER_NO_RESULT_FOUND');
             $arResult['COMMENT_ERROR_TYPE'] = 'FILTER';
         }
+    }
+}
+
+$editId = (int) ($request['edit_id'] ?? 0);
+$postedRating = (int) ($request['rating'] ?? 0);
+if ($editId > 0 && $postedRating >= 1 && $postedRating <= 5) {
+    $ratingById[$editId] = $postedRating;
+}
+if ($ratingById) {
+    $applyRatings = static function (array &$node) use (&$applyRatings, $ratingById): void {
+        if (
+            isset($node['ID'])
+            && (isset($node['POST_TEXT']) || isset($node['~POST_TEXT']))
+        ) {
+            $id = (int) $node['ID'];
+            if (isset($ratingById[$id])) {
+                $node['UF_ASPRO_COM_RATING'] = $ratingById[$id];
+            }
+
+            return;
+        }
+        foreach ($node as &$child) {
+            if (is_array($child)) {
+                $applyRatings($child);
+            }
+        }
+        unset($child);
+    };
+    if (isset($arResult['CommentsResult']) && is_array($arResult['CommentsResult'])) {
+        $applyRatings($arResult['CommentsResult']);
+    }
+    if (isset($arResult['PagesComment']) && is_array($arResult['PagesComment'])) {
+        $applyRatings($arResult['PagesComment']);
     }
 }
