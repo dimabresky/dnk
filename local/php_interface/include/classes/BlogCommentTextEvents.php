@@ -39,16 +39,18 @@ final class BlogCommentTextEvents
      */
     public static function onBeforeCommentUpdate($id, array &$arFields): bool
     {
-        // Empty UF from the shared form would clear the stored score on Update.
-        $rating = Context::getCurrent()->getRequest()->get('rating');
-        if (is_array($rating)) {
-            $rating = reset($rating);
-        }
-        $rating = is_scalar($rating) ? (int) trim((string) $rating) : 0;
-        if ($rating >= 1 && $rating <= 5) {
-            $arFields['UF_ASPRO_COM_RATING'] = $rating;
-        } else {
-            unset($arFields['UF_ASPRO_COM_RATING']);
+        // Only a posted form rating may change the UF. Callers that set it in $arFields keep their value.
+        $rating = Context::getCurrent()->getRequest()->getPost('rating');
+        if ($rating !== null) {
+            if (is_array($rating)) {
+                $rating = reset($rating);
+            }
+            $rating = is_scalar($rating) ? (int) trim((string) $rating) : 0;
+            if ($rating >= 1 && $rating <= 5) {
+                $arFields['UF_ASPRO_COM_RATING'] = $rating;
+            } else {
+                unset($arFields['UF_ASPRO_COM_RATING']);
+            }
         }
 
         if (!array_key_exists('POST_TEXT', $arFields)) {
