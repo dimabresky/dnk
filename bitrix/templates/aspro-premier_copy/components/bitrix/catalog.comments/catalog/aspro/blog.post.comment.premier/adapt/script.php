@@ -291,14 +291,14 @@ function waitResult(id) {
                     reviewFormHome.appendChild(reviewForm);
                     reviewForm.style.display = 'none';
                 }
-                if (BX('blg-comment-' + id)) {
+                if (shownComment && BX('blg-comment-' + id)) {
                     var nextRating = BX('blg-comment-' + id).getAttribute('data-rating');
-                    if (shownComment && nextRating !== null) {
+                    if (nextRating !== null) {
                         shownComment.setAttribute('data-rating', nextRating);
                     }
                     shownComment.innerHTML = BX('blg-comment-' + id).innerHTML;
                     shownComment.id = 'blg-comment-' + id;
-                } else {
+                } else if (BX('blg-comment-' + id + 'old')) {
                     BX('blg-comment-' + id + 'old').innerHTML = ob.innerHTML;
                 }
 
