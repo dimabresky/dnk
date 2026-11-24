@@ -222,6 +222,14 @@ EventManager::getInstance()->addEventHandlerCompatible(
 
 EventManager::getInstance()->addEventHandlerCompatible(
     'blog',
+    'OnCommentUpdate',
+    [BlogCommentTextEvents::class, 'onCommentUpdate'],
+    false,
+    50
+);
+
+EventManager::getInstance()->addEventHandlerCompatible(
+    'blog',
     'OnCommentAdd',
     [ReviewBonusEvents::class, 'onCommentAdd'],
     false,
