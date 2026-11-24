@@ -233,7 +233,7 @@ $pathForAjax = $templateFolder;
                                                             </div>
                                                         </div>
                                                         <div class="rating_message secondary-color" data-message="<?=GetMessage('RATING_MESSAGE_0');?>"><?=GetMessage('RATING_MESSAGE_0');?></div>
-                                                        <input class="hidden" name="rating" required>
+                                                        <input class="form-control review-rating-input" type="number" name="rating" min="1" max="5" step="1" inputmode="numeric" required>
                                                     </div>
                                                 </div>
                                             </div>
@@ -422,7 +422,7 @@ $pathForAjax = $templateFolder;
                         data-oid="<?=$comment['UF_ASPRO_COM_OFFER_ID'];?>"
                     >
                     <a name="<?=$comment["ID"];?>"></a>
-                    <div id="blg-comment-<?=$comment["ID"];?>" class="blog-comment__content">
+                    <div id="blg-comment-<?=$comment["ID"];?>" class="blog-comment__content" data-rating="<?=(int)$comment['UF_ASPRO_COM_RATING']?>">
                         <?if (
                             isset($_SESSION['NOT_ADDED_FILES'])
                             && $_SESSION['NOT_ADDED_FILES']['FILES']
