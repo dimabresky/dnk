@@ -62,7 +62,7 @@ $arSelectedFields = [
 ];
 
 $dbComment = CBlogComment::GetList($arOrder, $arFilter, false, false, $arSelectedFields);
-$arResult['IMAGES'] = $arDBComments = [];
+$arResult['IMAGES'] = $arResult['REVIEWS_COUNT_PER_OID'] = $arResult['AVAILABLE_RATING'] = $arDBComments = [];
 
 while ($comment = $dbComment->Fetch()) {
     if ($comment['UF_ASPRO_COM_RATING']) {
@@ -108,6 +108,9 @@ if (isset($arResult['CommentsResult']) && is_array($arResult['CommentsResult']))
 }
 if (isset($arResult['PagesComment']) && is_array($arResult['PagesComment'])) {
     $collectCommentIds($arResult['PagesComment']);
+}
+foreach (array_keys($arDBComments) as $storedId) {
+    $commentIds[] = (int) $storedId;
 }
 $commentIds = array_values(array_unique(array_filter($commentIds)));
 if ($commentIds) {

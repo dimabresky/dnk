@@ -109,6 +109,9 @@ if (isset($arResult['CommentsResult']) && is_array($arResult['CommentsResult']))
 if (isset($arResult['PagesComment']) && is_array($arResult['PagesComment'])) {
     $collectCommentIds($arResult['PagesComment']);
 }
+foreach (array_keys($arDBComments) as $storedId) {
+    $commentIds[] = (int) $storedId;
+}
 $commentIds = array_values(array_unique(array_filter($commentIds)));
 if ($commentIds) {
     $ratingRows = Bitrix\Main\Application::getConnection()->query(
