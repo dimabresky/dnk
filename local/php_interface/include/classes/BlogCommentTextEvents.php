@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dnk\PhpInterface;
 
+use Bitrix\Main\Context;
 use CBlog;
 use CBlogComment;
 
@@ -38,6 +39,12 @@ final class BlogCommentTextEvents
      */
     public static function onBeforeCommentUpdate($id, array &$arFields): bool
     {
+        // Update persists user fields from $arFields and would keep the stale UF value.
+        $rating = Context::getCurrent()->getRequest()->get('rating');
+        if (is_scalar($rating) && preg_match('/^[1-5]$/', (string) $rating) === 1) {
+            $arFields['UF_ASPRO_COM_RATING'] = (int) $rating;
+        }
+
         if (!array_key_exists('POST_TEXT', $arFields)) {
             return true;
         }
