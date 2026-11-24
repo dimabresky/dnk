@@ -282,8 +282,14 @@ function waitResult(id) {
             ob.innerHTML = '';
         } else {
             if (BX('edit_id').value > 0) {
+                var shownComment = BX('blg-comment-' + id + 'old');
+                var reviewForm = BX('form_c_del');
+                var reviewFormHome = BX('form_comment_');
+                if (reviewForm && reviewFormHome && shownComment && shownComment.contains(reviewForm)) {
+                    reviewFormHome.appendChild(reviewForm);
+                    reviewForm.style.display = 'none';
+                }
                 if (BX('blg-comment-' + id)) {
-                    var shownComment = BX('blg-comment-' + id + 'old');
                     var nextRating = BX('blg-comment-' + id).getAttribute('data-rating');
                     if (shownComment && nextRating !== null) {
                         shownComment.setAttribute('data-rating', nextRating);
@@ -636,12 +642,7 @@ function updateEditForm(commentBlock, pFormCont, parent) {
 }
 
 function clearForm(pFormCont) {
-    var stars = BX.findChild(pFormCont, {
-        "class": 'item-rating'
-    }, true, true);
-    stars.forEach(function(star, index) {
-        $(stars).removeClass('rating__star-svg--filled');
-    });
+    $(pFormCont).find('.item-rating').removeClass('rating__star-svg--filled');
 
     var votesBlock = $(pFormCont).find('.votes_block');
 
