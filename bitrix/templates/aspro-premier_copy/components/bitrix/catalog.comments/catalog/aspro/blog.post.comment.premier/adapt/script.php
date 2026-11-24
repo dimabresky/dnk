@@ -283,8 +283,13 @@ function waitResult(id) {
         } else {
             if (BX('edit_id').value > 0) {
                 if (BX('blg-comment-' + id)) {
-                    BX('blg-comment-' + id + 'old').innerHTML = BX('blg-comment-' + id).innerHTML;
-                    BX('blg-comment-' + id + 'old').id = 'blg-comment-' + id;
+                    var shownComment = BX('blg-comment-' + id + 'old');
+                    var nextRating = BX('blg-comment-' + id).getAttribute('data-rating');
+                    if (shownComment && nextRating !== null) {
+                        shownComment.setAttribute('data-rating', nextRating);
+                    }
+                    shownComment.innerHTML = BX('blg-comment-' + id).innerHTML;
+                    shownComment.id = 'blg-comment-' + id;
                 } else {
                     BX('blg-comment-' + id + 'old').innerHTML = ob.innerHTML;
                 }
