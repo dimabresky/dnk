@@ -91,6 +91,7 @@ function showComment(key, error, userName, userEmail, needData) {
     }
 
     clearForm(pFormCont);
+    setReviewRatingEnabled(pFormCont, parseInt(key, 10) === 0);
 
     if (BX.hasClass(pFormCont, 'blog-comment__edit-form')) {
         BX.removeClass(pFormCont, 'blog-comment__edit-form');
@@ -544,37 +545,50 @@ function deleteComment(url, id) {
     return false;
 }
 
+function paintReviewRating(votesBlock, rating) {
+    rating = parseInt(rating, 10);
+    var valid = rating >= 1 && rating <= 5;
+    var stars = votesBlock.find('.item-rating');
+    stars.each(function (index) {
+        $(this).toggleClass('rating__star-svg--filled', valid && index < rating);
+    });
+    var messageNode = votesBlock.find('.rating_message');
+    if (valid) {
+        votesBlock.data('rating', rating);
+        var message = stars.eq(rating - 1).data('message');
+        if (message) {
+            messageNode.text(message);
+        }
+    } else {
+        votesBlock.removeData('rating');
+        messageNode.text(messageNode.data('message') || '');
+    }
+    return valid;
+}
+
+function setReviewRating(votesBlock, rating) {
+    if (paintReviewRating(votesBlock, rating)) {
+        votesBlock.find('input[name=rating]').val(parseInt(rating, 10));
+    }
+}
+
+// Disabled so a reply does not post an empty rating.
+function setReviewRatingEnabled(form, enabled) {
+    var block = $(form).find('.votes_block');
+    var input = block.find('input[name=rating]');
+    input.prop('disabled', !enabled);
+    input.prop('required', !!enabled);
+    block.closest('.row.form').toggle(!!enabled);
+}
+
 function updateEditForm(commentBlock, pFormCont, parent) {
     clearForm(pFormCont);
     if (parent) {
-        var rating = BX.findChild(commentBlock, {
-            "class": 'rate__bar'
-        }, true, true);
-        rating = rating === undefined ? 0 : rating[0].value;
-
-        var stars = BX.findChild(pFormCont, {
-            "class": 'item-rating rating__star-svg'
-        }, true, true);
-        var _this = $(stars[rating - 1]),
-            index = rating,
-            ratingMessage = _this.data('message');
-
-        _this.closest('.votes_block').data('rating', index);
-        var ratingInput = _this.closest('.votes_block').find('input[name=RATING]');
-        if (ratingInput.length) {
-            ratingInput.val(index);
-        } else {
-            _this.closest('.votes_block').find('input[data-sid=RATING]').val(index);
+        setReviewRatingEnabled(pFormCont, true);
+        var rating = commentBlock ? parseInt(commentBlock.getAttribute('data-rating'), 10) : 0;
+        if (rating >= 1 && rating <= 5) {
+            setReviewRating($(pFormCont).find('.votes_block'), rating);
         }
-        _this.closest('.votes_block').find('.rating_message').data('message', ratingMessage).text(ratingMessage);;
-
-        stars.forEach(function(star, index) {
-            if (index < rating) {
-                $(star).addClass('rating__star-svg--filled');
-            } else {
-                $(star).removeClass('rating__star-svg--filled');
-            }
-        });
 
         var virtues = BX.findChild(commentBlock, {
             "class": 'comment-text__text VIRTUES'
@@ -606,6 +620,7 @@ function updateEditForm(commentBlock, pFormCont, parent) {
         $(pFormCont).find('.form.comment textarea').val(comment);
         $(pFormCont).find('.form.approve-text input').val(approveText);
     } else {
+        setReviewRatingEnabled(pFormCont, false);
         var comment = BX.findChild(commentBlock, {
             "class": 'comment-text__text COMMENT'
         }, true).innerHTML.trim();
@@ -728,6 +743,18 @@ $('.blog-add-comment .btn').on('click', function() {
     } else {
         $('#form_comment_0').slideToggle();
     }
+});
+
+$(document).on('click', '.blog-comment-fields .item-rating', function () {
+    var votesBlock = $(this).closest('.votes_block');
+    if (votesBlock.find('input[name=rating]').prop('disabled')) {
+        return;
+    }
+    setReviewRating(votesBlock, $(this).index() + 1);
+});
+
+$(document).on('input', '.blog-comment-fields input[name=rating]', function () {
+    paintReviewRating($(this).closest('.votes_block'), this.value);
 });
 
 $(document).on('paste change keyup', '.form.blog-comment-fields textarea', function() {

@@ -178,6 +178,10 @@
 	background: var(--theme-base-color);
 }
 
+.blog-comment-fields .review-rating-input {
+	max-width: 5rem;
+}
+
 /* Product image grey background override */
 /*
 .grey-bg-goods-y .toggle-white-grey-bg {
