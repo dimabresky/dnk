@@ -13,6 +13,12 @@ use Bitrix\Main\Grid\Declension;
  */
 final class ImshopUserEvents
 {
+    /** Сумма покупок для перехода: уровень 1 → 2 и 2 → 3. */
+    private const LOYALTY_LEVEL_THRESHOLDS = [
+        1 => 300.0,
+        2 => 800.0,
+    ];
+
     public static function onUserProfileBuild(Event $event): ?EventResult
     {
         $user = $event->getParameter('USER');
@@ -44,6 +50,10 @@ final class ImshopUserEvents
                     . ' BYN покупок до '
                     . $nextName;
             }
+            $threshold = self::LOYALTY_LEVEL_THRESHOLDS[(int) $loyalty['level']] ?? null;
+            if ($threshold !== null && is_numeric($nextCost) && (float) $nextCost > 0.0) {
+                $program['progress'] = self::loyaltyProgress((float) $nextCost, $threshold);
+            }
             $benefits = Utils::getLoyaltyBenefitLines((int) $loyalty['level']);
             if ($benefits !== []) {
                 $program['benefits'] = $benefits;
@@ -71,5 +81,24 @@ final class ImshopUserEvents
         return new EventResult(EventResult::SUCCESS, [
             'USER' => $user,
         ]);
+    }
+
+    /**
+     * Процент уже пройденного порога. Целое, если десятых нет.
+     */
+    private static function loyaltyProgress(float $remaining, float $threshold): int|float
+    {
+        if ($threshold <= 0.0) {
+            return 0;
+        }
+
+        $percent = ($threshold - $remaining) / $threshold * 100;
+        $percent = max(0.0, min(100.0, $percent));
+        $text = number_format(round($percent, 1), 1, '.', '');
+        if (str_ends_with($text, '.0')) {
+            return (int) $text;
+        }
+
+        return (float) $text;
     }
 }
