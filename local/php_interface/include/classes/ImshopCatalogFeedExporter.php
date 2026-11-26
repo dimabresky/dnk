@@ -258,7 +258,7 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
             $lines[] = '        <video>' . self::escapeXml($video) . '</video>';
         }
 
-        foreach ($this->buildParamTags($props) as $paramLine) {
+        foreach ($this->offerParamTags($props) as $paramLine) {
             $lines[] = '        ' . $paramLine;
         }
 
@@ -267,6 +267,34 @@ final class ImshopCatalogFeedExporter extends CatalogYmlFeedExporter
         $lines[] = '      </offer>';
 
         return implode("\n", $lines) . "\n";
+    }
+
+    /**
+     * Артикул и штрихкод в IMSHOP идут отдельными полями оффера, не характеристиками.
+     *
+     * @param array<string, mixed> $props
+     * @return list<string>
+     */
+    private function offerParamTags(array $props): array
+    {
+        $skip = [
+            'Артикул' => true,
+            'Артикул2' => true,
+            'Штрихкод' => true,
+        ];
+        $tags = [];
+        foreach ($this->buildParamTags($props) as $tag) {
+            if (preg_match('/ name="([^"]+)"/', $tag, $match) === 1 && isset($skip[$match[1]])) {
+                continue;
+            }
+            $tags[] = $tag;
+        }
+
+        foreach ($this->propertyValues($props['ACTIVE_COMPONENTS'] ?? null) as $value) {
+            $tags[] = '<param name="Активные компоненты">' . self::escapeXml($value) . '</param>';
+        }
+
+        return $tags;
     }
 
     /**
