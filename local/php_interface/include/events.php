@@ -17,6 +17,7 @@ use Dnk\PhpInterface\UserAddEvents;
 use Dnk\PhpInterface\BlogCommentConsentEvents;
 use Dnk\PhpInterface\BlogCommentTextEvents;
 use Dnk\PhpInterface\ImshopAvailabilityEvents;
+use Dnk\PhpInterface\ImshopBasketEvents;
 use Dnk\PhpInterface\ImshopPickupEvents;
 use Dnk\PhpInterface\ImshopOtpEvents;
 use Dnk\PhpInterface\ImshopUserEvents;
@@ -242,6 +243,12 @@ EventManager::getInstance()->addEventHandlerCompatible(
     [ReviewBonusEvents::class, 'onCommentUpdate'],
     false,
     100
+);
+
+EventManager::getInstance()->addEventHandler(
+    'bx.imshop.integration',
+    'onBasketCalculated',
+    [ImshopBasketEvents::class, 'onBasketCalculated']
 );
 
 EventManager::getInstance()->addEventHandler(

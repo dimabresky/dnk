@@ -47,6 +47,7 @@ use Dnk\PhpInterface\ImshopStoresAgent;
 use Dnk\PhpInterface\ImshopBelpostPickup;
 use Dnk\PhpInterface\ImshopEuropostPickup;
 use Dnk\PhpInterface\ImshopAvailabilityEvents;
+use Dnk\PhpInterface\ImshopBasketEvents;
 use Dnk\PhpInterface\ImshopPickupEvents;
 use Dnk\PhpInterface\ImshopOtpEvents;
 use Dnk\PhpInterface\ImshopUserEvents;
@@ -112,6 +113,7 @@ Loader::registerAutoLoadClasses(null, [
     ImshopEuropostPickup::class => $classesPath . '/ImshopEuropostPickup.php',
     ImshopBelpostPickup::class => $classesPath . '/ImshopBelpostPickup.php',
     ImshopAvailabilityEvents::class => $classesPath . '/ImshopAvailabilityEvents.php',
+    ImshopBasketEvents::class => $classesPath . '/ImshopBasketEvents.php',
     ImshopPickupEvents::class => $classesPath . '/ImshopPickupEvents.php',
     ImshopOtpEvents::class => $classesPath . '/ImshopOtpEvents.php',
     ImshopUserEvents::class => $classesPath . '/ImshopUserEvents.php',
